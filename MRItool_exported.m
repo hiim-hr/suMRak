@@ -165,25 +165,38 @@ classdef MRItool_exported < matlab.apps.AppBase
                 try
                     %Create image object
                     imageObj = ImageDataObject(seq_Path_temp);
-                    attemptAcqProt = [num2str(i), ' -> ', imageObj.Visu.VisuAcquisitionProtocol];
+                    attempt_AcqProt = [num2str(i), ' -> ', imageObj.Visu.VisuAcquisitionProtocol];
                     %Store properties into respective arrays
                     try
-                        imageObj.Visu.VisuAcqEchoTime < imageObj.Visu.VisuAcqRepetitionTime;
-                        TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^- 3);
-                        TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
-                        voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
-                        seq_Num = cat(1, seq_Num, i);
-                        visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '. ', imageObj.Visu.VisuAcquisitionProtocol));
-                        seq_Path = cat(1, seq_Path, seq_Path_temp);
-                        seq_ImageData = cat(1, seq_ImageData, {squeeze(ImageDataObject(seq_Path_temp).data)});
+                        attempt_voxelDims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
+                        try
+                            imageObj.Visu.VisuAcqEchoTime < imageObj.Visu.VisuAcqRepetitionTime;
+                            voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
+                            visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '. ', imageObj.Visu.VisuAcquisitionProtocol));
+                            seq_Num = cat(1, seq_Num, i);
+                            seq_Path = cat(1, seq_Path, seq_Path_temp);
+                            seq_ImageData = cat(1, seq_ImageData, {squeeze(ImageDataObject(seq_Path_temp).data)});
+                            TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^- 3);
+                            TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
+                        catch
+                            %x = [num2str(i), ' -> TIME DATA ERROR'];
+                        end
                     catch
-                        %x = [num2str(i), ' -> TIME DATA ERROR'];
+                        %x = [num2str(i), ' -> VOXEL DIM ERROR'];
                     end
                 catch
                     %x = [num2str(i), ' -> WOBBLE'];
                 end
             end
             
+%             size(TE_time)
+%             size(seq_Num)
+%             size(TR_time)
+%             size(voxel_Dims)
+%             size(seq_Path)
+%             size(seq_ImageData)
+%             size(visu_AcqProt)
+
             % Construct sequence property table
             app.SequencePropertyTable = table(seq_Num, TE_time, TR_time, voxel_Dims, seq_Path, seq_ImageData, 'RowNames', visu_AcqProt);
             app.UITable.Data=app.SequencePropertyTable;
