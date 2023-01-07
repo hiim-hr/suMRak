@@ -5,6 +5,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        LoadsingleButton                matlab.ui.control.Button
         SliceSpinner_4                  matlab.ui.control.Spinner
         SliceSpinner_4Label             matlab.ui.control.Label
         SliceSpinner_3                  matlab.ui.control.Spinner
@@ -74,30 +75,28 @@ classdef MRItool_exported < matlab.apps.AppBase
         SelectsequencetosegmentDropDownLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         DSCTab                          matlab.ui.container.Tab
+        DSCMapsDropDown                 matlab.ui.control.DropDown
+        DSCMapsDropDownLabel            matlab.ui.control.Label
+        ComparemapsButton               matlab.ui.control.Button
+        SelectASLDropDown               matlab.ui.control.DropDown
+        SelectASLexperimenttocompareLabel  matlab.ui.control.Label
         SelectvolumetricdataDropDown    matlab.ui.control.DropDown
-        SelectvolumetricdataformapcalculationLabel  matlab.ui.control.Label
-        MTTMapLabel                     matlab.ui.control.Label
-        CBVMapLabel                     matlab.ui.control.Label
-        CBFMapLabel                     matlab.ui.control.Label
-        SliceSpinner_MTT                matlab.ui.control.Spinner
+        SelectDSCvolumetricdataformapcalculationLabel  matlab.ui.control.Label
+        ASLMapLabel                     matlab.ui.control.Label
+        SliceSpinner_ASL                matlab.ui.control.Spinner
         SliceSpinner_7Label             matlab.ui.control.Label
-        SliceSpinner_CBV                matlab.ui.control.Spinner
-        SliceSpinner_6Label             matlab.ui.control.Label
-        SliceSpinner_CBF                matlab.ui.control.Spinner
+        SliceSpinner_DSCMaps            matlab.ui.control.Spinner
         SliceSpinner_5Label_2           matlab.ui.control.Label
-        GlobalslicesliderSlider         matlab.ui.control.Slider
-        GlobalslicesliderSliderLabel    matlab.ui.control.Label
-        Button3                         matlab.ui.control.Button
-        CalculatemapsButton             matlab.ui.control.Button
-        UIAxes_DSC_MTT                  matlab.ui.control.UIAxes
-        UIAxes_DSC_CBV                  matlab.ui.control.UIAxes
-        UIAxes_DSC_CBF                  matlab.ui.control.UIAxes
+        CalculateDSCmapsButton          matlab.ui.control.Button
+        UIAxes_ASL                      matlab.ui.control.UIAxes
+        UIAxes_DSCMaps                  matlab.ui.control.UIAxes
     end
 
     
     properties (Access = private)
         
         % Loading and preview tab properties
+        LoadCounter = 1
         StudyPath % Filepath of selected study directory
         SequencePropertyTable % Table of loaded sequence properties
         Sequence1ImageData % Image matrix of sequence 1
@@ -129,11 +128,13 @@ classdef MRItool_exported < matlab.apps.AppBase
         
         % DSC tab
         DropDownItemsDSC = {'None'};
-        WorkMask
+        WorkMaskDSC
         MTTData
         CBFData
         CBVData
         CBVLCData
+        WorkMaskASL
+        ImageDataASL
         
     end
     
@@ -143,6 +144,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: BrowseButton
         function BrowseButtonPushed(app, event)
+            
             addBrukerPaths;
             
             % Select study directory and update the edit field text
@@ -152,6 +154,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: UpdateButton
         function UpdateButtonPushed(app, event)
+            
             % Create property arrays of sequences in selected study
             seq_Num = 0;
             seq_Path = "None";  
@@ -179,8 +182,8 @@ classdef MRItool_exported < matlab.apps.AppBase
                             visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '. ', imageObj.Visu.VisuAcquisitionProtocol));
                             seq_Num = cat(1, seq_Num, i);
                             seq_Path = cat(1, seq_Path, seq_Path_temp);
-                            seq_ImageData = cat(1, seq_ImageData, {squeeze(ImageDataObject(seq_Path_temp).data)});
-                            TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^- 3);
+                            seq_ImageData = cat(1, seq_ImageData, {squeeze(imageObj.data)});
+                            TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^-3);
                             TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
                         catch
                             %x = [num2str(i), ' -> TIME DATA ERROR'];
@@ -202,13 +205,61 @@ classdef MRItool_exported < matlab.apps.AppBase
 %             size(visu_AcqProt)
 
             % Construct sequence property table
-            app.SequencePropertyTable = table(seq_Num, TE_time, TR_time, voxel_Dims, seq_Path, seq_ImageData, 'RowNames', visu_AcqProt);
+            exp_Names = visu_AcqProt;
+            %column_Names = ["exp_Names", "Image data", "seq_Num", "TE", "TR", "Voxel dims", "Path"];
+            app.SequencePropertyTable = table(exp_Names, seq_ImageData, seq_Num, TE_time, TR_time, voxel_Dims, seq_Path, 'RowNames', visu_AcqProt);
             app.UITable.Data=app.SequencePropertyTable;
             
             % Update drop down items
             app.Sequence1DropDown.Items = visu_AcqProt;
             app.Sequence2DropDown.Items = visu_AcqProt;
             app.SelectsequencetosegmentDropDown.Items = visu_AcqProt;
+        end
+
+        % Button pushed function: LoadsingleButton
+        function LoadsingleButtonPushed(app, event)
+            
+            % Get filepath of single experiment image data, create image
+            % object and get properties
+            single_Path = uigetdir;
+            imageObj = ImageDataObject(single_Path);
+            
+            try
+                imageObj.Visu.VisuAcqEchoTime < imageObj.Visu.VisuAcqRepetitionTime;
+                TE_time = imageObj.Visu.VisuAcqEchoTime*10^-3;
+                TR_time = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
+            catch
+                TE_time = 0;
+                TR_time = 0;
+            end
+            try
+                visu_AcqProt = {append('Manual load ', num2str(app.LoadCounter), '. ', imageObj.Visu.VisuAcquisitionProtocol)};
+            catch 
+                visu_AcqProt = {['Unnamed_manual_seq ', num2str(app.LoadCounter)]};
+            end      
+            try
+                voxel_Dims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
+            catch 
+                voxel_Dims = [0 0];
+            end
+            
+            % Update load counter used for naming
+            seq_Num = app.LoadCounter;
+            app.LoadCounter = app.LoadCounter+1;
+            seq_Path = convertCharsToStrings(single_Path);
+            seq_ImageData = {squeeze(imageObj.data)};
+            
+            % Construct temporary sequence property table and combine with
+            % main
+            exp_Names = visu_AcqProt;
+            temp_Table = table(exp_Names, seq_ImageData, seq_Num, TE_time, TR_time, voxel_Dims, seq_Path, 'RowNames', visu_AcqProt);
+            app.SequencePropertyTable = [app.SequencePropertyTable; temp_Table];
+            app.UITable.Data=app.SequencePropertyTable;
+            
+            % Update drop down items
+            app.Sequence1DropDown.Items = app.SequencePropertyTable.exp_Names;
+            app.Sequence2DropDown.Items = app.SequencePropertyTable.exp_Names;
+            app.SelectsequencetosegmentDropDown.Items = app.SequencePropertyTable.exp_Names;
         end
 
         % Value changed function: Sequence1DropDown
@@ -375,6 +426,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Value changed function: Dim5Spinner_Segmenter
         function Dim5Spinner_SegmenterValueChanged(app, event)
+            
             % Get current slice image in dim4 and dim5 value, set intensity limits, show image
             current_slice = app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
             app.SliceLimits = [min(current_slice, [], 'all'), max(current_slice, [], 'all')];
@@ -403,6 +455,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: RotateButton_Segmenter_2
         function ResetviewButton_Segmenter_Pushed(app, event)
+           
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
@@ -867,6 +920,10 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Update DSC tab drop down menu
             app.DropDownItemsDSC = cat(1, app.DropDownItemsDSC, {app.SelectsequencetosegmentDropDown.Value});
             app.SelectvolumetricdataDropDown.Items = app.DropDownItemsDSC;
+            app.SelectASLDropDown.Items = app.DropDownItemsDSC;
+            
+            % Update last action label
+            app.ActionLabel.Text = "Segmented sequence saved to permanent data.";
         end
 
         % Button pushed function: ExportsequenceButton
@@ -877,21 +934,42 @@ classdef MRItool_exported < matlab.apps.AppBase
             temp_dir = append(temp_dir, '\');
             niftiwrite(app.SavedImageSegmenter, append(temp_dir, 'Image'))
             niftiwrite(app.SavedMaskSegmenter, append(temp_dir, 'Mask'))
+            
+            % Update last action label
+            app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
         end
 
-        % Button pushed function: CalculatemapsButton
-        function CalculatemapsButtonPushed(app, event)
+        % Button pushed function: SegmentusingexternalmaskButton
+        function SegmentusingexternalmaskButtonPushed(app, event)
+            
+            % Get external mask data
+            temp_dir = uigetfile;
+            temp_Mask = niftiread(temp_dir);
+            app.SavedMaskSegmenter = temp_Mask;
+            
+            % Upade saved image data with segmented data using loaded
+            % external mask
+            num_dims = size(app.SeqDimsSegmenter);
+            if num_dims(2) == 4
+                for j=1:app.SeqDimsSegmenter(3)
+                    for i=1:app.SeqDimsSegmenter(4)
+                        app.SavedImageSegmenter(:,:,j,i) = temp_Mask(:,:,j).*app.OriginalImage(:,:,j,i);
+                    end
+                end
+            elseif num_dims(2) == 3
+                for i=1:app.SeqDimsSegmenter(3)
+                    app.SavedImageSegmenter(:,:,i) = temp_Mask(:,:,i).*app.OriginalImage(:,:,i);
+                end
+            end
+        end
+
+        % Button pushed function: CalculateDSCmapsButton
+        function CalculateDSCmapsButtonPushed(app, event)
             
             % Get custom options for DSC tolbox
             custom_options = DSC_mri_getOptions();
             custom_options.display = 1;
             custom_options.deconv.method = {'SVD'}; %'cSVD';'oSVD'}
-            
-
-
-%             idx = any(app.SavedImageSegmenter(:,:,:,1), [1, 2]);
-%             nesto = app.SavedImageSegmenter(:,:,idx,:);
-%             disp(size(nesto))
             
             % Get volumetric data and sequence parameters for map
             % calculation
@@ -899,7 +977,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             TE = table2array(app.SequencePropertyTable({drop_Value}, "TE_time"));
             TR = table2array(app.SequencePropertyTable({drop_Value}, "TR_time"));            
             work_Data = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Image")));
-            app.WorkMask = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Mask")));
+            app.WorkMaskDSC = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Mask")));
             
             % Calculate and display DSC maps
             if numel(size(work_Data)) == 4   
@@ -916,66 +994,80 @@ classdef MRItool_exported < matlab.apps.AppBase
                 app.CBVLCData = cbv_lc;
                 
                 data_dims = size(app.CBFData);
-                app.SliceSpinner_CBF.Limits = [1, data_dims(3)];
-                app.SliceSpinner_CBV.Limits = [1, data_dims(3)];
-                app.SliceSpinner_MTT.Limits = [1, data_dims(3)];
-                app.GlobalslicesliderSlider.Limits = [1, data_dims(3)];
-                
-                app.SliceSpinner_CBF.Enable = 'On';
-                app.SliceSpinner_CBV.Enable = 'On';
-                app.SliceSpinner_MTT.Enable = 'On';
+                app.SliceSpinner_DSCMaps.Limits = [1, data_dims(3)];              
+                app.SliceSpinner_DSCMaps.Enable = 'On';
+                app.SliceSpinner_DSCMaps.Value = 1;
     
-                cbf_im = imshow(app.CBFData(:,:,1), [], 'Parent', app.UIAxes_DSC_CBF, Colormap = turbo);
-                cbf_im.AlphaData = app.WorkMask(:,:,1);
-                
-                cbv_im = imshow(app.CBVData(:,:,1), [], 'Parent', app.UIAxes_DSC_CBV, Colormap = turbo);
-                cbv_im.AlphaData = app.WorkMask(:,:,1);
-                
-                mtt_im = imshow(app.MTTData(:,:,1), [], 'Parent', app.UIAxes_DSC_MTT, Colormap = turbo);
-                mtt_im.AlphaData = app.WorkMask(:,:,1);
+                if app.DSCMapsDropDown.Value == "CBF"
+                    dscMaps_im = imshow(app.CBFData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    dscMaps_im = imshow(app.CBVData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    dscMaps_im = imshow(app.MTTData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                end
+                dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,1);
             else
                 disp('Wrong number of dimensions!')
             end
-                
-        end
-
-        % Button pushed function: Button3
-        function Button3Pushed(app, event)
-            disp(app.SavedTableSegmenter)
-        end
-
-        % Value changed function: SliceSpinner_CBF
-        function SliceSpinner_CBFValueChanged(app, event)
-            cbf_im = imshow(app.CBFData(:,:,app.SliceSpinner_CBF.Value), [], 'Parent', app.UIAxes_DSC_CBF, Colormap = turbo);
-            cbf_im.AlphaData = app.WorkMask(:,:,app.SliceSpinner_CBF.Value);
-        end
-
-        % Value changed function: SliceSpinner_CBV
-        function SliceSpinner_CBVValueChanged(app, event)
-            cbv_im = imshow(app.CBVData(:,:,app.SliceSpinner_CBV.Value), [], 'Parent', app.UIAxes_DSC_CBV, Colormap = turbo);
-            cbv_im.AlphaData = app.WorkMask(:,:,app.SliceSpinner_CBV.Value);
-        end
-
-        % Value changed function: SliceSpinner_MTT
-        function SliceSpinner_MTTValueChanged(app, event)
-            mtt_im = imshow(app.MTTData(:,:,app.SliceSpinner_MTT.Value), [], 'Parent', app.UIAxes_DSC_MTT, Colormap = turbo);
-            mtt_im.AlphaData = app.WorkMask(:,:,app.SliceSpinner_MTT.Value);
-        end
-
-        % Value changing function: GlobalslicesliderSlider
-        function GlobalslicesliderSliderValueChanging(app, event)
-            changingValue = round(event.Value);
             
-            cbf_im = imshow(app.CBFData(:,:,changingValue), [], 'Parent', app.UIAxes_DSC_CBF, Colormap = turbo);
-            cbf_im.AlphaData = app.WorkMask(:,:,changingValue);
-            cbv_im = imshow(app.CBVData(:,:,changingValue), [], 'Parent', app.UIAxes_DSC_CBV, Colormap = turbo);
-            cbv_im.AlphaData = app.WorkMask(:,:,changingValue);
-            mtt_im = imshow(app.MTTData(:,:,changingValue), [], 'Parent', app.UIAxes_DSC_MTT, Colormap = turbo);
-            mtt_im.AlphaData = app.WorkMask(:,:,changingValue);
+            app.UIAxes_DSCMaps.Interactions = [];
+        end
+
+        % Value changed function: DSCMapsDropDown
+        function DSCMapsDropDownValueChanged(app, event)
             
-            app.SliceSpinner_CBF.Value = changingValue;
-            app.SliceSpinner_CBV.Value = changingValue;
-            app.SliceSpinner_MTT.Value = changingValue;
+            % Display chosen map image
+            if app.DSCMapsDropDown.Value == "CBF"
+                dscMaps_im = imshow(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+            elseif app.DSCMapsDropDown.Value == "CBV"
+                dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+            elseif app.DSCMapsDropDown.Value == "MTT"
+                dscMaps_im = imshow(app.MTTData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+            end
+            dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+        end
+
+        % Value changed function: SliceSpinner_DSCMaps
+        function SliceSpinner_DSCMapsValueChanged(app, event)
+            if app.DSCMapsDropDown.Value == "CBF"
+                dscMaps_im = imshow(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+            elseif app.DSCMapsDropDown.Value == "CBV"
+                dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+            elseif app.DSCMapsDropDown.Value == "MTT"
+                dscMaps_im = imshow(app.MTTData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+            end
+            dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+        end
+
+        % Value changed function: SelectASLDropDown
+        function SelectASLDropDownValueChanged(app, event)
+            
+            % Display chosen ASL map image from saved segmented data,
+            % update slice spinner
+            drop_Value = app.SelectASLDropDown.Value; 
+            app.ImageDataASL = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Image")));
+            app.WorkMaskASL = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Mask")));
+            aslMap_im = imshow(app.ImageDataASL(:,:,1), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
+            aslMap_im.AlphaData = app.WorkMaskASL(:,:,1);
+        
+            data_dims = size(app.ImageDataASL);
+            app.SliceSpinner_ASL.Limits = [1, data_dims(3)];              
+            app.SliceSpinner_ASL.Enable = 'On';
+            app.SliceSpinner_ASL.Value = 1;
+            
+            app.UIAxes_ASL.Interactions = [];
+        end
+
+        % Value changed function: SliceSpinner_ASL
+        function SliceSpinner_ASLValueChanged(app, event)
+            aslMap_im = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
+            aslMap_im.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);
+        end
+
+        % Button pushed function: ComparemapsButton
+        function ComparemapsButtonPushed(app, event)
+            % Calculate 2D correlation coeff. for current DSC/ASL slices
+            corr2(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value))
         end
     end
 
@@ -1084,7 +1176,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create UpdateButton
             app.UpdateButton = uibutton(app.PreviewTab, 'push');
             app.UpdateButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonPushed, true);
-            app.UpdateButton.Position = [426 622 100 22];
+            app.UpdateButton.Position = [530 622 100 22];
             app.UpdateButton.Text = 'Update';
 
             % Create BrowseButton
@@ -1107,12 +1199,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create NumberofsequencesEditFieldLabel
             app.NumberofsequencesEditFieldLabel = uilabel(app.PreviewTab);
             app.NumberofsequencesEditFieldLabel.HorizontalAlignment = 'right';
-            app.NumberofsequencesEditFieldLabel.Position = [643 663 123 22];
+            app.NumberofsequencesEditFieldLabel.Position = [103 622 123 22];
             app.NumberofsequencesEditFieldLabel.Text = {'Number of sequences'; ''};
 
             % Create NumberofsequencesEditField
             app.NumberofsequencesEditField = uieditfield(app.PreviewTab, 'numeric');
-            app.NumberofsequencesEditField.Position = [781 663 61 22];
+            app.NumberofsequencesEditField.Position = [241 622 61 22];
 
             % Create SliderLabel
             app.SliderLabel = uilabel(app.PreviewTab);
@@ -1151,6 +1243,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create SliceSpinner_4
             app.SliceSpinner_4 = uispinner(app.PreviewTab);
             app.SliceSpinner_4.Position = [872 80 100 22];
+
+            % Create LoadsingleButton
+            app.LoadsingleButton = uibutton(app.PreviewTab, 'push');
+            app.LoadsingleButton.ButtonPushedFcn = createCallbackFcn(app, @LoadsingleButtonPushed, true);
+            app.LoadsingleButton.Position = [704 642 100 22];
+            app.LoadsingleButton.Text = 'Load single';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
@@ -1408,6 +1506,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create SegmentusingexternalmaskButton
             app.SegmentusingexternalmaskButton = uibutton(app.SegmenterTab, 'push');
+            app.SegmentusingexternalmaskButton.ButtonPushedFcn = createCallbackFcn(app, @SegmentusingexternalmaskButtonPushed, true);
             app.SegmentusingexternalmaskButton.Position = [1175 613 174 22];
             app.SegmentusingexternalmaskButton.Text = 'Segment using external mask';
 
@@ -1415,129 +1514,110 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.DSCTab = uitab(app.TabGroup);
             app.DSCTab.Title = 'DSC';
 
-            % Create UIAxes_DSC_CBF
-            app.UIAxes_DSC_CBF = uiaxes(app.DSCTab);
-            app.UIAxes_DSC_CBF.Toolbar.Visible = 'off';
-            app.UIAxes_DSC_CBF.XLimitMethod = 'tight';
-            app.UIAxes_DSC_CBF.YLimitMethod = 'tight';
-            app.UIAxes_DSC_CBF.XTick = [];
-            app.UIAxes_DSC_CBF.XTickLabel = '';
-            app.UIAxes_DSC_CBF.YTick = [];
-            app.UIAxes_DSC_CBF.YTickLabel = '';
-            app.UIAxes_DSC_CBF.Position = [36 48 442 393];
+            % Create UIAxes_DSCMaps
+            app.UIAxes_DSCMaps = uiaxes(app.DSCTab);
+            app.UIAxes_DSCMaps.Toolbar.Visible = 'off';
+            app.UIAxes_DSCMaps.XLimitMethod = 'tight';
+            app.UIAxes_DSCMaps.YLimitMethod = 'tight';
+            app.UIAxes_DSCMaps.XTick = [];
+            app.UIAxes_DSCMaps.XTickLabel = '';
+            app.UIAxes_DSCMaps.YTick = [];
+            app.UIAxes_DSCMaps.YTickLabel = '';
+            app.UIAxes_DSCMaps.Position = [151 52 534 468];
 
-            % Create UIAxes_DSC_CBV
-            app.UIAxes_DSC_CBV = uiaxes(app.DSCTab);
-            app.UIAxes_DSC_CBV.Toolbar.Visible = 'off';
-            app.UIAxes_DSC_CBV.XLimitMethod = 'tight';
-            app.UIAxes_DSC_CBV.YLimitMethod = 'tight';
-            app.UIAxes_DSC_CBV.XTick = [];
-            app.UIAxes_DSC_CBV.XTickLabel = '';
-            app.UIAxes_DSC_CBV.YTick = [];
-            app.UIAxes_DSC_CBV.YTickLabel = '';
-            app.UIAxes_DSC_CBV.Position = [496 48 442 393];
+            % Create UIAxes_ASL
+            app.UIAxes_ASL = uiaxes(app.DSCTab);
+            app.UIAxes_ASL.Toolbar.Visible = 'off';
+            app.UIAxes_ASL.XLimitMethod = 'tight';
+            app.UIAxes_ASL.YLimitMethod = 'tight';
+            app.UIAxes_ASL.XTick = [];
+            app.UIAxes_ASL.XTickLabel = '';
+            app.UIAxes_ASL.YTick = [];
+            app.UIAxes_ASL.YTickLabel = '';
+            app.UIAxes_ASL.Position = [755 52 523 468];
 
-            % Create UIAxes_DSC_MTT
-            app.UIAxes_DSC_MTT = uiaxes(app.DSCTab);
-            app.UIAxes_DSC_MTT.Toolbar.Visible = 'off';
-            app.UIAxes_DSC_MTT.XLimitMethod = 'tight';
-            app.UIAxes_DSC_MTT.YLimitMethod = 'tight';
-            app.UIAxes_DSC_MTT.XTick = [];
-            app.UIAxes_DSC_MTT.XTickLabel = '';
-            app.UIAxes_DSC_MTT.YTick = [];
-            app.UIAxes_DSC_MTT.YTickLabel = '';
-            app.UIAxes_DSC_MTT.Position = [956 48 442 393];
-
-            % Create CalculatemapsButton
-            app.CalculatemapsButton = uibutton(app.DSCTab, 'push');
-            app.CalculatemapsButton.ButtonPushedFcn = createCallbackFcn(app, @CalculatemapsButtonPushed, true);
-            app.CalculatemapsButton.Position = [654 592 128 22];
-            app.CalculatemapsButton.Text = 'Calculate maps';
-
-            % Create Button3
-            app.Button3 = uibutton(app.DSCTab, 'push');
-            app.Button3.ButtonPushedFcn = createCallbackFcn(app, @Button3Pushed, true);
-            app.Button3.Position = [1282 643 87 22];
-            app.Button3.Text = 'Button3';
-
-            % Create GlobalslicesliderSliderLabel
-            app.GlobalslicesliderSliderLabel = uilabel(app.DSCTab);
-            app.GlobalslicesliderSliderLabel.HorizontalAlignment = 'center';
-            app.GlobalslicesliderSliderLabel.Position = [586 485 71 41];
-            app.GlobalslicesliderSliderLabel.Text = {'Global slice '; 'slider'};
-
-            % Create GlobalslicesliderSlider
-            app.GlobalslicesliderSlider = uislider(app.DSCTab);
-            app.GlobalslicesliderSlider.ValueChangingFcn = createCallbackFcn(app, @GlobalslicesliderSliderValueChanging, true);
-            app.GlobalslicesliderSlider.MinorTicks = [];
-            app.GlobalslicesliderSlider.Position = [678 513 150 3];
+            % Create CalculateDSCmapsButton
+            app.CalculateDSCmapsButton = uibutton(app.DSCTab, 'push');
+            app.CalculateDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateDSCmapsButtonPushed, true);
+            app.CalculateDSCmapsButton.Position = [356 592 128 22];
+            app.CalculateDSCmapsButton.Text = 'Calculate DSC maps';
 
             % Create SliceSpinner_5Label_2
             app.SliceSpinner_5Label_2 = uilabel(app.DSCTab);
             app.SliceSpinner_5Label_2.HorizontalAlignment = 'right';
             app.SliceSpinner_5Label_2.Enable = 'off';
-            app.SliceSpinner_5Label_2.Position = [181 17 31 22];
+            app.SliceSpinner_5Label_2.Position = [346 17 31 22];
             app.SliceSpinner_5Label_2.Text = 'Slice';
 
-            % Create SliceSpinner_CBF
-            app.SliceSpinner_CBF = uispinner(app.DSCTab);
-            app.SliceSpinner_CBF.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_CBFValueChanged, true);
-            app.SliceSpinner_CBF.Enable = 'off';
-            app.SliceSpinner_CBF.Position = [227 17 100 22];
-
-            % Create SliceSpinner_6Label
-            app.SliceSpinner_6Label = uilabel(app.DSCTab);
-            app.SliceSpinner_6Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_6Label.Enable = 'off';
-            app.SliceSpinner_6Label.Position = [656 17 31 22];
-            app.SliceSpinner_6Label.Text = 'Slice';
-
-            % Create SliceSpinner_CBV
-            app.SliceSpinner_CBV = uispinner(app.DSCTab);
-            app.SliceSpinner_CBV.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_CBVValueChanged, true);
-            app.SliceSpinner_CBV.Enable = 'off';
-            app.SliceSpinner_CBV.Position = [702 17 100 22];
+            % Create SliceSpinner_DSCMaps
+            app.SliceSpinner_DSCMaps = uispinner(app.DSCTab);
+            app.SliceSpinner_DSCMaps.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_DSCMapsValueChanged, true);
+            app.SliceSpinner_DSCMaps.Enable = 'off';
+            app.SliceSpinner_DSCMaps.Position = [392 17 100 22];
 
             % Create SliceSpinner_7Label
             app.SliceSpinner_7Label = uilabel(app.DSCTab);
             app.SliceSpinner_7Label.HorizontalAlignment = 'right';
             app.SliceSpinner_7Label.Enable = 'off';
-            app.SliceSpinner_7Label.Position = [1121 17 31 22];
+            app.SliceSpinner_7Label.Position = [947 17 31 22];
             app.SliceSpinner_7Label.Text = 'Slice';
 
-            % Create SliceSpinner_MTT
-            app.SliceSpinner_MTT = uispinner(app.DSCTab);
-            app.SliceSpinner_MTT.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_MTTValueChanged, true);
-            app.SliceSpinner_MTT.Enable = 'off';
-            app.SliceSpinner_MTT.Position = [1167 17 100 22];
+            % Create SliceSpinner_ASL
+            app.SliceSpinner_ASL = uispinner(app.DSCTab);
+            app.SliceSpinner_ASL.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_ASLValueChanged, true);
+            app.SliceSpinner_ASL.Enable = 'off';
+            app.SliceSpinner_ASL.Position = [993 17 100 22];
 
-            % Create CBFMapLabel
-            app.CBFMapLabel = uilabel(app.DSCTab);
-            app.CBFMapLabel.Position = [229 440 56 22];
-            app.CBFMapLabel.Text = {'CBF Map'; ''};
+            % Create ASLMapLabel
+            app.ASLMapLabel = uilabel(app.DSCTab);
+            app.ASLMapLabel.Position = [992 547 54 22];
+            app.ASLMapLabel.Text = {'ASL Map'; ''};
 
-            % Create CBVMapLabel
-            app.CBVMapLabel = uilabel(app.DSCTab);
-            app.CBVMapLabel.Position = [692 440 57 22];
-            app.CBVMapLabel.Text = {'CBV Map'; ''};
-
-            % Create MTTMapLabel
-            app.MTTMapLabel = uilabel(app.DSCTab);
-            app.MTTMapLabel.Position = [1166 440 56 22];
-            app.MTTMapLabel.Text = {'MTT Map'; ''};
-
-            % Create SelectvolumetricdataformapcalculationLabel
-            app.SelectvolumetricdataformapcalculationLabel = uilabel(app.DSCTab);
-            app.SelectvolumetricdataformapcalculationLabel.HorizontalAlignment = 'right';
-            app.SelectvolumetricdataformapcalculationLabel.Position = [608 673 229 22];
-            app.SelectvolumetricdataformapcalculationLabel.Text = 'Select volumetric data for map calculation';
+            % Create SelectDSCvolumetricdataformapcalculationLabel
+            app.SelectDSCvolumetricdataformapcalculationLabel = uilabel(app.DSCTab);
+            app.SelectDSCvolumetricdataformapcalculationLabel.HorizontalAlignment = 'right';
+            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [291 663 259 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel.Text = 'Select DSC volumetric data for map calculation';
 
             % Create SelectvolumetricdataDropDown
             app.SelectvolumetricdataDropDown = uidropdown(app.DSCTab);
             app.SelectvolumetricdataDropDown.Items = {};
             app.SelectvolumetricdataDropDown.Placeholder = 'None';
-            app.SelectvolumetricdataDropDown.Position = [538 643 360 21];
+            app.SelectvolumetricdataDropDown.Position = [239 633 360 21];
             app.SelectvolumetricdataDropDown.Value = {};
+
+            % Create SelectASLexperimenttocompareLabel
+            app.SelectASLexperimenttocompareLabel = uilabel(app.DSCTab);
+            app.SelectASLexperimenttocompareLabel.HorizontalAlignment = 'right';
+            app.SelectASLexperimenttocompareLabel.Position = [923 663 191 22];
+            app.SelectASLexperimenttocompareLabel.Text = 'Select ASL experiment to compare';
+
+            % Create SelectASLDropDown
+            app.SelectASLDropDown = uidropdown(app.DSCTab);
+            app.SelectASLDropDown.Items = {};
+            app.SelectASLDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectASLDropDownValueChanged, true);
+            app.SelectASLDropDown.Placeholder = 'None';
+            app.SelectASLDropDown.Position = [838 633 360 21];
+            app.SelectASLDropDown.Value = {};
+
+            % Create ComparemapsButton
+            app.ComparemapsButton = uibutton(app.DSCTab, 'push');
+            app.ComparemapsButton.ButtonPushedFcn = createCallbackFcn(app, @ComparemapsButtonPushed, true);
+            app.ComparemapsButton.Position = [916 592 203 22];
+            app.ComparemapsButton.Text = 'Compare ASL and DSC CBF maps';
+
+            % Create DSCMapsDropDownLabel
+            app.DSCMapsDropDownLabel = uilabel(app.DSCTab);
+            app.DSCMapsDropDownLabel.HorizontalAlignment = 'center';
+            app.DSCMapsDropDownLabel.Position = [373 564 101 22];
+            app.DSCMapsDropDownLabel.Text = 'DSC Maps';
+
+            % Create DSCMapsDropDown
+            app.DSCMapsDropDown = uidropdown(app.DSCTab);
+            app.DSCMapsDropDown.Items = {'CBF', 'CBV', 'MTT'};
+            app.DSCMapsDropDown.ValueChangedFcn = createCallbackFcn(app, @DSCMapsDropDownValueChanged, true);
+            app.DSCMapsDropDown.Position = [394 535 61 23];
+            app.DSCMapsDropDown.Value = 'CBF';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
