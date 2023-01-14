@@ -75,6 +75,12 @@ classdef MRItool_exported < matlab.apps.AppBase
         SelectsequencetosegmentDropDownLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         DSCTab                          matlab.ui.container.Tab
+        ExportDSCMapsButton             matlab.ui.control.Button
+        MethodButtonGroup               matlab.ui.container.ButtonGroup
+        oSVDButton                      matlab.ui.control.RadioButton
+        cSVDButton                      matlab.ui.control.RadioButton
+        SVDButton                       matlab.ui.control.RadioButton
+        ExportASLButton                 matlab.ui.control.Button
         DSCMapsDropDown                 matlab.ui.control.DropDown
         DSCMapsDropDownLabel            matlab.ui.control.Label
         ComparemapsButton               matlab.ui.control.Button
@@ -451,6 +457,10 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SavedMaskSegmenter = rot90(app.SavedMaskSegmenter, -1);
             app.SeqDimsSegmenter = size(app.OriginalImage);
             app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+            
+%             value = app.SelectsequencetosegmentDropDown.Value;
+%             nesto = cell2mat(table2array(app.SequencePropertyTable({value}, "seq_ImageData")));
+%             app.SequencePropertyTable.seq_ImageData(8) = {rot90(nesto, -1)};
         end
 
         % Button pushed function: RotateButton_Segmenter_2
@@ -961,6 +971,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                     app.SavedImageSegmenter(:,:,i) = temp_Mask(:,:,i).*app.OriginalImage(:,:,i);
                 end
             end
+            a = app.SavedImageSegmenter;
         end
 
         % Button pushed function: CalculateDSCmapsButton
@@ -969,7 +980,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Get custom options for DSC tolbox
             custom_options = DSC_mri_getOptions();
             custom_options.display = 1;
-            custom_options.deconv.method = {'SVD'}; %'cSVD';'oSVD'}
+            custom_options.deconv.method = {'SVD';'cSVD';'oSVD'};
             
             % Get volumetric data and sequence parameters for map
             % calculation
@@ -982,61 +993,153 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Calculate and display DSC maps
             if numel(size(work_Data)) == 4   
                 [cbv,cbf,mtt,cbv_lc,ttp,mask,aif,conc,s0]=DSC_mri_core(work_Data, TE, TR, custom_options);
-    %             assignin('base',"mtt", mtt)
-    %             assignin('base',"cbf", cbf)
-    %             assignin('base',"cbv_lc", cbv_lc)
-    %             assignin('base',"cbv", cbv)
+                assignin('base',"mtt", mtt)
+                assignin('base',"cbf", cbf)
+                assignin('base',"cbv", cbv)
                 
-                app.MTTData = mtt.svd;
-                app.MTTData(isnan(app.MTTData)) = 0;
-                app.CBFData = cbf.svd.map;
+                app.MTTData = mtt; 
+                app.MTTData.svd(isnan(app.MTTData.svd)) = 0;
+                app.MTTData.svd(isnan(app.MTTData.csvd)) = 0;
+                app.MTTData.svd(isnan(app.MTTData.osvd)) = 0;
+                app.CBFData = cbf;
                 app.CBVData = cbv;
                 app.CBVLCData = cbv_lc;
                 
-                data_dims = size(app.CBFData);
+                data_dims = size(app.CBFData.svd.map);
                 app.SliceSpinner_DSCMaps.Limits = [1, data_dims(3)];              
                 app.SliceSpinner_DSCMaps.Enable = 'On';
                 app.SliceSpinner_DSCMaps.Value = 1;
     
                 if app.DSCMapsDropDown.Value == "CBF"
-                    dscMaps_im = imshow(app.CBFData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    if app.SVDButton.Value == true
+                        dscMaps_im = imshow(app.CBFData.svd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.cSVDButton.Value == true
+                        dscMaps_im = imshow(app.CBFData.csvd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.oSVDButton.Value == true
+                        dscMaps_im = imshow(app.CBFData.osvd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    end
                 elseif app.DSCMapsDropDown.Value == "CBV"
                     dscMaps_im = imshow(app.CBVData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
                 elseif app.DSCMapsDropDown.Value == "MTT"
-                    dscMaps_im = imshow(app.MTTData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                    if app.SVDButton.Value == true
+                        dscMaps_im = imshow(app.MTTData.svd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.cSVDButton.Value == true
+                        dscMaps_im = imshow(app.MTTData.csvd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.oSVDButton.Value == true
+                        dscMaps_im = imshow(app.MTTData.osvd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    end 
                 end
                 dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,1);
             else
                 disp('Wrong number of dimensions!')
             end
             
+            % Set no interactions on UIAxes
             app.UIAxes_DSCMaps.Interactions = [];
         end
 
         % Value changed function: DSCMapsDropDown
         function DSCMapsDropDownValueChanged(app, event)
             
-            % Display chosen map image
+            % Display chosen map image based on method selected
             if app.DSCMapsDropDown.Value == "CBF"
-                dscMaps_im = imshow(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                end
             elseif app.DSCMapsDropDown.Value == "CBV"
                 dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
             elseif app.DSCMapsDropDown.Value == "MTT"
-                dscMaps_im = imshow(app.MTTData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                end
             end
             dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
         end
 
         % Value changed function: SliceSpinner_DSCMaps
         function SliceSpinner_DSCMapsValueChanged(app, event)
+            
+            % Display chosen map image based on method selected and spinner
+            % Value
             if app.DSCMapsDropDown.Value == "CBF"
-                dscMaps_im = imshow(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                end
             elseif app.DSCMapsDropDown.Value == "CBV"
                 dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
             elseif app.DSCMapsDropDown.Value == "MTT"
-                dscMaps_im = imshow(app.MTTData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                end
             end
             dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+        end
+
+        % Selection changed function: MethodButtonGroup
+        function MethodButtonGroupSelectionChanged(app, event)
+            
+            % Display chosen map image based on method selected
+            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
+            if selectedButton == "SVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    dscMaps_im = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    dscMaps_im = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                end
+            elseif selectedButton == "cSVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    dscMaps_im = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    dscMaps_im = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                end
+            elseif selectedButton == "oSVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    dscMaps_im = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    dscMaps_im = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    dscMaps_im = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                end
+            end
+            dscMaps_im.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+        end
+
+        % Button pushed function: ExportDSCMapsButton
+        function ExportDSCMapsButtonPushed(app, event)
+            
+            % Get directory and export calculated DSC maps
+            temp_dir = uigetdir;
+            temp_dir = append(temp_dir, '\');
+            
+            niftiwrite(app.CBFData.svd.map, append(temp_dir, 'CBF-SVD'))
+            niftiwrite(app.CBFData.csvd.map, append(temp_dir, 'CBF-cSVD'))
+            niftiwrite(app.CBFData.osvd.map, append(temp_dir, 'CBF-oSVD'))
+            
+            niftiwrite(app.MTTData.svd, append(temp_dir, 'MTT-SVD'))
+            niftiwrite(app.MTTData.csvd, append(temp_dir, 'MTT-cSVD'))
+            niftiwrite(app.MTTData.osvd, append(temp_dir, 'MTT-oSVD'))
+            
+            niftiwrite(app.CBVData, append(temp_dir, 'CBV'))
         end
 
         % Value changed function: SelectASLDropDown
@@ -1055,19 +1158,65 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_ASL.Enable = 'On';
             app.SliceSpinner_ASL.Value = 1;
             
+            % Set no interactions on UIAxes
             app.UIAxes_ASL.Interactions = [];
         end
 
         % Value changed function: SliceSpinner_ASL
         function SliceSpinner_ASLValueChanged(app, event)
+            
+            % Display ASL slice based of spinner Value
             aslMap_im = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
             aslMap_im.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);
         end
 
         % Button pushed function: ComparemapsButton
         function ComparemapsButtonPushed(app, event)
+            
             % Calculate 2D correlation coeff. for current DSC/ASL slices
-            corr2(app.CBFData(:,:,app.SliceSpinner_DSCMaps.Value), app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value))
+            % for using only pixels with nonzero values
+            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
+            if selectedButton == "SVD"
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "cSVD"
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "oSVD"
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            end     
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            dims = size(slice_ASL);
+            
+            if (app.SliceSpinner_DSCMaps.Value == app.SliceSpinner_ASL.Value) && (size(slice_ASL) == size(slice_DSC))
+                up = 0;
+                d1 = 0;
+                d2 = 0;
+                meansize = size(nonzeros(slice_DSC));
+                meanA = sum(nonzeros(slice_DSC))/meansize(1);
+                meanB = sum(nonzeros(slice_ASL))/meansize(1);
+                for i=1:dims(1)
+                    for j=1:dims(2)
+                        if slice_DSC(i,j)~=0
+                            up = up + (slice_DSC(i,j)-meanA)*(slice_ASL(i,j)-meanB);
+                            d1 = d1 + (slice_DSC(i,j)-meanA)^2;
+                            d2 = d2 + (slice_ASL(i,j)-meanB)^2;
+                        end
+                    end
+                end
+                
+                out = up/sqrt(d1*d2);
+                disp(out)
+            else
+                disp("Error: different slices or image dimensions")
+            end
+        end
+
+        % Button pushed function: ExportASLButton
+        function ExportASLButtonPushed(app, event)
+            
+            % Get directory and export segmented ASL map
+            temp_dir = uigetdir;
+            temp_dir = append(temp_dir, '\');
+            niftiwrite(app.ImageDataASL, append(temp_dir, 'ASL'))
         end
     end
 
@@ -1609,15 +1758,49 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create DSCMapsDropDownLabel
             app.DSCMapsDropDownLabel = uilabel(app.DSCTab);
             app.DSCMapsDropDownLabel.HorizontalAlignment = 'center';
-            app.DSCMapsDropDownLabel.Position = [373 564 101 22];
+            app.DSCMapsDropDownLabel.Position = [371 562 101 22];
             app.DSCMapsDropDownLabel.Text = 'DSC Maps';
 
             % Create DSCMapsDropDown
             app.DSCMapsDropDown = uidropdown(app.DSCTab);
             app.DSCMapsDropDown.Items = {'CBF', 'CBV', 'MTT'};
             app.DSCMapsDropDown.ValueChangedFcn = createCallbackFcn(app, @DSCMapsDropDownValueChanged, true);
-            app.DSCMapsDropDown.Position = [394 535 61 23];
+            app.DSCMapsDropDown.Position = [392 533 61 23];
             app.DSCMapsDropDown.Value = 'CBF';
+
+            % Create ExportASLButton
+            app.ExportASLButton = uibutton(app.DSCTab, 'push');
+            app.ExportASLButton.ButtonPushedFcn = createCallbackFcn(app, @ExportASLButtonPushed, true);
+            app.ExportASLButton.Position = [1147 592 100 22];
+            app.ExportASLButton.Text = {'Export ASL'; ''};
+
+            % Create MethodButtonGroup
+            app.MethodButtonGroup = uibuttongroup(app.DSCTab);
+            app.MethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MethodButtonGroupSelectionChanged, true);
+            app.MethodButtonGroup.Title = 'Method';
+            app.MethodButtonGroup.Position = [28 243 109 91];
+
+            % Create SVDButton
+            app.SVDButton = uiradiobutton(app.MethodButtonGroup);
+            app.SVDButton.Text = 'SVD';
+            app.SVDButton.Position = [11 45 58 22];
+            app.SVDButton.Value = true;
+
+            % Create cSVDButton
+            app.cSVDButton = uiradiobutton(app.MethodButtonGroup);
+            app.cSVDButton.Text = 'cSVD';
+            app.cSVDButton.Position = [11 23 65 22];
+
+            % Create oSVDButton
+            app.oSVDButton = uiradiobutton(app.MethodButtonGroup);
+            app.oSVDButton.Text = 'oSVD';
+            app.oSVDButton.Position = [11 1 65 22];
+
+            % Create ExportDSCMapsButton
+            app.ExportDSCMapsButton = uibutton(app.DSCTab, 'push');
+            app.ExportDSCMapsButton.ButtonPushedFcn = createCallbackFcn(app, @ExportDSCMapsButtonPushed, true);
+            app.ExportDSCMapsButton.Position = [28 194 112 22];
+            app.ExportDSCMapsButton.Text = 'Export DSC Maps';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
