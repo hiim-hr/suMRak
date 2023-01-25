@@ -6,10 +6,6 @@ classdef MRItool_exported < matlab.apps.AppBase
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
         LoadsingleButton                matlab.ui.control.Button
-        SliceSpinner_4                  matlab.ui.control.Spinner
-        SliceSpinner_4Label             matlab.ui.control.Label
-        SliceSpinner_3                  matlab.ui.control.Spinner
-        SliceSpinner_3Label             matlab.ui.control.Label
         UITable                         matlab.ui.control.Table
         Slider                          matlab.ui.control.Slider
         SliderLabel                     matlab.ui.control.Label
@@ -43,7 +39,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         RotateButton_Segmenter_2        matlab.ui.control.Button
         FreeButton_Remove_Lesion        matlab.ui.control.Button
         FreeButton_Add_Lesion           matlab.ui.control.Button
-        MainselectionButton_Lesiion     matlab.ui.control.Button
+        MainselectionButton_Lesion      matlab.ui.control.Button
         IIILesionselectionLabel         matlab.ui.control.Label
         MainselectionButton_Hemisphere  matlab.ui.control.Button
         CorrectionButton_Hemisphere     matlab.ui.control.Button
@@ -75,6 +71,9 @@ classdef MRItool_exported < matlab.apps.AppBase
         SelectsequencetosegmentDropDownLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         DSCTab                          matlab.ui.container.Tab
+        ROIpixelexclusionButton         matlab.ui.control.Button
+        ASLcomparationROIButton         matlab.ui.control.Button
+        DSCcomparationROIButton         matlab.ui.control.Button
         ExportDSCMapsButton             matlab.ui.control.Button
         MethodButtonGroup               matlab.ui.container.ButtonGroup
         oSVDButton                      matlab.ui.control.RadioButton
@@ -808,8 +807,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             mask_overlay_Red.AlphaData = app.RightHemi-0.9;
         end
 
-        % Button pushed function: MainselectionButton_Lesiion
-        function MainselectionButton_LesiionPushed(app, event)
+        % Button pushed function: MainselectionButton_Lesion
+        function MainselectionButton_LesionPushed(app, event)
             
             % Update and load masked slice image
             %app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
@@ -886,6 +885,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             
             % Update last action label
             app.ActionLabel.Text = "Slice " + num2str(app.SliceSpinner_Segmenter.Value) + " saved to temporary data.";
+        end
+
+        % Callback function
+        function AreaButtonPushed(app, event)
+            size(nonzeros(app.Mask))
         end
 
         % Button pushed function: ResetsliceButton
@@ -1218,6 +1222,143 @@ classdef MRItool_exported < matlab.apps.AppBase
             temp_dir = append(temp_dir, '\');
             niftiwrite(app.ImageDataASL, append(temp_dir, 'ASL'))
         end
+
+        % Button pushed function: DSCcomparationROIButton
+        function DSCcomparationROIButtonPushed(app, event)
+            
+            dscROI = drawfreehand(app.UIAxes_DSCMaps);
+            dscROI_mask = dscROI.createMask();
+            delete(dscROI)
+            
+            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
+            if selectedButton == "SVD"
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "cSVD"
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "oSVD"
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            end     
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            dims = size(slice_ASL);
+            
+            
+            up = 0;
+            d1 = 0;
+            d2 = 0;
+            meansize = size(nonzeros(dscROI_mask));
+            meanA = sum(slice_DSC(dscROI_mask==1))/meansize(1);
+            meanB = sum(slice_ASL(dscROI_mask==1))/meansize(1);
+            for i=1:dims(1)
+                for j=1:dims(2)
+                    if dscROI_mask(i,j)~=0
+                        up = up + (slice_DSC(i,j)-meanA)*(slice_ASL(i,j)-meanB);
+                        d1 = d1 + (slice_DSC(i,j)-meanA)^2;
+                        d2 = d2 + (slice_ASL(i,j)-meanB)^2;
+                    end
+                end
+            end
+                
+            out = up/sqrt(d1*d2);
+            disp(out)
+        end
+
+        % Button pushed function: ASLcomparationROIButton
+        function ASLcomparationROIButtonPushed(app, event)
+            
+            aslROI = drawfreehand(app.UIAxes_ASL);
+            aslROI_mask = aslROI.createMask();
+            delete(aslROI)
+            
+            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
+            if selectedButton == "SVD"
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "cSVD"
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            elseif selectedButton == "oSVD"
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+            end     
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            dims = size(slice_ASL);
+            
+
+            up = 0;
+            d1 = 0;
+            d2 = 0;
+            meansize = size(nonzeros(aslROI_mask));
+            meanA = sum(slice_DSC(aslROI_mask==1))/meansize(1);
+            meanB = sum(slice_ASL(aslROI_mask==1))/meansize(1);
+            for i=1:dims(1)
+                for j=1:dims(2)
+                    if aslROI_mask(i,j)~=0
+                        up = up + (slice_DSC(i,j)-meanA)*(slice_ASL(i,j)-meanB);
+                        d1 = d1 + (slice_DSC(i,j)-meanA)^2;
+                        d2 = d2 + (slice_ASL(i,j)-meanB)^2;
+                    end
+                end
+            end
+            
+            out = up/sqrt(d1*d2);
+            disp(out)
+        end
+
+        % Button pushed function: ROIpixelexclusionButton
+        function ROIpixelexclusionButtonPushed(app, event)
+            dscROI = drawfreehand(app.UIAxes_DSCMaps);
+            dscROI_mask = dscROI.createMask();
+            delete(dscROI)      
+            
+            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
+            if selectedButton == "SVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    modified_slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    modified_slice_DSC = app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value); 
+                end
+            elseif selectedButton == "cSVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    modified_slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    modified_slice_DSC = app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value); 
+                end
+            elseif selectedButton == "oSVD"
+                if app.DSCMapsDropDown.Value == "CBF"
+                    modified_slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "CBV"
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                elseif app.DSCMapsDropDown.Value == "MTT"
+                    modified_slice_DSC = app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value);
+                end
+            end
+            
+            modified_slice_DSC(dscROI_mask==1) = 0;
+            
+            if app.DSCMapsDropDown.Value == "CBF"
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                end
+            elseif app.DSCMapsDropDown.Value == "CBV"
+                dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+            elseif app.DSCMapsDropDown.Value == "MTT"
+                if app.SVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                elseif app.cSVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                elseif app.oSVDButton.Value == true
+                    dscMaps_im = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                end
+            end
+            temp_alphaMask = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            temp_alphaMask(dscROI_mask) = 0;
+            dscMaps_im.AlphaData = temp_alphaMask;
+        end
     end
 
     % Component initialization
@@ -1372,26 +1513,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
             app.UITable.RowName = {};
             app.UITable.Position = [973 252 389 306];
-
-            % Create SliceSpinner_3Label
-            app.SliceSpinner_3Label = uilabel(app.PreviewTab);
-            app.SliceSpinner_3Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_3Label.Position = [827 134 31 22];
-            app.SliceSpinner_3Label.Text = 'Slice';
-
-            % Create SliceSpinner_3
-            app.SliceSpinner_3 = uispinner(app.PreviewTab);
-            app.SliceSpinner_3.Position = [873 134 100 22];
-
-            % Create SliceSpinner_4Label
-            app.SliceSpinner_4Label = uilabel(app.PreviewTab);
-            app.SliceSpinner_4Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_4Label.Position = [826 80 31 22];
-            app.SliceSpinner_4Label.Text = 'Slice';
-
-            % Create SliceSpinner_4
-            app.SliceSpinner_4 = uispinner(app.PreviewTab);
-            app.SliceSpinner_4.Position = [872 80 100 22];
 
             % Create LoadsingleButton
             app.LoadsingleButton = uibutton(app.PreviewTab, 'push');
@@ -1586,11 +1707,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.IIILesionselectionLabel.Position = [1202 203 108 22];
             app.IIILesionselectionLabel.Text = {'III. Lesion selection'; ''};
 
-            % Create MainselectionButton_Lesiion
-            app.MainselectionButton_Lesiion = uibutton(app.SegmenterTab, 'push');
-            app.MainselectionButton_Lesiion.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_LesiionPushed, true);
-            app.MainselectionButton_Lesiion.Position = [1208 173 96 22];
-            app.MainselectionButton_Lesiion.Text = {'Main selection'; ''};
+            % Create MainselectionButton_Lesion
+            app.MainselectionButton_Lesion = uibutton(app.SegmenterTab, 'push');
+            app.MainselectionButton_Lesion.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_LesionPushed, true);
+            app.MainselectionButton_Lesion.Position = [1208 173 96 22];
+            app.MainselectionButton_Lesion.Text = {'Main selection'; ''};
 
             % Create FreeButton_Add_Lesion
             app.FreeButton_Add_Lesion = uibutton(app.SegmenterTab, 'push');
@@ -1695,27 +1816,27 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_5Label_2 = uilabel(app.DSCTab);
             app.SliceSpinner_5Label_2.HorizontalAlignment = 'right';
             app.SliceSpinner_5Label_2.Enable = 'off';
-            app.SliceSpinner_5Label_2.Position = [346 17 31 22];
+            app.SliceSpinner_5Label_2.Position = [270 17 31 22];
             app.SliceSpinner_5Label_2.Text = 'Slice';
 
             % Create SliceSpinner_DSCMaps
             app.SliceSpinner_DSCMaps = uispinner(app.DSCTab);
             app.SliceSpinner_DSCMaps.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_DSCMapsValueChanged, true);
             app.SliceSpinner_DSCMaps.Enable = 'off';
-            app.SliceSpinner_DSCMaps.Position = [392 17 100 22];
+            app.SliceSpinner_DSCMaps.Position = [316 17 100 22];
 
             % Create SliceSpinner_7Label
             app.SliceSpinner_7Label = uilabel(app.DSCTab);
             app.SliceSpinner_7Label.HorizontalAlignment = 'right';
             app.SliceSpinner_7Label.Enable = 'off';
-            app.SliceSpinner_7Label.Position = [947 17 31 22];
+            app.SliceSpinner_7Label.Position = [900 17 31 22];
             app.SliceSpinner_7Label.Text = 'Slice';
 
             % Create SliceSpinner_ASL
             app.SliceSpinner_ASL = uispinner(app.DSCTab);
             app.SliceSpinner_ASL.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_ASLValueChanged, true);
             app.SliceSpinner_ASL.Enable = 'off';
-            app.SliceSpinner_ASL.Position = [993 17 100 22];
+            app.SliceSpinner_ASL.Position = [946 17 100 22];
 
             % Create ASLMapLabel
             app.ASLMapLabel = uilabel(app.DSCTab);
@@ -1801,6 +1922,24 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ExportDSCMapsButton.ButtonPushedFcn = createCallbackFcn(app, @ExportDSCMapsButtonPushed, true);
             app.ExportDSCMapsButton.Position = [28 194 112 22];
             app.ExportDSCMapsButton.Text = 'Export DSC Maps';
+
+            % Create DSCcomparationROIButton
+            app.DSCcomparationROIButton = uibutton(app.DSCTab, 'push');
+            app.DSCcomparationROIButton.ButtonPushedFcn = createCallbackFcn(app, @DSCcomparationROIButtonPushed, true);
+            app.DSCcomparationROIButton.Position = [431 17 135 22];
+            app.DSCcomparationROIButton.Text = 'DSC comparation ROI';
+
+            % Create ASLcomparationROIButton
+            app.ASLcomparationROIButton = uibutton(app.DSCTab, 'push');
+            app.ASLcomparationROIButton.ButtonPushedFcn = createCallbackFcn(app, @ASLcomparationROIButtonPushed, true);
+            app.ASLcomparationROIButton.Position = [1063 17 132 22];
+            app.ASLcomparationROIButton.Text = 'ASL comparation ROI';
+
+            % Create ROIpixelexclusionButton
+            app.ROIpixelexclusionButton = uibutton(app.DSCTab, 'push');
+            app.ROIpixelexclusionButton.ButtonPushedFcn = createCallbackFcn(app, @ROIpixelexclusionButtonPushed, true);
+            app.ROIpixelexclusionButton.Position = [28 161 112 22];
+            app.ROIpixelexclusionButton.Text = 'ROI pixel exclusion';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
