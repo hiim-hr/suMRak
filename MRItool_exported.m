@@ -5,28 +5,24 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        Dim4SliderPreview               matlab.ui.control.Slider
+        Dim4Slider_2Label               matlab.ui.control.Label
+        Dim5SliderPreview               matlab.ui.control.Slider
+        Dim5SliderLabel                 matlab.ui.control.Label
         LoadsingleButton                matlab.ui.control.Button
         UITable                         matlab.ui.control.Table
-        Slider                          matlab.ui.control.Slider
-        SliderLabel                     matlab.ui.control.Label
         NumberofsequencesEditField      matlab.ui.control.NumericEditField
         NumberofsequencesEditFieldLabel  matlab.ui.control.Label
         StudyfolderEditField            matlab.ui.control.EditField
         StudyfolderEditFieldLabel       matlab.ui.control.Label
         BrowseButton                    matlab.ui.control.Button
         UpdateButton                    matlab.ui.control.Button
-        SliceSpinner_2                  matlab.ui.control.Spinner
-        SliceSpinner_2Label             matlab.ui.control.Label
-        SliceSpinner                    matlab.ui.control.Spinner
+        SliceSpinnerPreview             matlab.ui.control.Spinner
         SliceSpinnerLabel               matlab.ui.control.Label
-        Sequence2DropDown               matlab.ui.control.DropDown
-        Sequence2DropDownLabel          matlab.ui.control.Label
-        Sequence1DropDown               matlab.ui.control.DropDown
-        Sequence1DropDownLabel          matlab.ui.control.Label
-        TransposeButton                 matlab.ui.control.Button
-        TransposeButton_2               matlab.ui.control.Button
-        UIAxes                          matlab.ui.control.UIAxes
-        UIAxes_2                        matlab.ui.control.UIAxes
+        PreviewDropDown                 matlab.ui.control.DropDown
+        PreviewLabel                    matlab.ui.control.Label
+        RotateButtonPreview             matlab.ui.control.Button
+        UIAxesPreview                   matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
         FreeButton_Remove               matlab.ui.control.Button
         PolyButton_Remove               matlab.ui.control.Button
@@ -58,7 +54,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         ExportsequenceButton            matlab.ui.control.Button
         SavesequenceButton              matlab.ui.control.Button
         ActionLabel                     matlab.ui.control.Label
-        RotateButton_Segmenter_2        matlab.ui.control.Button
+        ResetViewButton_Segmenter       matlab.ui.control.Button
         SavesliceButton                 matlab.ui.control.Button
         IBrainsegmentationLabel         matlab.ui.control.Label
         ResetsliceButton                matlab.ui.control.Button
@@ -124,10 +120,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         LoadCounter = 1
         StudyPath % Filepath of selected study directory
         SequencePropertyTable % Table of loaded sequence properties
-        Sequence1ImageData % Image matrix of sequence 1
-        Sequence2ImageData % Image matrix of sequence 1
-        Sequence3ImageData % Image matrix of sequence 1
-        Sequence4ImageData % Image matrix of sequence 1
+        PreviewSequenceImageData % Image matrix of preview sequence
         
         % Segmenter tab
         % Initial segmentation
@@ -152,18 +145,18 @@ classdef MRItool_exported < matlab.apps.AppBase
         SavedTableSegmenter = table(); % Table with all saved segmented sequences
         
         % DSC/ASL tab
-        DropDownItemsDSC = {'None'};
-        WorkMaskDSC
-        MTTData
-        CBFData
-        CBVData
-        CBVLCData
-        DSCImage
-        WorkMaskASL
-        ImageDataASL
-        ASLImage
-        ROICounter = 1
-        SavedROI   
+        DropDownItemsDSC = {'None'}; % DSC tab drop down placeholder
+        WorkMaskDSC % Working mask of currently displayed DSC sequence
+        MTTData % MTT data of currently displayed DSC sequence
+        CBFData % CBF data of currently displayed DSC sequence
+        CBVData % CBV data of currently displayed DSC sequence
+        CBVLCData % CBV_LC data of currently displayed DSC sequence
+        DSCImage % Property for storing imshow of currently displayed DSC image without mask overlay
+        WorkMaskASL % Working mask of currently displayed ASL sequence
+        ImageDataASL % Image data of currently displayed ASL sequence
+        ASLImage % Property for storing imshow of currently displayed ASL image without mask overlay
+        ROICounter = 1 % Comparation ROI counter used for nomenclature and storage
+        SavedROI % Table for Comparation ROI storage
     end
     
 
@@ -202,10 +195,10 @@ classdef MRItool_exported < matlab.apps.AppBase
                 seq_Path_temp = fullfile(app.StudyPath, filesep, num2str(i), [filesep ,'pdata', filesep, '1']);
                 %seq_Path_temp = fullfile(nekajtemp, filesep, num2str(i), [filesep ,'pdata', filesep, '1']);
                 try
-                    %Create image object
+                    % Create image object
                     imageObj = ImageDataObject(seq_Path_temp);
                     attempt_AcqProt = [num2str(i), ' -> ', imageObj.Visu.VisuAcquisitionProtocol];
-                    %Store properties into respective arrays
+                    % Store properties into respective arrays
                     try
                         attempt_voxelDims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
                         try
@@ -227,14 +220,6 @@ classdef MRItool_exported < matlab.apps.AppBase
                     %x = [num2str(i), ' -> WOBBLE'];
                 end
             end
-            
-%             size(TE_time)
-%             size(seq_Num)
-%             size(TR_time)
-%             size(voxel_Dims)
-%             size(seq_Path)
-%             size(seq_ImageData)
-%             size(visu_AcqProt)
 
             % Construct sequence property table
             exp_ID = visu_AcqProt;
@@ -244,8 +229,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UITable.ColumnName = variable_Names;
             
             % Update drop down items
-            app.Sequence1DropDown.Items = visu_AcqProt;
-            app.Sequence2DropDown.Items = visu_AcqProt;
+            app.PreviewDropDown.Items = visu_AcqProt;
             app.SelectsequencetosegmentDropDown.Items = visu_AcqProt;
             
             % close the dialog box
@@ -299,77 +283,111 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UITable.ColumnName = variable_Names;
             
             % Update drop down items
-            app.Sequence1DropDown.Items = table2array(app.SequencePropertyTable(:,"Experiment ID"));
-            app.Sequence2DropDown.Items = table2array(app.SequencePropertyTable(:,"Experiment ID"));
+            app.PreviewDropDown.Items = table2array(app.SequencePropertyTable(:,"Experiment ID"));
             app.SelectsequencetosegmentDropDown.Items = table2array(app.SequencePropertyTable(:,"Experiment ID"));
             
             % close the dialog box
             close(progress)
         end
 
-        % Value changed function: Sequence1DropDown
-        function Sequence1DropDownValueChanged(app, event)
-            value = app.Sequence1DropDown.Value;  
+        % Value changed function: PreviewDropDown
+        function PreviewDropDownValueChanged(app, event)
+            value = app.PreviewDropDown.Value;  
             
             % Get selected sequence image data
-            app.Sequence1ImageData = cell2mat(table2array(app.SequencePropertyTable({value}, "Image data")));
+            app.PreviewSequenceImageData = cell2mat(table2array(app.SequencePropertyTable({value}, "Image data")));
             
-            % Get data dimension sizes, set slice spinner limits
-            sequence_dims = size(app.Sequence1ImageData);
+            % Get data dimension sizes, set slider limits
+            sequence_dims = size(app.PreviewSequenceImageData);
             dim3_size = sequence_dims(3);
-            app.SliceSpinner.Limits = [1, dim3_size];
-            app.Slider.Limits = [1, dim3_size];
+            app.SliceSpinnerPreview.Limits = [1, dim3_size];
+            
+            if numel(sequence_dims) == 4
+                dim4_size = sequence_dims(4);
+                app.Dim4SliderPreview.Enable = 'on';
+                app.Dim5SliderPreview.Enable = 'off';
+                app.Dim4SliderPreview.Limits = [1, dim4_size];
+                
+                app.Dim5SliderPreview.Value = 1;
+                app.Dim4SliderPreview.Value = 1;
+            elseif numel(sequence_dims) == 5
+                dim4_size = sequence_dims(4);
+                app.Dim4SliderPreview.Enable = 'on';
+                app.Dim4SliderPreview.Limits = [1, dim4_size];
+                dim5_size = sequence_dims(5);
+                app.Dim5SliderPreview.Enable = 'on';
+                app.Dim5SliderPreview.Limits = [1, dim5_size];
+                
+                app.Dim4SliderPreview.Value = 1;
+                app.Dim5SliderPreview.Value = 1;
+            elseif numel(sequence_dims) == 3
+                app.Dim4SliderPreview.Enable = 'off';
+                app.Dim5SliderPreview.Enable = 'off';
+                
+                app.Dim4SliderPreview.Value = 1;
+                app.Dim5SliderPreview.Value = 1;
+            end
             
             % Display sequence, update slice spinner
-            imshow(app.Sequence1ImageData(:,:,1), [], 'Parent', app.UIAxes);
+            imshow(app.PreviewSequenceImageData(:,:,1), [], 'Parent', app.UIAxesPreview);
             disableDefaultInteractivity(app.UIAxes_Segmenter)
-            app.SliceSpinner.Value = 1;
-        end
-
-        % Value changed function: SliceSpinner
-        function SliceSpinnerValueChanged(app, event)
-        imshow(app.Sequence1ImageData(:,:,app.SliceSpinner.Value), [], 'Parent', app.UIAxes);
-        end
-
-        % Button pushed function: TransposeButton
-        function TransposeButtonPushed(app, event)
-            app.Sequence1ImageData = pagetranspose(app.Sequence1ImageData);
-            imshow(app.Sequence1ImageData(:,:,app.SliceSpinner.Value), [], 'Parent', app.UIAxes);
-        end
-
-        % Value changed function: Sequence2DropDown
-        function Sequence2DropDownValueChanged(app, event)
-            value = app.Sequence2DropDown.Value;
+            app.SliceSpinnerPreview.Value = 1;
             
-            % Get selected sequence image data
-            app.Sequence2ImageData = cell2mat(table2array(app.SequencePropertyTable({value}, "Image data")));
+            % Set interactions of preview uiaxes
+            app.UIAxesPreview.Interactions = [];
+        end
+
+        % Value changed function: SliceSpinnerPreview
+        function SliceSpinnerPreviewValueChanged(app, event)
             
-            % Get data dimension sizes, set slice spinner limits
-            sequence_dims = size(app.Sequence2ImageData);
-            dim3_size = sequence_dims(3);
-            app.SliceSpinner_2.Limits = [1, dim3_size];
+            % Get current slice image, show image
+            sequence_dims = size(app.PreviewSequenceImageData);
+            if numel(sequence_dims) == 3
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value);
+            elseif numel(sequence_dims) == 4
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, app.Dim4SliderPreview.Value);
+            elseif numel(sequence_dims) == 5
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, app.Dim4SliderPreview.Value, app.Dim5SliderPreview.Value);
+            end
+            imshow(current_slice, [], 'Parent', app.UIAxesPreview);
+        end
+
+        % Value changing function: Dim4SliderPreview
+        function Dim4SliderPreviewValueChanging(app, event)
+            changingValue = round(event.Value);
             
-            % Display sequence, update slice spinner
-            imshow(app.Sequence2ImageData(:,:,1), [], 'Parent', app.UIAxes_2);
-            app.SliceSpinner_2.Value = 1;
+            % Get current slice image in dim4 value, show image
+            sequence_dims = size(app.PreviewSequenceImageData);
+            if numel(sequence_dims) == 4
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, changingValue);
+            elseif numel(sequence_dims) == 5
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, changingValue, app.Dim5SliderPreview.Value);
+            end
+            imshow(current_slice, [], 'Parent', app.UIAxesPreview);
         end
 
-        % Button pushed function: TransposeButton_2
-        function TransposeButton_2Pushed(app, event)
-            app.Sequence2ImageData = pagetranspose(app.Sequence2ImageData);
-            imshow(app.Sequence2ImageData(:,:,app.SliceSpinner_2.Value), [], 'Parent', app.UIAxes_2);
+        % Value changing function: Dim5SliderPreview
+        function Dim5SliderPreviewValueChanging(app, event)
+            changingValue = round(event.Value);
+            
+            % Get current slice image in dim5 value, show image
+            current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, app.Dim4SliderPreview.Value, changingValue);
+            imshow(current_slice, [], 'Parent', app.UIAxesPreview);
         end
 
-        % Value changed function: SliceSpinner_2
-        function SliceSpinner_2ValueChanged(app, event)
-            imshow(app.Sequence2ImageData(:,:,app.SliceSpinner_2.Value), [], 'Parent', app.UIAxes_2);
-        end
-
-        % Value changing function: Slider
-        function SliderValueChanging(app, event)
-            changingValue = round(event.Value);     
-            imshow(app.Sequence1ImageData(:,:,changingValue), [], 'Parent', app.UIAxes);
-            app.SliceSpinner.Value=changingValue;
+        % Button pushed function: RotateButtonPreview
+        function RotateButtonPreviewPushed(app, event)
+            app.PreviewSequenceImageData = rot90(app.PreviewSequenceImageData, -1);
+            
+            sequence_dims = size(app.PreviewSequenceImageData);
+            if numel(sequence_dims) == 3
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value);
+            elseif numel(sequence_dims) == 4
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, app.Dim4SliderPreview.Value);
+            elseif numel(sequence_dims) == 5
+                current_slice = app.PreviewSequenceImageData(:,:,app.SliceSpinnerPreview.Value, app.Dim4SliderPreview.Value, app.Dim5SliderPreview.Value);
+            end
+            imshow(current_slice, [], 'Parent', app.UIAxesPreview);
         end
 
         % Value changed function: SelectsequencetosegmentDropDown
@@ -460,7 +478,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceLimits = [min(current_slice, [], 'all'), max(current_slice, [], 'all')];
             app.FreeImage = imshow(current_slice, [], 'Parent', app.UIAxes_Segmenter);
             
-             % Reset zoom
+            % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
             
@@ -477,14 +495,13 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceLimits = [min(current_slice, [], 'all'), max(current_slice, [], 'all')];
             app.FreeImage = imshow(current_slice, [], 'Parent', app.UIAxes_Segmenter);
             
-             % Reset zoom
+            % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
             
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
-            
         end
 
         % Button pushed function: RotateButton_Segmenter
@@ -496,13 +513,9 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SavedMaskSegmenter = rot90(app.SavedMaskSegmenter, -1);
             app.SeqDimsSegmenter = size(app.OriginalImage);
             app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-            
-%             value = app.SelectsequencetosegmentDropDown.Value;
-%             nesto = cell2mat(table2array(app.SequencePropertyTable({value}, "seq_ImageData")));
-%             app.SequencePropertyTable.seq_ImageData(8) = {rot90(nesto, -1)};
         end
 
-        % Button pushed function: RotateButton_Segmenter_2
+        % Button pushed function: ResetViewButton_Segmenter
         function ResetviewButton_Segmenter_Pushed(app, event)
            
             % Reset zoom
@@ -522,7 +535,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             elseif numel(app.SeqDimsSegmenter) == 5
                 app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             end
-            %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             
             init_Region = drawfreehand(app.UIAxes_Segmenter);
             app.Mask = createMask(init_Region);
@@ -549,7 +561,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.Mask = clusters == 2;
             
             % Show image with mask overlaid on top
-            %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             if numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
@@ -576,7 +587,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.Mask = imopen(app.Mask, SE);
             
             % Show image with mask overlaid on top
-            %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             if numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
@@ -602,7 +612,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.Mask = imclose(app.Mask, SE);
             
             % Show image with mask overlaid on top
-            %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             if numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
@@ -631,7 +640,6 @@ classdef MRItool_exported < matlab.apps.AppBase
                 added_Mask = added_Region.createMask(app.FreeImage);
                 app.Mask = app.Mask|added_Mask;
                 
-                %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 if numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
@@ -665,7 +673,6 @@ classdef MRItool_exported < matlab.apps.AppBase
                 removed_Mask = removed_Region.createMask(app.FreeImage);
                 app.Mask(removed_Mask) = 0;
                 
-                %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 if numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
@@ -699,7 +706,6 @@ classdef MRItool_exported < matlab.apps.AppBase
                 added_Mask = added_Region.createMask(app.FreeImage);
                 app.Mask = app.Mask|added_Mask;
                 
-                %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 if numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
@@ -732,8 +738,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             if app.ImageshownSwitch.Value == "Overlay"
                 removed_Mask = createMask(removed_Region, app.FreeImage);
                 app.Mask(removed_Mask) = 0;
-                
-                %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+
                 if numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
@@ -761,7 +766,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Show image based on switch value - masked or original with 
             % overlaid transparent mask
             if value == "Overlay"
-                %app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 if numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
@@ -782,8 +786,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         % Button pushed function: MainselectionButton_Hemisphere
         function MainselectionButton_HemispherePushed(app, event)
             
-            % Update and load masked slice image
-            %app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
+            % Update and load masked slice image;
             if numel(app.SeqDimsSegmenter) == 3
                 app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
             elseif numel(app.SeqDimsSegmenter) == 4
@@ -851,7 +854,6 @@ classdef MRItool_exported < matlab.apps.AppBase
         function MainselectionButton_LesionPushed(app, event)
             
             % Update and load masked slice image
-            %app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
             if numel(app.SeqDimsSegmenter) == 3
                 app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
             elseif numel(app.SeqDimsSegmenter) == 4
@@ -1010,7 +1012,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                     app.SavedImageSegmenter(:,:,i) = temp_Mask(:,:,i).*app.OriginalImage(:,:,i);
                 end
             end
-            a = app.SavedImageSegmenter;
+%             a = app.SavedImageSegmenter;
         end
 
         % Button pushed function: CalculateDSCmapsButton
@@ -1070,7 +1072,6 @@ classdef MRItool_exported < matlab.apps.AppBase
                 end
                 app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
             else
-                %disp('Wrong number of dimensions!')
                 uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
             end
             
@@ -1109,7 +1110,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             end
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
-            % Reset zoom
+            % Reset zoom and comparation data
             app.UIAxes_DSCMaps.XLim = [-inf inf];
             app.UIAxes_DSCMaps.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
@@ -1141,7 +1142,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             end
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
-            % Reset zoom
+            % Reset zoom and comparation data
             app.UIAxes_DSCMaps.XLim = [-inf inf];
             app.UIAxes_DSCMaps.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
@@ -1186,10 +1187,13 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: ROIpixelexclusionButton
         function ROIpixelexclusionButtonPushed(app, event)
+            
+            % Draw freehand ROI
             dscROI = drawfreehand(app.UIAxes_DSCMaps);
             dscROI_mask = dscROI.createMask();
             delete(dscROI)      
             
+            % Get current slice image data, modify it using freehand ROI
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
                 if app.DSCMapDropDown.Value == "CBF"
@@ -1219,6 +1223,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             
             modified_slice_DSC(dscROI_mask==1) = 0;
             
+            % Display newly adjusted image with data from ROI set to 0
             if app.DSCMapDropDown.Value == "CBF"
                 if app.SVDButton.Value == true
                     app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
@@ -1243,6 +1248,24 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.DSCImage.AlphaData = temp_alphaMask;
         end
 
+        % Button pushed function: ExportDSCmapsButton
+        function ExportDSCmapsButtonPushed(app, event)
+            
+            % Get directory and export calculated DSC maps
+            temp_dir = uigetdir;
+            temp_dir = append(temp_dir, '\');
+            
+            niftiwrite(app.CBFData.svd.map, append(temp_dir, 'CBF-SVD'))
+            niftiwrite(app.CBFData.csvd.map, append(temp_dir, 'CBF-cSVD'))
+            niftiwrite(app.CBFData.osvd.map, append(temp_dir, 'CBF-oSVD'))
+            
+            niftiwrite(app.MTTData.svd, append(temp_dir, 'MTT-SVD'))
+            niftiwrite(app.MTTData.csvd, append(temp_dir, 'MTT-cSVD'))
+            niftiwrite(app.MTTData.osvd, append(temp_dir, 'MTT-oSVD'))
+            
+            niftiwrite(app.CBVData, append(temp_dir, 'CBV'))
+        end
+
         % Value changed function: SelectASLDropDown
         function SelectASLDropDownValueChanged(app, event)
             
@@ -1259,7 +1282,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_ASL.Enable = 'On';
             app.SliceSpinner_ASL.Value = 1;
             
-            % Set no interactions on UIAxes
+            % Set interactions on UIAxes
             app.UIAxes_ASL.Interactions = [regionZoomInteraction zoomInteraction];
             
             % Reset zoom
@@ -1284,6 +1307,15 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UIAxes_ASL.XLim = [-inf inf];
             app.UIAxes_ASL.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
+        end
+
+        % Button pushed function: ExportASLmapButton
+        function ExportASLmapButtonPushed(app, event)
+            
+            % Get directory and export segmented ASL map
+            temp_dir = uigetdir;
+            temp_dir = append(temp_dir, '\');
+            niftiwrite(app.ImageDataASL, append(temp_dir, 'ASL'))
         end
 
         % Button pushed function: ComparemapsButton
@@ -1328,6 +1360,9 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: DSCcomparationROIButton
         function DSCcomparationROIButtonPushed(app, event)
+            
+            % Draw polygon ROI, save it to table, update statistical values
+            % for DSC/ASL ROI data
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
                 slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
@@ -1344,7 +1379,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 ROI_mask = dscROI.createMask(app.DSCImage);
                 delete(dscROI)
                 
-                ROIName = append("Region ", num2str(app.ROICounter), "- Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
+                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
                 app.ComparationregionsListBox.Items = cat(2, app.ComparationregionsListBox.Items, ROIName);
                 app.ComparationregionsListBox.Value = ROIName;
                 app.ROICounter = app.ROICounter+1;
@@ -1387,7 +1422,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 app.ASLMaxLabel.Text = num2str(max(slice_ASL(ROI_mask==1)));
                 
                 % Display chosen map image based on method selected and spinner
-                % Value
+                % Value, with drawn ROI overlaid as mask
                 temp_RedScreen = cat(3, ones(dims(1:2)), zeros(dims(1:2)), zeros(dims(1:2)));
                 
                 if app.SVDButton.Value == true
@@ -1426,6 +1461,9 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: ASLcomparationROIButton
         function ASLcomparationROIButtonPushed(app, event)
+            
+            % Draw polygon ROI, save it to table, update statistical values
+            % for DSC/ASL ROI data
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
                 slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
@@ -1442,7 +1480,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 ROI_mask = aslROI.createMask(app.ASLImage);
                 delete(aslROI)
                 
-                ROIName = append("Region ", num2str(app.ROICounter), "- Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
+                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
                 app.ComparationregionsListBox.Items = cat(2, app.ComparationregionsListBox.Items, ROIName);
                 app.ComparationregionsListBox.Value = ROIName;
                 app.ROICounter = app.ROICounter+1;
@@ -1485,7 +1523,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 app.ASLMaxLabel.Text = num2str(max(slice_ASL(ROI_mask==1)));
                 
                 % Display chosen map image based on method selected and spinner
-                % Value
+                % Value, with drawn ROI overlaid as mask
                 temp_RedScreen = cat(3, ones(dims(1:2)), zeros(dims(1:2)), zeros(dims(1:2)));
                 
                 if app.SVDButton.Value == true
@@ -1523,8 +1561,11 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Value changed function: ComparationregionsListBox
         function ComparationregionsListBoxValueChanged(app, event)
+            
+            % Display chosen ROI on DSC/ASL map images, update statistical
+            % values
             value = app.ComparationregionsListBox.Value;
-            disp(value)
+            % disp(value)
             
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
@@ -1607,33 +1648,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);  
         end
 
-        % Button pushed function: ExportDSCmapsButton
-        function ExportDSCmapsButtonPushed(app, event)
-            
-            % Get directory and export calculated DSC maps
-            temp_dir = uigetdir;
-            temp_dir = append(temp_dir, '\');
-            
-            niftiwrite(app.CBFData.svd.map, append(temp_dir, 'CBF-SVD'))
-            niftiwrite(app.CBFData.csvd.map, append(temp_dir, 'CBF-cSVD'))
-            niftiwrite(app.CBFData.osvd.map, append(temp_dir, 'CBF-oSVD'))
-            
-            niftiwrite(app.MTTData.svd, append(temp_dir, 'MTT-SVD'))
-            niftiwrite(app.MTTData.csvd, append(temp_dir, 'MTT-cSVD'))
-            niftiwrite(app.MTTData.osvd, append(temp_dir, 'MTT-oSVD'))
-            
-            niftiwrite(app.CBVData, append(temp_dir, 'CBV'))
-        end
-
-        % Button pushed function: ExportASLmapButton
-        function ExportASLmapButtonPushed(app, event)
-            
-            % Get directory and export segmented ASL map
-            temp_dir = uigetdir;
-            temp_dir = append(temp_dir, '\');
-            niftiwrite(app.ImageDataASL, append(temp_dir, 'ASL'))
-        end
-
         % Button pushed function: ExportROImaskButton
         function ExportROImaskButtonPushed(app, event)
             % Get directory and export selected comparation region mask
@@ -1667,141 +1681,124 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.PreviewTab.AutoResizeChildren = 'off';
             app.PreviewTab.Title = 'Preview';
 
-            % Create UIAxes_2
-            app.UIAxes_2 = uiaxes(app.PreviewTab);
-            app.UIAxes_2.Toolbar.Visible = 'off';
-            app.UIAxes_2.XTick = [];
-            app.UIAxes_2.YTick = [];
-            app.UIAxes_2.Position = [603 319 250 215];
+            % Create UIAxesPreview
+            app.UIAxesPreview = uiaxes(app.PreviewTab);
+            app.UIAxesPreview.Toolbar.Visible = 'off';
+            app.UIAxesPreview.XLimitMethod = 'tight';
+            app.UIAxesPreview.YLimitMethod = 'tight';
+            app.UIAxesPreview.XTick = [];
+            app.UIAxesPreview.XTickLabel = '';
+            app.UIAxesPreview.YTick = [];
+            app.UIAxesPreview.YTickLabel = '';
+            app.UIAxesPreview.Position = [756 96 607 425];
 
-            % Create UIAxes
-            app.UIAxes = uiaxes(app.PreviewTab);
-            app.UIAxes.XLimitMethod = 'tight';
-            app.UIAxes.YLimitMethod = 'tight';
-            app.UIAxes.XTick = [];
-            app.UIAxes.XTickLabel = '';
-            app.UIAxes.YTick = [];
-            app.UIAxes.YTickLabel = '';
-            app.UIAxes.Position = [134 319 250 215];
+            % Create RotateButtonPreview
+            app.RotateButtonPreview = uibutton(app.PreviewTab, 'push');
+            app.RotateButtonPreview.ButtonPushedFcn = createCallbackFcn(app, @RotateButtonPreviewPushed, true);
+            app.RotateButtonPreview.Position = [1121 63 100 22];
+            app.RotateButtonPreview.Text = 'Rotate';
 
-            % Create TransposeButton_2
-            app.TransposeButton_2 = uibutton(app.PreviewTab, 'push');
-            app.TransposeButton_2.ButtonPushedFcn = createCallbackFcn(app, @TransposeButton_2Pushed, true);
-            app.TransposeButton_2.Position = [754 277 100 22];
-            app.TransposeButton_2.Text = 'Transpose';
+            % Create PreviewLabel
+            app.PreviewLabel = uilabel(app.PreviewTab);
+            app.PreviewLabel.HorizontalAlignment = 'right';
+            app.PreviewLabel.Position = [933 523 48 22];
+            app.PreviewLabel.Text = 'Preview';
 
-            % Create TransposeButton
-            app.TransposeButton = uibutton(app.PreviewTab, 'push');
-            app.TransposeButton.ButtonPushedFcn = createCallbackFcn(app, @TransposeButtonPushed, true);
-            app.TransposeButton.Position = [287 277 100 22];
-            app.TransposeButton.Text = 'Transpose';
-
-            % Create Sequence1DropDownLabel
-            app.Sequence1DropDownLabel = uilabel(app.PreviewTab);
-            app.Sequence1DropDownLabel.HorizontalAlignment = 'right';
-            app.Sequence1DropDownLabel.Position = [102 558 70 22];
-            app.Sequence1DropDownLabel.Text = 'Sequence 1';
-
-            % Create Sequence1DropDown
-            app.Sequence1DropDown = uidropdown(app.PreviewTab);
-            app.Sequence1DropDown.Items = {};
-            app.Sequence1DropDown.ValueChangedFcn = createCallbackFcn(app, @Sequence1DropDownValueChanged, true);
-            app.Sequence1DropDown.Placeholder = 'None';
-            app.Sequence1DropDown.Position = [187 558 229 22];
-            app.Sequence1DropDown.Value = {};
-
-            % Create Sequence2DropDownLabel
-            app.Sequence2DropDownLabel = uilabel(app.PreviewTab);
-            app.Sequence2DropDownLabel.HorizontalAlignment = 'right';
-            app.Sequence2DropDownLabel.Position = [552 558 70 22];
-            app.Sequence2DropDownLabel.Text = 'Sequence 2';
-
-            % Create Sequence2DropDown
-            app.Sequence2DropDown = uidropdown(app.PreviewTab);
-            app.Sequence2DropDown.Items = {};
-            app.Sequence2DropDown.ValueChangedFcn = createCallbackFcn(app, @Sequence2DropDownValueChanged, true);
-            app.Sequence2DropDown.Placeholder = 'None';
-            app.Sequence2DropDown.Position = [637 558 229 22];
-            app.Sequence2DropDown.Value = {};
+            % Create PreviewDropDown
+            app.PreviewDropDown = uidropdown(app.PreviewTab);
+            app.PreviewDropDown.Items = {};
+            app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
+            app.PreviewDropDown.Placeholder = 'None';
+            app.PreviewDropDown.Position = [996 523 229 22];
+            app.PreviewDropDown.Value = {};
 
             % Create SliceSpinnerLabel
             app.SliceSpinnerLabel = uilabel(app.PreviewTab);
             app.SliceSpinnerLabel.HorizontalAlignment = 'right';
-            app.SliceSpinnerLabel.Position = [135 277 31 22];
+            app.SliceSpinnerLabel.Position = [949 63 31 22];
             app.SliceSpinnerLabel.Text = 'Slice';
 
-            % Create SliceSpinner
-            app.SliceSpinner = uispinner(app.PreviewTab);
-            app.SliceSpinner.ValueChangedFcn = createCallbackFcn(app, @SliceSpinnerValueChanged, true);
-            app.SliceSpinner.Position = [181 277 100 22];
-
-            % Create SliceSpinner_2Label
-            app.SliceSpinner_2Label = uilabel(app.PreviewTab);
-            app.SliceSpinner_2Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_2Label.Position = [604 277 31 22];
-            app.SliceSpinner_2Label.Text = 'Slice';
-
-            % Create SliceSpinner_2
-            app.SliceSpinner_2 = uispinner(app.PreviewTab);
-            app.SliceSpinner_2.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_2ValueChanged, true);
-            app.SliceSpinner_2.Position = [650 277 100 22];
+            % Create SliceSpinnerPreview
+            app.SliceSpinnerPreview = uispinner(app.PreviewTab);
+            app.SliceSpinnerPreview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinnerPreviewValueChanged, true);
+            app.SliceSpinnerPreview.Position = [995 63 100 22];
 
             % Create UpdateButton
             app.UpdateButton = uibutton(app.PreviewTab, 'push');
             app.UpdateButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonPushed, true);
-            app.UpdateButton.Position = [530 622 100 22];
+            app.UpdateButton.Position = [675 606 100 22];
             app.UpdateButton.Text = 'Update';
 
             % Create BrowseButton
             app.BrowseButton = uibutton(app.PreviewTab, 'push');
             app.BrowseButton.ButtonPushedFcn = createCallbackFcn(app, @BrowseButtonPushed, true);
-            app.BrowseButton.Position = [529 663 100 22];
+            app.BrowseButton.Position = [880 647 100 22];
             app.BrowseButton.Text = 'Browse';
 
             % Create StudyfolderEditFieldLabel
             app.StudyfolderEditFieldLabel = uilabel(app.PreviewTab);
             app.StudyfolderEditFieldLabel.HorizontalAlignment = 'right';
-            app.StudyfolderEditFieldLabel.Position = [107 663 70 22];
+            app.StudyfolderEditFieldLabel.Position = [458 647 70 22];
             app.StudyfolderEditFieldLabel.Text = {'Study folder'; ''};
 
             % Create StudyfolderEditField
             app.StudyfolderEditField = uieditfield(app.PreviewTab, 'text');
             app.StudyfolderEditField.Editable = 'off';
-            app.StudyfolderEditField.Position = [185 663 337 22];
+            app.StudyfolderEditField.Position = [536 647 337 22];
 
             % Create NumberofsequencesEditFieldLabel
             app.NumberofsequencesEditFieldLabel = uilabel(app.PreviewTab);
             app.NumberofsequencesEditFieldLabel.HorizontalAlignment = 'right';
-            app.NumberofsequencesEditFieldLabel.Position = [103 622 123 22];
+            app.NumberofsequencesEditFieldLabel.Position = [454 606 123 22];
             app.NumberofsequencesEditFieldLabel.Text = {'Number of sequences'; ''};
 
             % Create NumberofsequencesEditField
             app.NumberofsequencesEditField = uieditfield(app.PreviewTab, 'numeric');
-            app.NumberofsequencesEditField.Position = [241 622 61 22];
-
-            % Create SliderLabel
-            app.SliderLabel = uilabel(app.PreviewTab);
-            app.SliderLabel.HorizontalAlignment = 'right';
-            app.SliderLabel.Position = [150 227 36 22];
-            app.SliderLabel.Text = 'Slider';
-
-            % Create Slider
-            app.Slider = uislider(app.PreviewTab);
-            app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
-            app.Slider.MinorTicks = [];
-            app.Slider.Position = [207 236 150 3];
+            app.NumberofsequencesEditField.Position = [592 606 61 22];
 
             % Create UITable
             app.UITable = uitable(app.PreviewTab);
             app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
             app.UITable.RowName = {};
-            app.UITable.Position = [973 252 389 306];
+            app.UITable.Position = [67 96 599 452];
 
             % Create LoadsingleButton
             app.LoadsingleButton = uibutton(app.PreviewTab, 'push');
             app.LoadsingleButton.ButtonPushedFcn = createCallbackFcn(app, @LoadsingleButtonPushed, true);
-            app.LoadsingleButton.Position = [704 642 100 22];
+            app.LoadsingleButton.Position = [880 606 100 22];
             app.LoadsingleButton.Text = 'Load single';
+
+            % Create Dim5SliderLabel
+            app.Dim5SliderLabel = uilabel(app.PreviewTab);
+            app.Dim5SliderLabel.HorizontalAlignment = 'right';
+            app.Dim5SliderLabel.Position = [703 307 44 22];
+            app.Dim5SliderLabel.Text = 'Dim - 5';
+
+            % Create Dim5SliderPreview
+            app.Dim5SliderPreview = uislider(app.PreviewTab);
+            app.Dim5SliderPreview.MajorTicks = [];
+            app.Dim5SliderPreview.MajorTickLabels = {''};
+            app.Dim5SliderPreview.Orientation = 'vertical';
+            app.Dim5SliderPreview.ValueChangingFcn = createCallbackFcn(app, @Dim5SliderPreviewValueChanging, true);
+            app.Dim5SliderPreview.MinorTicks = [];
+            app.Dim5SliderPreview.Enable = 'off';
+            app.Dim5SliderPreview.Position = [729 339 3 150];
+
+            % Create Dim4Slider_2Label
+            app.Dim4Slider_2Label = uilabel(app.PreviewTab);
+            app.Dim4Slider_2Label.HorizontalAlignment = 'right';
+            app.Dim4Slider_2Label.Position = [703 108 44 22];
+            app.Dim4Slider_2Label.Text = 'Dim - 4';
+
+            % Create Dim4SliderPreview
+            app.Dim4SliderPreview = uislider(app.PreviewTab);
+            app.Dim4SliderPreview.MajorTicks = [];
+            app.Dim4SliderPreview.MajorTickLabels = {''};
+            app.Dim4SliderPreview.Orientation = 'vertical';
+            app.Dim4SliderPreview.ValueChangingFcn = createCallbackFcn(app, @Dim4SliderPreviewValueChanging, true);
+            app.Dim4SliderPreview.MinorTicks = [];
+            app.Dim4SliderPreview.Enable = 'off';
+            app.Dim4SliderPreview.Position = [729 140 3 150];
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
@@ -1879,11 +1876,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SavesliceButton.Position = [1261 100 100 22];
             app.SavesliceButton.Text = 'Save slice';
 
-            % Create RotateButton_Segmenter_2
-            app.RotateButton_Segmenter_2 = uibutton(app.SegmenterTab, 'push');
-            app.RotateButton_Segmenter_2.ButtonPushedFcn = createCallbackFcn(app, @ResetviewButton_Segmenter_Pushed, true);
-            app.RotateButton_Segmenter_2.Position = [794 17 94 22];
-            app.RotateButton_Segmenter_2.Text = 'Reset view';
+            % Create ResetViewButton_Segmenter
+            app.ResetViewButton_Segmenter = uibutton(app.SegmenterTab, 'push');
+            app.ResetViewButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @ResetviewButton_Segmenter_Pushed, true);
+            app.ResetViewButton_Segmenter.Position = [794 17 94 22];
+            app.ResetViewButton_Segmenter.Text = 'Reset view';
 
             % Create ActionLabel
             app.ActionLabel = uilabel(app.SegmenterTab);
@@ -2066,6 +2063,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create DSCTab
             app.DSCTab = uitab(app.TabGroup);
+            app.DSCTab.AutoResizeChildren = 'off';
             app.DSCTab.Title = 'DSC';
 
             % Create UIAxes_DSCMaps
@@ -2176,11 +2174,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create ExportASLmapButton
             app.ExportASLmapButton = uibutton(app.DSCTab, 'push');
             app.ExportASLmapButton.ButtonPushedFcn = createCallbackFcn(app, @ExportASLmapButtonPushed, true);
-            app.ExportASLmapButton.Position = [167 17 112 22];
+            app.ExportASLmapButton.Position = [177 17 112 22];
             app.ExportASLmapButton.Text = {'Export ASL map'; ''};
 
             % Create MethodButtonGroup
             app.MethodButtonGroup = uibuttongroup(app.DSCTab);
+            app.MethodButtonGroup.AutoResizeChildren = 'off';
             app.MethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MethodButtonGroupSelectionChanged, true);
             app.MethodButtonGroup.BorderType = 'none';
             app.MethodButtonGroup.TitlePosition = 'centertop';
@@ -2206,7 +2205,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create ExportDSCmapsButton
             app.ExportDSCmapsButton = uibutton(app.DSCTab, 'push');
             app.ExportDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @ExportDSCmapsButtonPushed, true);
-            app.ExportDSCmapsButton.Position = [39 17 112 22];
+            app.ExportDSCmapsButton.Position = [49 17 112 22];
             app.ExportDSCmapsButton.Text = 'Export DSC maps';
 
             % Create DSCcomparationROIButton
@@ -2229,6 +2228,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create ComparationPanel
             app.ComparationPanel = uipanel(app.DSCTab);
+            app.ComparationPanel.AutoResizeChildren = 'off';
             app.ComparationPanel.Position = [22 128 280 374];
 
             % Create VoxelNLabel
@@ -2339,7 +2339,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create ExportROImaskButton
             app.ExportROImaskButton = uibutton(app.DSCTab, 'push');
             app.ExportROImaskButton.ButtonPushedFcn = createCallbackFcn(app, @ExportROImaskButtonPushed, true);
-            app.ExportROImaskButton.Position = [109 84 112 22];
+            app.ExportROImaskButton.Position = [106 84 112 22];
             app.ExportROImaskButton.Text = 'Export ROI mask';
 
             % Show the figure after all components are created
