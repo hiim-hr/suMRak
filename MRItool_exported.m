@@ -111,6 +111,22 @@ classdef MRItool_exported < matlab.apps.AppBase
         CalculateDSCmapsButton          matlab.ui.control.Button
         UIAxes_ASL                      matlab.ui.control.UIAxes
         UIAxes_DSCMaps                  matlab.ui.control.UIAxes
+        RegistrationTab                 matlab.ui.container.Tab
+        SliceSpinner_Parameter          matlab.ui.control.Spinner
+        SliceSpinner_3Label_2           matlab.ui.control.Label
+        SelectparameterDropDown         matlab.ui.control.DropDown
+        SelectDSCvolumetricdataformapcalculationLabel_4  matlab.ui.control.Label
+        UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
+        SliceSpinner_Moving             matlab.ui.control.Spinner
+        SliceSpinner_3Label             matlab.ui.control.Label
+        SliceSpinner_Fixed              matlab.ui.control.Spinner
+        SliceSpinnerLabel_2             matlab.ui.control.Label
+        RegisterButton                  matlab.ui.control.Button
+        SelectmovingDropDown            matlab.ui.control.DropDown
+        SelectDSCvolumetricdataformapcalculationLabel_3  matlab.ui.control.Label
+        SelectfixedDropDown             matlab.ui.control.DropDown
+        SelectDSCvolumetricdataformapcalculationLabel_2  matlab.ui.control.Label
+        UIAxes_Registration             matlab.ui.control.UIAxes
     end
 
     
@@ -171,6 +187,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Select study directory and update the edit field text
             app.StudyPath = uigetdir; 
             app.StudyfolderEditField.Value = app.StudyPath; 
+            figure(app.UIFigure)
         end
 
         % Button pushed function: UpdateButton
@@ -242,6 +259,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Get filepath of single experiment image data, create image
             % object and get properties
             single_Path = uigetdir;
+            figure(app.UIFigure)
             imageObj = ImageDataObject(single_Path);
             
             progress = uiprogressdlg(app.UIFigure,'Title','Please wait',...
@@ -968,10 +986,13 @@ classdef MRItool_exported < matlab.apps.AppBase
             temp_Table = table({app.SavedImageSegmenter}, {app.SavedMaskSegmenter}, 'RowNames', {app.SelectsequencetosegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
             app.SavedTableSegmenter = [app.SavedTableSegmenter; temp_Table];
             
-            % Update DSC tab drop down menu
+            % Update DSC and Registration tab drop down menus
             app.DropDownItemsDSC = cat(1, app.DropDownItemsDSC, {app.SelectsequencetosegmentDropDown.Value});
             app.SelectvolumetricdataDropDown.Items = app.DropDownItemsDSC;
             app.SelectASLDropDown.Items = app.DropDownItemsDSC;
+            app.SelectfixedDropDown.Items = app.DropDownItemsDSC;
+            app.SelectmovingDropDown.Items = app.DropDownItemsDSC;
+            app.SelectparameterDropDown.Items = app.DropDownItemsDSC;
             
             % Update last action label
             app.ActionLabel.Text = "Segmented sequence saved to permanent data.";
@@ -995,6 +1016,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             
             % Get external mask data
             temp_dir = uigetfile;
+            figure(app.UIFigure)
             temp_Mask = niftiread(temp_dir);
             app.SavedMaskSegmenter = temp_Mask;
             
@@ -1012,7 +1034,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                     app.SavedImageSegmenter(:,:,i) = temp_Mask(:,:,i).*app.OriginalImage(:,:,i);
                 end
             end
-%             a = app.SavedImageSegmenter;
+            uiconfirm(app.UIFigure, "Data segmented successfully using external mask.", "External Segmentation","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: CalculateDSCmapsButton
@@ -1657,6 +1679,70 @@ classdef MRItool_exported < matlab.apps.AppBase
             temp_dir = append(temp_dir, '\');
             niftiwrite(double(ROI_mask), append(temp_dir, value))
         end
+
+        % Value changed function: SelectfixedDropDown
+        function SelectfixedDropDownValueChanged(app, event)
+            fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+            dims = size(fixed_Image);
+            dim3_size = dims(3);
+            app.SliceSpinner_Fixed.Limits = [1, dim3_size];
+        end
+
+        % Value changed function: SelectmovingDropDown
+        function SelectmovingDropDownValueChanged(app, event)
+            moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
+            dims = size(moving_Image);
+            dim3_size = dims(3);
+            app.SliceSpinner_Moving.Limits = [1, dim3_size];
+        end
+
+        % Value changed function: UsedifferentparametermapCheckBox
+        function UsedifferentparametermapCheckBoxValueChanged(app, event)
+            value = app.UsedifferentparametermapCheckBox.Value;
+            if value == 1
+                app.SelectparameterDropDown.Enable = 'on';
+                app.SliceSpinner_Parameter.Enable = 'on';
+            else
+                app.SelectparameterDropDown.Enable = 'off';
+                app.SliceSpinner_Parameter.Enable = 'off';
+            end
+        end
+
+        % Value changed function: SelectparameterDropDown
+        function SelectparameterDropDownValueChanged(app, event)
+            parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
+            dims = size(parameter_Image);
+            dim3_size = dims(3);
+            app.SliceSpinner_Parameter.Limits = [1, dim3_size];
+        end
+
+        % Button pushed function: RegisterButton
+        function RegisterButtonPushed(app, event)
+            fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+            fixed_Image_py = py.numpy.array(fixed_Image(:,:,app.SliceSpinner_Fixed.Value));
+            moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
+            moving_Image_py = py.numpy.array(moving_Image(:,:,app.SliceSpinner_Moving.Value));
+
+            progress = uiprogressdlg(app.UIFigure,'Title','Please wait',...
+                'Indeterminate','on', 'Message', 'Registering images');
+            drawnow
+            
+            if app.UsedifferentparametermapCheckBox.Value == 0
+                resultImage_py = pyrunfile("C:\Users\Stern\OneDrive\Desktop\Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
+                resultImage = single(resultImage_py);
+                imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+            else
+                parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
+                parameter_Image_py = py.numpy.array(parameter_Image(:,:,app.SliceSpinner_Parameter.Value));
+
+                resultImage_py = pyrunfile("C:\Users\Stern\OneDrive\Desktop\Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
+                resultImage = single(resultImage_py);
+                imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+            end
+
+            % close the dialog box
+            close(progress)
+        end
     end
 
     % Component initialization
@@ -2205,7 +2291,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create ExportDSCmapsButton
             app.ExportDSCmapsButton = uibutton(app.DSCTab, 'push');
             app.ExportDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @ExportDSCmapsButtonPushed, true);
-            app.ExportDSCmapsButton.Position = [49 17 112 22];
+            app.ExportDSCmapsButton.Position = [38 17 112 22];
             app.ExportDSCmapsButton.Text = 'Export DSC maps';
 
             % Create DSCcomparationROIButton
@@ -2341,6 +2427,110 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ExportROImaskButton.ButtonPushedFcn = createCallbackFcn(app, @ExportROImaskButtonPushed, true);
             app.ExportROImaskButton.Position = [106 84 112 22];
             app.ExportROImaskButton.Text = 'Export ROI mask';
+
+            % Create RegistrationTab
+            app.RegistrationTab = uitab(app.TabGroup);
+            app.RegistrationTab.Title = 'Registration';
+
+            % Create UIAxes_Registration
+            app.UIAxes_Registration = uiaxes(app.RegistrationTab);
+            app.UIAxes_Registration.Toolbar.Visible = 'off';
+            app.UIAxes_Registration.XLimitMethod = 'tight';
+            app.UIAxes_Registration.YLimitMethod = 'tight';
+            app.UIAxes_Registration.XTick = [];
+            app.UIAxes_Registration.YTick = [];
+            app.UIAxes_Registration.Position = [6 17 1028 683];
+
+            % Create SelectDSCvolumetricdataformapcalculationLabel_2
+            app.SelectDSCvolumetricdataformapcalculationLabel_2 = uilabel(app.RegistrationTab);
+            app.SelectDSCvolumetricdataformapcalculationLabel_2.HorizontalAlignment = 'right';
+            app.SelectDSCvolumetricdataformapcalculationLabel_2.Position = [1136 662 130 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel_2.Text = 'Select fixed image data';
+
+            % Create SelectfixedDropDown
+            app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
+            app.SelectfixedDropDown.Items = {};
+            app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
+            app.SelectfixedDropDown.Placeholder = 'None';
+            app.SelectfixedDropDown.Position = [1059 632 284 21];
+            app.SelectfixedDropDown.Value = {};
+
+            % Create SelectDSCvolumetricdataformapcalculationLabel_3
+            app.SelectDSCvolumetricdataformapcalculationLabel_3 = uilabel(app.RegistrationTab);
+            app.SelectDSCvolumetricdataformapcalculationLabel_3.HorizontalAlignment = 'right';
+            app.SelectDSCvolumetricdataformapcalculationLabel_3.Position = [1128 599 143 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel_3.Text = 'Select moving image data';
+
+            % Create SelectmovingDropDown
+            app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
+            app.SelectmovingDropDown.Items = {};
+            app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
+            app.SelectmovingDropDown.Placeholder = 'None';
+            app.SelectmovingDropDown.Position = [1059 567 283 21];
+            app.SelectmovingDropDown.Value = {};
+
+            % Create RegisterButton
+            app.RegisterButton = uibutton(app.RegistrationTab, 'push');
+            app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
+            app.RegisterButton.Position = [1194 394 100 22];
+            app.RegisterButton.Text = 'Register';
+
+            % Create SliceSpinnerLabel_2
+            app.SliceSpinnerLabel_2 = uilabel(app.RegistrationTab);
+            app.SliceSpinnerLabel_2.HorizontalAlignment = 'right';
+            app.SliceSpinnerLabel_2.Position = [1376 662 31 22];
+            app.SliceSpinnerLabel_2.Text = 'Slice';
+
+            % Create SliceSpinner_Fixed
+            app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Fixed.Position = [1365 633 54 22];
+            app.SliceSpinner_Fixed.Value = 1;
+
+            % Create SliceSpinner_3Label
+            app.SliceSpinner_3Label = uilabel(app.RegistrationTab);
+            app.SliceSpinner_3Label.HorizontalAlignment = 'right';
+            app.SliceSpinner_3Label.Position = [1376 596 31 22];
+            app.SliceSpinner_3Label.Text = 'Slice';
+
+            % Create SliceSpinner_Moving
+            app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Moving.Position = [1365 567 54 22];
+            app.SliceSpinner_Moving.Value = 1;
+
+            % Create UsedifferentparametermapCheckBox
+            app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
+            app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
+            app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
+            app.UsedifferentparametermapCheckBox.Position = [1156 513 175 22];
+
+            % Create SelectDSCvolumetricdataformapcalculationLabel_4
+            app.SelectDSCvolumetricdataformapcalculationLabel_4 = uilabel(app.RegistrationTab);
+            app.SelectDSCvolumetricdataformapcalculationLabel_4.HorizontalAlignment = 'right';
+            app.SelectDSCvolumetricdataformapcalculationLabel_4.Enable = 'off';
+            app.SelectDSCvolumetricdataformapcalculationLabel_4.Position = [1081 476 239 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel_4.Text = 'Select image data for parameter generation';
+
+            % Create SelectparameterDropDown
+            app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
+            app.SelectparameterDropDown.Items = {};
+            app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
+            app.SelectparameterDropDown.Enable = 'off';
+            app.SelectparameterDropDown.Placeholder = 'None';
+            app.SelectparameterDropDown.Position = [1059 444 283 21];
+            app.SelectparameterDropDown.Value = {};
+
+            % Create SliceSpinner_3Label_2
+            app.SliceSpinner_3Label_2 = uilabel(app.RegistrationTab);
+            app.SliceSpinner_3Label_2.HorizontalAlignment = 'right';
+            app.SliceSpinner_3Label_2.Enable = 'off';
+            app.SliceSpinner_3Label_2.Position = [1376 476 31 22];
+            app.SliceSpinner_3Label_2.Text = 'Slice';
+
+            % Create SliceSpinner_Parameter
+            app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Parameter.Enable = 'off';
+            app.SliceSpinner_Parameter.Position = [1365 443 54 22];
+            app.SliceSpinner_Parameter.Value = 1;
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
