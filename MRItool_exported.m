@@ -62,7 +62,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         ImageshownSwitchLabel           matlab.ui.control.Label
         RotateButton_Segmenter          matlab.ui.control.Button
         SliceSpinner_Segmenter          matlab.ui.control.Spinner
-        SliceSpinner_5Label             matlab.ui.control.Label
+        SliceSpinner_SegmenterLabel     matlab.ui.control.Label
         SelectsequencetosegmentDropDown  matlab.ui.control.DropDown
         SelectsequencetosegmentDropDownLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
@@ -105,27 +105,27 @@ classdef MRItool_exported < matlab.apps.AppBase
         SelectDSCvolumetricdataformapcalculationLabel  matlab.ui.control.Label
         ASLMapLabel                     matlab.ui.control.Label
         SliceSpinner_ASL                matlab.ui.control.Spinner
-        SliceSpinner_7Label             matlab.ui.control.Label
+        SliceSpinner_ASLLabel           matlab.ui.control.Label
         SliceSpinner_DSCMaps            matlab.ui.control.Spinner
-        SliceSpinner_5Label_2           matlab.ui.control.Label
+        SliceSpinner_DSCMapsLabel       matlab.ui.control.Label
         CalculateDSCmapsButton          matlab.ui.control.Button
         UIAxes_ASL                      matlab.ui.control.UIAxes
         UIAxes_DSCMaps                  matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
         SliceSpinner_Parameter          matlab.ui.control.Spinner
-        SliceSpinner_3Label_2           matlab.ui.control.Label
+        SliceSpinner_ParameterLabel     matlab.ui.control.Label
         SelectparameterDropDown         matlab.ui.control.DropDown
-        SelectDSCvolumetricdataformapcalculationLabel_4  matlab.ui.control.Label
+        SelectparameterLabel            matlab.ui.control.Label
         UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
         SliceSpinner_Moving             matlab.ui.control.Spinner
-        SliceSpinner_3Label             matlab.ui.control.Label
+        SliceSpinner_MovingLabel        matlab.ui.control.Label
         SliceSpinner_Fixed              matlab.ui.control.Spinner
-        SliceSpinnerLabel_2             matlab.ui.control.Label
+        SliceSpinner_FixedLabel         matlab.ui.control.Label
         RegisterButton                  matlab.ui.control.Button
         SelectmovingDropDown            matlab.ui.control.DropDown
-        SelectDSCvolumetricdataformapcalculationLabel_3  matlab.ui.control.Label
+        SelectmovingLabel               matlab.ui.control.Label
         SelectfixedDropDown             matlab.ui.control.DropDown
-        SelectDSCvolumetricdataformapcalculationLabel_2  matlab.ui.control.Label
+        SelectfixedLabel                matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
     end
 
@@ -1728,14 +1728,14 @@ classdef MRItool_exported < matlab.apps.AppBase
             drawnow
             
             if app.UsedifferentparametermapCheckBox.Value == 0
-                resultImage_py = pyrunfile("C:\Users\Stern\OneDrive\Desktop\Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
+                resultImage_py = pyrunfile("Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
                 resultImage = single(resultImage_py);
                 imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
             else
                 parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
                 parameter_Image_py = py.numpy.array(parameter_Image(:,:,app.SliceSpinner_Parameter.Value));
 
-                resultImage_py = pyrunfile("C:\Users\Stern\OneDrive\Desktop\Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
+                resultImage_py = pyrunfile("Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
                 resultImage = single(resultImage_py);
                 imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
             end
@@ -1914,11 +1914,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectsequencetosegmentDropDown.Position = [1160 648 202 21];
             app.SelectsequencetosegmentDropDown.Value = {};
 
-            % Create SliceSpinner_5Label
-            app.SliceSpinner_5Label = uilabel(app.SegmenterTab);
-            app.SliceSpinner_5Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_5Label.Position = [186 17 31 22];
-            app.SliceSpinner_5Label.Text = 'Slice';
+            % Create SliceSpinner_SegmenterLabel
+            app.SliceSpinner_SegmenterLabel = uilabel(app.SegmenterTab);
+            app.SliceSpinner_SegmenterLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_SegmenterLabel.Position = [186 17 31 22];
+            app.SliceSpinner_SegmenterLabel.Text = 'Slice';
 
             % Create SliceSpinner_Segmenter
             app.SliceSpinner_Segmenter = uispinner(app.SegmenterTab);
@@ -2180,12 +2180,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.CalculateDSCmapsButton.Position = [525 592 128 22];
             app.CalculateDSCmapsButton.Text = 'Calculate DSC maps';
 
-            % Create SliceSpinner_5Label_2
-            app.SliceSpinner_5Label_2 = uilabel(app.DSCTab);
-            app.SliceSpinner_5Label_2.HorizontalAlignment = 'right';
-            app.SliceSpinner_5Label_2.Enable = 'off';
-            app.SliceSpinner_5Label_2.Position = [439 17 31 22];
-            app.SliceSpinner_5Label_2.Text = 'Slice';
+            % Create SliceSpinner_DSCMapsLabel
+            app.SliceSpinner_DSCMapsLabel = uilabel(app.DSCTab);
+            app.SliceSpinner_DSCMapsLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_DSCMapsLabel.Enable = 'off';
+            app.SliceSpinner_DSCMapsLabel.Position = [439 17 31 22];
+            app.SliceSpinner_DSCMapsLabel.Text = 'Slice';
 
             % Create SliceSpinner_DSCMaps
             app.SliceSpinner_DSCMaps = uispinner(app.DSCTab);
@@ -2193,12 +2193,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_DSCMaps.Enable = 'off';
             app.SliceSpinner_DSCMaps.Position = [485 17 100 22];
 
-            % Create SliceSpinner_7Label
-            app.SliceSpinner_7Label = uilabel(app.DSCTab);
-            app.SliceSpinner_7Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_7Label.Enable = 'off';
-            app.SliceSpinner_7Label.Position = [1025 17 31 22];
-            app.SliceSpinner_7Label.Text = 'Slice';
+            % Create SliceSpinner_ASLLabel
+            app.SliceSpinner_ASLLabel = uilabel(app.DSCTab);
+            app.SliceSpinner_ASLLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_ASLLabel.Enable = 'off';
+            app.SliceSpinner_ASLLabel.Position = [1025 17 31 22];
+            app.SliceSpinner_ASLLabel.Text = 'Slice';
 
             % Create SliceSpinner_ASL
             app.SliceSpinner_ASL = uispinner(app.DSCTab);
@@ -2441,11 +2441,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UIAxes_Registration.YTick = [];
             app.UIAxes_Registration.Position = [6 17 1028 683];
 
-            % Create SelectDSCvolumetricdataformapcalculationLabel_2
-            app.SelectDSCvolumetricdataformapcalculationLabel_2 = uilabel(app.RegistrationTab);
-            app.SelectDSCvolumetricdataformapcalculationLabel_2.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel_2.Position = [1136 662 130 22];
-            app.SelectDSCvolumetricdataformapcalculationLabel_2.Text = 'Select fixed image data';
+            % Create SelectfixedLabel
+            app.SelectfixedLabel = uilabel(app.RegistrationTab);
+            app.SelectfixedLabel.HorizontalAlignment = 'right';
+            app.SelectfixedLabel.Position = [1136 662 130 22];
+            app.SelectfixedLabel.Text = 'Select fixed image data';
 
             % Create SelectfixedDropDown
             app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
@@ -2455,11 +2455,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Position = [1059 632 284 21];
             app.SelectfixedDropDown.Value = {};
 
-            % Create SelectDSCvolumetricdataformapcalculationLabel_3
-            app.SelectDSCvolumetricdataformapcalculationLabel_3 = uilabel(app.RegistrationTab);
-            app.SelectDSCvolumetricdataformapcalculationLabel_3.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel_3.Position = [1128 599 143 22];
-            app.SelectDSCvolumetricdataformapcalculationLabel_3.Text = 'Select moving image data';
+            % Create SelectmovingLabel
+            app.SelectmovingLabel = uilabel(app.RegistrationTab);
+            app.SelectmovingLabel.HorizontalAlignment = 'right';
+            app.SelectmovingLabel.Position = [1128 599 143 22];
+            app.SelectmovingLabel.Text = 'Select moving image data';
 
             % Create SelectmovingDropDown
             app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
@@ -2475,22 +2475,22 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.RegisterButton.Position = [1194 394 100 22];
             app.RegisterButton.Text = 'Register';
 
-            % Create SliceSpinnerLabel_2
-            app.SliceSpinnerLabel_2 = uilabel(app.RegistrationTab);
-            app.SliceSpinnerLabel_2.HorizontalAlignment = 'right';
-            app.SliceSpinnerLabel_2.Position = [1376 662 31 22];
-            app.SliceSpinnerLabel_2.Text = 'Slice';
+            % Create SliceSpinner_FixedLabel
+            app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_FixedLabel.Position = [1376 662 31 22];
+            app.SliceSpinner_FixedLabel.Text = 'Slice';
 
             % Create SliceSpinner_Fixed
             app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
             app.SliceSpinner_Fixed.Position = [1365 633 54 22];
             app.SliceSpinner_Fixed.Value = 1;
 
-            % Create SliceSpinner_3Label
-            app.SliceSpinner_3Label = uilabel(app.RegistrationTab);
-            app.SliceSpinner_3Label.HorizontalAlignment = 'right';
-            app.SliceSpinner_3Label.Position = [1376 596 31 22];
-            app.SliceSpinner_3Label.Text = 'Slice';
+            % Create SliceSpinner_MovingLabel
+            app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_MovingLabel.Position = [1376 596 31 22];
+            app.SliceSpinner_MovingLabel.Text = 'Slice';
 
             % Create SliceSpinner_Moving
             app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
@@ -2503,12 +2503,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
             app.UsedifferentparametermapCheckBox.Position = [1156 513 175 22];
 
-            % Create SelectDSCvolumetricdataformapcalculationLabel_4
-            app.SelectDSCvolumetricdataformapcalculationLabel_4 = uilabel(app.RegistrationTab);
-            app.SelectDSCvolumetricdataformapcalculationLabel_4.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel_4.Enable = 'off';
-            app.SelectDSCvolumetricdataformapcalculationLabel_4.Position = [1081 476 239 22];
-            app.SelectDSCvolumetricdataformapcalculationLabel_4.Text = 'Select image data for parameter generation';
+            % Create SelectparameterLabel
+            app.SelectparameterLabel = uilabel(app.RegistrationTab);
+            app.SelectparameterLabel.HorizontalAlignment = 'right';
+            app.SelectparameterLabel.Enable = 'off';
+            app.SelectparameterLabel.Position = [1081 476 239 22];
+            app.SelectparameterLabel.Text = 'Select image data for parameter generation';
 
             % Create SelectparameterDropDown
             app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
@@ -2519,12 +2519,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.Position = [1059 444 283 21];
             app.SelectparameterDropDown.Value = {};
 
-            % Create SliceSpinner_3Label_2
-            app.SliceSpinner_3Label_2 = uilabel(app.RegistrationTab);
-            app.SliceSpinner_3Label_2.HorizontalAlignment = 'right';
-            app.SliceSpinner_3Label_2.Enable = 'off';
-            app.SliceSpinner_3Label_2.Position = [1376 476 31 22];
-            app.SliceSpinner_3Label_2.Text = 'Slice';
+            % Create SliceSpinner_ParameterLabel
+            app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_ParameterLabel.Enable = 'off';
+            app.SliceSpinner_ParameterLabel.Position = [1376 476 31 22];
+            app.SliceSpinner_ParameterLabel.Text = 'Slice';
 
             % Create SliceSpinner_Parameter
             app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
