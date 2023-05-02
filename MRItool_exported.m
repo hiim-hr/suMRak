@@ -24,6 +24,8 @@ classdef MRItool_exported < matlab.apps.AppBase
         RotateButtonPreview             matlab.ui.control.Button
         UIAxesPreview                   matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
+        DeleteButton                    matlab.ui.control.Button
+        ConfirmButton                   matlab.ui.control.Button
         FreeButton_Remove               matlab.ui.control.Button
         PolyButton_Remove               matlab.ui.control.Button
         PolyButton_Add                  matlab.ui.control.Button
@@ -143,6 +145,8 @@ classdef MRItool_exported < matlab.apps.AppBase
         OriginalImage % Original slice image data
         SeqDimsSegmenter % Dimensions of selected sequence for segmentation 
         FreeImage % Property for storing imshow of OriginalImage image without a mask overlay or MaskedImage
+        FreeROI % Property for storing current manual ROI object
+        ROI_id = "" % Manual ROI identifier
         SliceLimits % Current slice pixel intensity range
         MaskedImage % Masked image of current slice
         Mask % Binary mask of current slice
@@ -650,131 +654,97 @@ classdef MRItool_exported < matlab.apps.AppBase
         function FreeButton_AddPushed(app, event)
             
             % Draw freehand ROI
-            added_Region = drawfreehand(app.UIAxes_Segmenter);
-            
-            % Update mask using new ROI based on current image displayed -
-            % masked or original with overlaid transparent mask
-            if app.ImageshownSwitch.Value == "Overlay"
-                added_Mask = added_Region.createMask(app.FreeImage);
-                app.Mask = app.Mask|added_Mask;
-                
-                if numel(app.SeqDimsSegmenter) == 3
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 4
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 5
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                end
-                
-                hold(app.UIAxes_Segmenter, "on")
-                mask_Overlay = imshow(app.GreenScreen, "Parent",app.UIAxes_Segmenter);
-                hold(app.UIAxes_Segmenter, "off")
-                mask_Overlay.AlphaData = app.Mask-0.9;
-            else
-                added_Mask = added_Region.createMask(app.FreeImage);
-                app.Mask = app.Mask|added_Mask;
-                
-                app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
-                app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
-            end  
+            app.FreeROI = drawfreehand(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.4660 0.6740 0.1880]);
+            app.ROI_id = "add";
         end
 
         % Button pushed function: FreeButton_Remove
         function FreeButton_RemovePushed(app, event)
             
             % Draw freehand ROI
-            removed_Region = drawfreehand(app.UIAxes_Segmenter);
-            
-            % Update mask using new ROI based on current image displayed -
-            % masked or original with overlaid transparent mask
-            if app.ImageshownSwitch.Value == "Overlay"
-                removed_Mask = removed_Region.createMask(app.FreeImage);
-                app.Mask(removed_Mask) = 0;
-                
-                if numel(app.SeqDimsSegmenter) == 3
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 4
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 5
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                end
-                
-                hold(app.UIAxes_Segmenter, "on")
-                mask_Overlay = imshow(app.GreenScreen, "Parent",app.UIAxes_Segmenter);
-                hold(app.UIAxes_Segmenter, "off")
-                mask_Overlay.AlphaData = app.Mask-0.9;
-            else
-                removed_Mask = removed_Region.createMask(app.FreeImage);
-                app.Mask(removed_Mask) = 0;
-                
-                app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
-                app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
-            end
+            app.FreeROI = drawfreehand(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.6350 0.0780 0.1840]);
+            app.ROI_id = "remove";
         end
 
         % Button pushed function: PolyButton_Add
         function PolyButton_AddPushed(app, event)
             
             % Draw polygon ROI
-            added_Region = drawpolygon(app.UIAxes_Segmenter);
-            
-            % Update mask using new ROI based on current image displayed -
-            % masked or original with overlaid transparent mask
-            if app.ImageshownSwitch.Value == "Overlay"
-                added_Mask = added_Region.createMask(app.FreeImage);
-                app.Mask = app.Mask|added_Mask;
-                
-                if numel(app.SeqDimsSegmenter) == 3
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 4
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 5
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                end
-                
-                hold(app.UIAxes_Segmenter, "on")
-                mask_Overlay = imshow(app.GreenScreen, "Parent",app.UIAxes_Segmenter);
-                hold(app.UIAxes_Segmenter, "off")
-                mask_Overlay.AlphaData = app.Mask-0.9;
-            else
-                added_Mask = added_Region.createMask(app.FreeImage);
-                app.Mask = app.Mask|added_Mask;
-                
-                app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
-                app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
-            end
+            app.FreeROI = drawpolygon(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.4660 0.6740 0.1880]);
+            app.ROI_id = "add";
         end
 
         % Button pushed function: PolyButton_Remove
         function PolyButton_RemovePushed(app, event)
             
             % Draw polygon ROI
-            removed_Region = drawpolygon(app.UIAxes_Segmenter);
-            
+            app.FreeROI = drawpolygon(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.6350 0.0780 0.1840]);
+            app.ROI_id = "remove";
+        end
+
+        % Button pushed function: ConfirmButton
+        function ConfirmButtonPushed(app, event)
+                        
             % Update mask using new ROI based on current image displayed -
             % masked or original with overlaid transparent mask
-            if app.ImageshownSwitch.Value == "Overlay"
-                removed_Mask = createMask(removed_Region, app.FreeImage);
-                app.Mask(removed_Mask) = 0;
-
-                if numel(app.SeqDimsSegmenter) == 3
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 4
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
-                elseif numel(app.SeqDimsSegmenter) == 5
-                    app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+            if app.ROI_id == "add"
+                if app.ImageshownSwitch.Value == "Overlay"
+                    added_Mask = app.FreeROI.createMask(app.FreeImage);
+                    app.Mask = app.Mask|added_Mask;
+                    
+                    if numel(app.SeqDimsSegmenter) == 3
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 4
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 5
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    end
+                    
+                    hold(app.UIAxes_Segmenter, "on")
+                    mask_Overlay = imshow(app.GreenScreen, "Parent",app.UIAxes_Segmenter);
+                    hold(app.UIAxes_Segmenter, "off")
+                    mask_Overlay.AlphaData = app.Mask-0.9;
+                else
+                    added_Mask = app.FreeROI.createMask(app.FreeImage);
+                    app.Mask = app.Mask|added_Mask;
+                    
+                    app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
+                    app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
                 end
+
+            else
+                if app.ImageshownSwitch.Value == "Overlay"
+                removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                app.Mask(removed_Mask) = 0;
+                
+                    if numel(app.SeqDimsSegmenter) == 3
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 4
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 5
+                        app.FreeImage = imshow(app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
+                    end
+                
                 hold(app.UIAxes_Segmenter, "on")
                 mask_Overlay = imshow(app.GreenScreen, "Parent",app.UIAxes_Segmenter);
                 hold(app.UIAxes_Segmenter, "off")
                 mask_Overlay.AlphaData = app.Mask-0.9;
-            else
-                removed_Mask = removed_Region.createMask(app.FreeImage);
-                app.Mask(removed_Mask) = 0;
-                
-                app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
-                app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
+                else
+                    removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                    app.Mask(removed_Mask) = 0;
+                    
+                    app.MaskedImage = app.Mask.*app.OriginalImage(:,:,app.SliceSpinner_Segmenter.Value);
+                    app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', app.SliceLimits, 'Parent', app.UIAxes_Segmenter);
+                end
             end
+            
+        end
+
+        % Button pushed function: DeleteButton
+        function DeleteButtonPushed(app, event)
+            
+            % Delete current ROI
+            delete(app.FreeROI)
         end
 
         % Value changed function: ImageshownSwitch
@@ -995,7 +965,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.Items = app.DropDownItemsDSC;
             
             % Update last action label
-            app.ActionLabel.Text = "Segmented sequence saved to permanent data.";
+            %app.ActionLabel.Text = "Segmented sequence saved to permanent data.";
+            uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: ExportsequenceButton
@@ -1008,7 +979,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             niftiwrite(app.SavedMaskSegmenter, append(temp_dir, 'Mask'))
             
             % Update last action label
-            app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
+            %app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
+            uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: SegmentusingexternalmaskButton
@@ -2120,32 +2092,46 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create ROILabel
             app.ROILabel = uilabel(app.SegmenterTab);
-            app.ROILabel.Position = [1340 441 25 15];
+            app.ROILabel.Position = [1340 452 25 15];
             app.ROILabel.Text = {'ROI'; ''; ''};
 
             % Create FreeButton_Add
             app.FreeButton_Add = uibutton(app.SegmenterTab, 'push');
             app.FreeButton_Add.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_AddPushed, true);
-            app.FreeButton_Add.Position = [1298 410 50 22];
+            app.FreeButton_Add.Position = [1298 421 50 22];
             app.FreeButton_Add.Text = {'+ Free'; ''};
 
             % Create PolyButton_Add
             app.PolyButton_Add = uibutton(app.SegmenterTab, 'push');
             app.PolyButton_Add.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_AddPushed, true);
-            app.PolyButton_Add.Position = [1298 378 50 22];
+            app.PolyButton_Add.Position = [1298 389 50 22];
             app.PolyButton_Add.Text = '+ Poly';
 
             % Create PolyButton_Remove
             app.PolyButton_Remove = uibutton(app.SegmenterTab, 'push');
             app.PolyButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_RemovePushed, true);
-            app.PolyButton_Remove.Position = [1357 378 50 22];
+            app.PolyButton_Remove.Position = [1357 389 50 22];
             app.PolyButton_Remove.Text = {'- Poly'; ''};
 
             % Create FreeButton_Remove
             app.FreeButton_Remove = uibutton(app.SegmenterTab, 'push');
             app.FreeButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_RemovePushed, true);
-            app.FreeButton_Remove.Position = [1357 410 50 22];
+            app.FreeButton_Remove.Position = [1357 421 50 22];
             app.FreeButton_Remove.Text = {'- Free'; ''};
+
+            % Create ConfirmButton
+            app.ConfirmButton = uibutton(app.SegmenterTab, 'push');
+            app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
+            app.ConfirmButton.Icon = 'check icon.png';
+            app.ConfirmButton.Position = [1322 360 26 22];
+            app.ConfirmButton.Text = '';
+
+            % Create DeleteButton
+            app.DeleteButton = uibutton(app.SegmenterTab, 'push');
+            app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
+            app.DeleteButton.Icon = 'x icon.png';
+            app.DeleteButton.Position = [1357 360 27 22];
+            app.DeleteButton.Text = '';
 
             % Create DSCTab
             app.DSCTab = uitab(app.TabGroup);
