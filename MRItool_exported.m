@@ -66,26 +66,6 @@ classdef MRItool_exported < matlab.apps.AppBase
         SelectexperimenttosegmentDropDown  matlab.ui.control.DropDown
         SelectexperimenttosegmentDropDownLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
-        RegistrationTab                 matlab.ui.container.Tab
-        ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
-        AddsliceButton                  matlab.ui.control.Button
-        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
-        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
-        SliceSpinner_Parameter          matlab.ui.control.Spinner
-        SliceSpinner_ParameterLabel     matlab.ui.control.Label
-        SelectparameterDropDown         matlab.ui.control.DropDown
-        SelectparameterLabel            matlab.ui.control.Label
-        UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
-        SliceSpinner_Moving             matlab.ui.control.Spinner
-        SliceSpinner_MovingLabel        matlab.ui.control.Label
-        SliceSpinner_Fixed              matlab.ui.control.Spinner
-        SliceSpinner_FixedLabel         matlab.ui.control.Label
-        RegisterButton                  matlab.ui.control.Button
-        SelectmovingDropDown            matlab.ui.control.DropDown
-        SelectmovingLabel               matlab.ui.control.Label
-        SelectfixedDropDown             matlab.ui.control.DropDown
-        SelectfixedLabel                matlab.ui.control.Label
-        UIAxes_Registration             matlab.ui.control.UIAxes
         DSCASLTab                       matlab.ui.container.Tab
         ExportROImaskButton             matlab.ui.control.Button
         ComparationPanel                matlab.ui.container.Panel
@@ -131,6 +111,30 @@ classdef MRItool_exported < matlab.apps.AppBase
         CalculateDSCmapsButton          matlab.ui.control.Button
         UIAxes_ASL                      matlab.ui.control.UIAxes
         UIAxes_DSCMaps                  matlab.ui.control.UIAxes
+        RegistrationTab                 matlab.ui.container.Tab
+        ExportRegisteredDataButton      matlab.ui.control.Button
+        SaveRegisteredDataButton        matlab.ui.control.Button
+        SliceSpinner_Registration       matlab.ui.control.Spinner
+        SliceSpinner_SegmenterLabel_2   matlab.ui.control.Label
+        ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
+        AddsliceButton                  matlab.ui.control.Button
+        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
+        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
+        SliceSpinner_Parameter          matlab.ui.control.Spinner
+        SliceSpinner_ParameterLabel     matlab.ui.control.Label
+        SelectparameterDropDown         matlab.ui.control.DropDown
+        SelectparameterLabel            matlab.ui.control.Label
+        UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
+        SliceSpinner_Moving             matlab.ui.control.Spinner
+        SliceSpinner_MovingLabel        matlab.ui.control.Label
+        SliceSpinner_Fixed              matlab.ui.control.Spinner
+        SliceSpinner_FixedLabel         matlab.ui.control.Label
+        RegisterButton                  matlab.ui.control.Button
+        SelectmovingDropDown            matlab.ui.control.DropDown
+        SelectmovingLabel               matlab.ui.control.Label
+        SelectfixedDropDown             matlab.ui.control.DropDown
+        SelectfixedLabel                matlab.ui.control.Label
+        UIAxes_Registration             matlab.ui.control.UIAxes
     end
 
     
@@ -165,6 +169,9 @@ classdef MRItool_exported < matlab.apps.AppBase
         SavedImageSegmenter % Saved segmented data of current sequence
         SavedMaskSegmenter % Saved mask data of current sequence
         SavedTableSegmenter = table(); % Table with all saved segmented sequences
+
+        % Registration tab
+        RegisteredImageData
         
         % DSC/ASL tab
         WorkMaskDSC % Working mask of currently displayed DSC sequence
@@ -1772,30 +1779,68 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
-            fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
-            fixed_Image_py = py.numpy.array(fixed_Image(:,:,app.SliceSpinner_Fixed.Value));
-            moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
-            moving_Image_py = py.numpy.array(moving_Image(:,:,app.SliceSpinner_Moving.Value));
-
-            progress = uiprogressdlg(app.UIFigure,'Title','Please wait',...
-                'Indeterminate','on', 'Message', 'Registering images');
+            progress = uiprogressdlg(app.UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
             drawnow
-            
-            if app.UsedifferentparametermapCheckBox.Value == 0
-                resultImage_py = pyrunfile("Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
-                resultImage = single(resultImage_py);
-                imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-            else
-                parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
-                parameter_Image_py = py.numpy.array(parameter_Image(:,:,app.SliceSpinner_Parameter.Value));
+            split_instr = split(app.RegistrationInstructionsTextArea.Value, ' ');
+            split_instr = split_instr(2:end);
 
-                resultImage_py = pyrunfile("Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
-                resultImage = single(resultImage_py);
-                imshow(resultImage, [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+            app.RegisteredImageData = [];
+            %disp(split_instr)
+            for i=1:length(split_instr)
+
+                slice_instr = cell2mat(split_instr(i));
+                %disp(slice_instr)
+                F_ind = strfind(slice_instr, 'F');
+                moving_slice = str2num(slice_instr(2:(F_ind-1)));
+
+                
+                moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
+                moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice));
+
+                if ~contains(slice_instr, 'P') == 1
+                    fixed_slice = str2num(slice_instr((F_ind+1):end));
+
+                    fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+                    fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+
+                    resultImage_py = pyrunfile("Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
+                    resultImage = single(resultImage_py);
+                    app.RegisteredImageData = cat(3, resultImage, app.RegisteredImageData);
+                else
+                    P_ind = strfind(slice_instr, 'P');
+                    fixed_slice = str2num(slice_instr((F_ind+1):(P_ind-1)));
+                    param_slice = str2num(slice_instr((P_ind+1):end));
+
+                    fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+                    fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+
+                    parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
+                    parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice));
+    
+                    resultImage_py = pyrunfile("Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
+                    resultImage = single(resultImage_py);
+                    app.RegisteredImageData = cat(3, resultImage, app.RegisteredImageData);
+                end
+                %disp(moving_slice)
+                %disp(fixed_slice)
+                %disp(param_slice)
             end
 
-            % close the dialog box
+            imshow(app.RegisteredImageData(:,:,1), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+
+            dims_reg = size(app.RegisteredImageData);
+            dim3_size = dims_reg(3);
+            app.SliceSpinner_Registration.Limits = [1, dim3_size];
+            app.SliceSpinner_Registration.Value = 1;
+
+            % Close the dialog box
             close(progress)
+        end
+
+        % Value changed function: SliceSpinner_Registration
+        function SliceSpinner_RegistrationValueChanged(app, event)
+            value = app.SliceSpinner_Registration.Value;
+            imshow(app.RegisteredImageData(:,:,value), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
         end
     end
 
@@ -2207,130 +2252,6 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.DeleteButton.Position = [1357 360 27 22];
             app.DeleteButton.Text = '';
 
-            % Create RegistrationTab
-            app.RegistrationTab = uitab(app.TabGroup);
-            app.RegistrationTab.Title = 'Registration';
-
-            % Create UIAxes_Registration
-            app.UIAxes_Registration = uiaxes(app.RegistrationTab);
-            app.UIAxes_Registration.Toolbar.Visible = 'off';
-            app.UIAxes_Registration.XLimitMethod = 'tight';
-            app.UIAxes_Registration.YLimitMethod = 'tight';
-            app.UIAxes_Registration.XTick = [];
-            app.UIAxes_Registration.YTick = [];
-            app.UIAxes_Registration.Position = [6 17 1028 683];
-
-            % Create SelectfixedLabel
-            app.SelectfixedLabel = uilabel(app.RegistrationTab);
-            app.SelectfixedLabel.HorizontalAlignment = 'right';
-            app.SelectfixedLabel.Position = [1136 598 130 22];
-            app.SelectfixedLabel.Text = 'Select fixed image data';
-
-            % Create SelectfixedDropDown
-            app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
-            app.SelectfixedDropDown.Items = {};
-            app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
-            app.SelectfixedDropDown.Placeholder = 'None';
-            app.SelectfixedDropDown.Position = [1059 568 284 21];
-            app.SelectfixedDropDown.Value = {};
-
-            % Create SelectmovingLabel
-            app.SelectmovingLabel = uilabel(app.RegistrationTab);
-            app.SelectmovingLabel.HorizontalAlignment = 'right';
-            app.SelectmovingLabel.Position = [1128 665 143 22];
-            app.SelectmovingLabel.Text = 'Select moving image data';
-
-            % Create SelectmovingDropDown
-            app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
-            app.SelectmovingDropDown.Items = {};
-            app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
-            app.SelectmovingDropDown.Placeholder = 'None';
-            app.SelectmovingDropDown.Position = [1059 633 283 21];
-            app.SelectmovingDropDown.Value = {};
-
-            % Create RegisterButton
-            app.RegisterButton = uibutton(app.RegistrationTab, 'push');
-            app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
-            app.RegisterButton.Position = [1181 38 100 22];
-            app.RegisterButton.Text = 'Register';
-
-            % Create SliceSpinner_FixedLabel
-            app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_FixedLabel.Position = [1376 597 31 22];
-            app.SliceSpinner_FixedLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Fixed
-            app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Fixed.Position = [1365 568 54 22];
-
-            % Create SliceSpinner_MovingLabel
-            app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel.Position = [1376 662 31 22];
-            app.SliceSpinner_MovingLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Moving
-            app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Moving.Position = [1365 633 54 22];
-
-            % Create UsedifferentparametermapCheckBox
-            app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
-            app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
-            app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
-            app.UsedifferentparametermapCheckBox.Position = [1156 513 175 22];
-
-            % Create SelectparameterLabel
-            app.SelectparameterLabel = uilabel(app.RegistrationTab);
-            app.SelectparameterLabel.HorizontalAlignment = 'right';
-            app.SelectparameterLabel.Enable = 'off';
-            app.SelectparameterLabel.Position = [1081 476 239 22];
-            app.SelectparameterLabel.Text = 'Select image data for parameter generation';
-
-            % Create SelectparameterDropDown
-            app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
-            app.SelectparameterDropDown.Items = {};
-            app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
-            app.SelectparameterDropDown.Enable = 'off';
-            app.SelectparameterDropDown.Placeholder = 'None';
-            app.SelectparameterDropDown.Position = [1059 444 283 21];
-            app.SelectparameterDropDown.Value = {};
-
-            % Create SliceSpinner_ParameterLabel
-            app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_ParameterLabel.Enable = 'off';
-            app.SliceSpinner_ParameterLabel.Position = [1376 476 31 22];
-            app.SliceSpinner_ParameterLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Parameter
-            app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Parameter.Enable = 'off';
-            app.SliceSpinner_Parameter.Position = [1365 443 54 22];
-
-            % Create RegistrationInstructionsTextAreaLabel
-            app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationTab);
-            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'right';
-            app.RegistrationInstructionsTextAreaLabel.Position = [1164 356 134 22];
-            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
-
-            % Create RegistrationInstructionsTextArea
-            app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationTab);
-            app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [1071 289 320 60];
-
-            % Create AddsliceButton
-            app.AddsliceButton = uibutton(app.RegistrationTab, 'push');
-            app.AddsliceButton.ButtonPushedFcn = createCallbackFcn(app, @AddsliceButtonPushed, true);
-            app.AddsliceButton.Position = [1181 391 100 22];
-            app.AddsliceButton.Text = 'Add slice ';
-
-            % Create ManualinstructioninputCheckBox
-            app.ManualinstructioninputCheckBox = uicheckbox(app.RegistrationTab);
-            app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
-            app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
-            app.ManualinstructioninputCheckBox.Position = [1156 254 149 22];
-
             % Create DSCASLTab
             app.DSCASLTab = uitab(app.TabGroup);
             app.DSCASLTab.AutoResizeChildren = 'off';
@@ -2613,6 +2534,151 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ExportROImaskButton.ButtonPushedFcn = createCallbackFcn(app, @ExportROImaskButtonPushed, true);
             app.ExportROImaskButton.Position = [106 84 112 22];
             app.ExportROImaskButton.Text = 'Export ROI mask';
+
+            % Create RegistrationTab
+            app.RegistrationTab = uitab(app.TabGroup);
+            app.RegistrationTab.Title = 'Registration';
+
+            % Create UIAxes_Registration
+            app.UIAxes_Registration = uiaxes(app.RegistrationTab);
+            app.UIAxes_Registration.Toolbar.Visible = 'off';
+            app.UIAxes_Registration.XLimitMethod = 'tight';
+            app.UIAxes_Registration.YLimitMethod = 'tight';
+            app.UIAxes_Registration.XTick = [];
+            app.UIAxes_Registration.YTick = [];
+            app.UIAxes_Registration.Position = [6 41 1028 683];
+
+            % Create SelectfixedLabel
+            app.SelectfixedLabel = uilabel(app.RegistrationTab);
+            app.SelectfixedLabel.HorizontalAlignment = 'right';
+            app.SelectfixedLabel.Position = [1136 563 130 22];
+            app.SelectfixedLabel.Text = 'Select fixed image data';
+
+            % Create SelectfixedDropDown
+            app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
+            app.SelectfixedDropDown.Items = {};
+            app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
+            app.SelectfixedDropDown.Placeholder = 'None';
+            app.SelectfixedDropDown.Position = [1059 533 284 21];
+            app.SelectfixedDropDown.Value = {};
+
+            % Create SelectmovingLabel
+            app.SelectmovingLabel = uilabel(app.RegistrationTab);
+            app.SelectmovingLabel.HorizontalAlignment = 'right';
+            app.SelectmovingLabel.Position = [1128 630 143 22];
+            app.SelectmovingLabel.Text = 'Select moving image data';
+
+            % Create SelectmovingDropDown
+            app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
+            app.SelectmovingDropDown.Items = {};
+            app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
+            app.SelectmovingDropDown.Placeholder = 'None';
+            app.SelectmovingDropDown.Position = [1059 598 283 21];
+            app.SelectmovingDropDown.Value = {};
+
+            % Create RegisterButton
+            app.RegisterButton = uibutton(app.RegistrationTab, 'push');
+            app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
+            app.RegisterButton.Position = [1181 156 100 22];
+            app.RegisterButton.Text = 'Register';
+
+            % Create SliceSpinner_FixedLabel
+            app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_FixedLabel.Position = [1376 562 31 22];
+            app.SliceSpinner_FixedLabel.Text = 'Slice';
+
+            % Create SliceSpinner_Fixed
+            app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Fixed.Position = [1365 533 54 22];
+
+            % Create SliceSpinner_MovingLabel
+            app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_MovingLabel.Position = [1376 627 31 22];
+            app.SliceSpinner_MovingLabel.Text = 'Slice';
+
+            % Create SliceSpinner_Moving
+            app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Moving.Position = [1365 598 54 22];
+
+            % Create UsedifferentparametermapCheckBox
+            app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
+            app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
+            app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
+            app.UsedifferentparametermapCheckBox.Position = [1156 478 175 22];
+
+            % Create SelectparameterLabel
+            app.SelectparameterLabel = uilabel(app.RegistrationTab);
+            app.SelectparameterLabel.HorizontalAlignment = 'right';
+            app.SelectparameterLabel.Enable = 'off';
+            app.SelectparameterLabel.Position = [1081 441 239 22];
+            app.SelectparameterLabel.Text = 'Select image data for parameter generation';
+
+            % Create SelectparameterDropDown
+            app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
+            app.SelectparameterDropDown.Items = {};
+            app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
+            app.SelectparameterDropDown.Enable = 'off';
+            app.SelectparameterDropDown.Placeholder = 'None';
+            app.SelectparameterDropDown.Position = [1059 409 283 21];
+            app.SelectparameterDropDown.Value = {};
+
+            % Create SliceSpinner_ParameterLabel
+            app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_ParameterLabel.Enable = 'off';
+            app.SliceSpinner_ParameterLabel.Position = [1376 441 31 22];
+            app.SliceSpinner_ParameterLabel.Text = 'Slice';
+
+            % Create SliceSpinner_Parameter
+            app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Parameter.Enable = 'off';
+            app.SliceSpinner_Parameter.Position = [1365 408 54 22];
+
+            % Create RegistrationInstructionsTextAreaLabel
+            app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationTab);
+            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'right';
+            app.RegistrationInstructionsTextAreaLabel.Position = [1164 321 134 22];
+            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
+
+            % Create RegistrationInstructionsTextArea
+            app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationTab);
+            app.RegistrationInstructionsTextArea.Editable = 'off';
+            app.RegistrationInstructionsTextArea.Position = [1071 254 320 60];
+
+            % Create AddsliceButton
+            app.AddsliceButton = uibutton(app.RegistrationTab, 'push');
+            app.AddsliceButton.ButtonPushedFcn = createCallbackFcn(app, @AddsliceButtonPushed, true);
+            app.AddsliceButton.Position = [1181 356 100 22];
+            app.AddsliceButton.Text = 'Add slice ';
+
+            % Create ManualinstructioninputCheckBox
+            app.ManualinstructioninputCheckBox = uicheckbox(app.RegistrationTab);
+            app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
+            app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
+            app.ManualinstructioninputCheckBox.Position = [1156 219 149 22];
+
+            % Create SliceSpinner_SegmenterLabel_2
+            app.SliceSpinner_SegmenterLabel_2 = uilabel(app.RegistrationTab);
+            app.SliceSpinner_SegmenterLabel_2.HorizontalAlignment = 'right';
+            app.SliceSpinner_SegmenterLabel_2.Position = [467 17 31 22];
+            app.SliceSpinner_SegmenterLabel_2.Text = 'Slice';
+
+            % Create SliceSpinner_Registration
+            app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
+            app.SliceSpinner_Registration.Position = [509 17 97 22];
+
+            % Create SaveRegisteredDataButton
+            app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
+            app.SaveRegisteredDataButton.Position = [1095 84 133 22];
+            app.SaveRegisteredDataButton.Text = 'Save Registered Data';
+
+            % Create ExportRegisteredDataButton
+            app.ExportRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
+            app.ExportRegisteredDataButton.Position = [1239 84 140 22];
+            app.ExportRegisteredDataButton.Text = 'Export Registered Data';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
