@@ -213,38 +213,44 @@ classdef MRItool_exported < matlab.apps.AppBase
             voxel_Dims = [0 0];
 
             filelist_studyPath = dir(app.StudyPath);
-            filelist_studyPath = filelist_studyPath([filelist_studyPath.isdir]);
+            filelist_studyPath = rmmissing(str2double({filelist_studyPath.name}));
             
-            for i=1:length(filelist_studyPath)
-                experiment_dir = fullfile(filelist_studyPath(i).folder, filesep, num2str(i), filesep, 'pdata');
+            for i=filelist_studyPath % List through experiments 
+                experiment_dir = fullfile(app.StudyPath, filesep, num2str(i), filesep, 'pdata');
                 filelist_expDir = dir(experiment_dir);
-                filelist_expDir = filelist_expDir([filelist_expDir.isdir]);
+                filelist_expDir = rmmissing(str2double({filelist_expDir.name}));
 
-                for j=1:length(filelist_expDir)
+                for j=filelist_expDir % List through processings
                     try
                         % Create image object
-                        processing_dir = fullfile(filelist_expDir(j).folder, filesep, num2str(j));
+                        processing_dir = fullfile(experiment_dir, filesep, num2str(j));
                         imageObj = ImageDataObject(processing_dir);
-                        attempt_AcqProt = [num2str(i), ' -> ', imageObj.Visu.VisuAcquisitionProtocol];
-    
+                        try
+                            attempt_AcqProt = imageObj.Visu.VisuAcquisitionProtocol;
+                        catch
+                            attempt_AcqProt = imageObj.Visu.VisuSeriesTypeId;
+                        end
+                        exp_ImageData = cat(1, exp_ImageData, {squeeze(imageObj.data)});
+                        visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '-', num2str(j), '. ', attempt_AcqProt));
                         % Store properties into respective arrays
                         try
-                            attempt_voxelDims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
+                            voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
                             try
-                                imageObj.Visu.VisuAcqEchoTime < imageObj.Visu.VisuAcqRepetitionTime;
-                                voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
-                                visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '-', num2str(j), '. ', imageObj.Visu.VisuAcquisitionProtocol));
-                                exp_ImageData = cat(1, exp_ImageData, {squeeze(imageObj.data)});
                                 TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^-3);
                                 TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
                             catch
-                                %x = [num2str(i), ' -> TIME DATA ERROR'];
+                                x = [num2str(i), ' -> TIME DATA ERROR'];
+                                TE_time = cat(1, TE_time, 0);
+                                TR_time = cat(1, TR_time, 0);
                             end
                         catch
-                            %x = [num2str(i), ' -> VOXEL DIM ERROR'];
+                            x = [num2str(i), ' -> IMAGE DATA ERROR'];
+                            voxel_Dims = cat(1, voxel_Dims, [0 0]);
+                            TE_time = cat(1, TE_time, 0);
+                            TR_time = cat(1, TR_time, 0);
                         end
                     catch
-                    %x = [num2str(i), ' -> WOBBLE'];
+                    x = [num2str(i), ' -> WOBBLE'];
                     end
                 end
             end
