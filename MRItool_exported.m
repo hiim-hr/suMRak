@@ -5,6 +5,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        ResetViewButton_Preview         matlab.ui.control.Button
         ResetEnvironment                matlab.ui.control.Button
         Dim4Slider_Preview              matlab.ui.control.Slider
         Dim4Slider_PreviewLabel         matlab.ui.control.Label
@@ -113,6 +114,15 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIAxes_ASL                      matlab.ui.control.UIAxes
         UIAxes_DSCMaps                  matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
+        Dim4Spinner_Parameter           matlab.ui.control.Spinner
+        SliceSpinner_MovingLabel_4      matlab.ui.control.Label
+        FixDim4CheckBox_Parameter       matlab.ui.control.CheckBox
+        Dim4Spinner_Fixed               matlab.ui.control.Spinner
+        SliceSpinner_MovingLabel_3      matlab.ui.control.Label
+        FixDim4CheckBox_Fixed           matlab.ui.control.CheckBox
+        Dim4Spinner_Moving              matlab.ui.control.Spinner
+        SliceSpinner_MovingLabel_2      matlab.ui.control.Label
+        FixDim4CheckBox_Moving          matlab.ui.control.CheckBox
         ExportRegisteredDataButton      matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
         SliceSpinner_Registration       matlab.ui.control.Spinner
@@ -426,7 +436,10 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.Value = 1;
             
             % Set interactions of preview uiaxes
-            app.UIAxes_Preview.Interactions = [];
+            app.UIAxes_Preview.Interactions = [regionZoomInteraction zoomInteraction];
+
+            % Reset zoom
+            
         end
 
         % Value changed function: SliceSpinner_Preview
@@ -482,59 +495,73 @@ classdef MRItool_exported < matlab.apps.AppBase
             imshow(current_slice, [], 'Parent', app.UIAxes_Preview);
         end
 
+        % Button pushed function: ResetViewButton_Preview
+        function ResetViewButton_PreviewPushed(app, event)
+            
+            % Reset zoom
+            app.UIAxes_Preview.XLim = [-inf inf];
+            app.UIAxes_Preview.YLim = [-inf inf];
+        end
+
         % Value changed function: SelectexperimenttosegmentDropDown
         function SelectexperimenttosegmentDropDownValueChanged(app, event)
             value = app.SelectexperimenttosegmentDropDown.Value;
-            
-            % Get selected sequence image data
-            app.OriginalSegmenterImageData = cell2mat(table2array(app.ExperimentPropertyTable({value}, "Image data")));
-            
-            
-            % Get data dimension sizes, set slice and spinner limits/values
-            app.SeqDimsSegmenter = size(app.OriginalSegmenterImageData);
-            dim3_size = app.SeqDimsSegmenter(3);
-            
-            if numel(app.SeqDimsSegmenter) == 4
-                dim4_size = app.SeqDimsSegmenter(4);
-                app.Dim4Spinner_Segmenter.Enable = 'on';
-                app.Dim5Spinner_Segmenter.Enable = 'off';
-                app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
-                app.Dim5Spinner_Segmenter.Value = 1;
-                app.PermuteDimsButton.Enable = 'on';
-            elseif numel(app.SeqDimsSegmenter) == 5
-                dim4_size = app.SeqDimsSegmenter(4);
-                app.Dim4Spinner_Segmenter.Enable = 'on';
-                app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
-                dim5_size = app.SeqDimsSegmenter(5);
-                app.Dim5Spinner_Segmenter.Enable = 'on';
-                app.Dim5Spinner_Segmenter.Limits = [1, dim5_size];
-                app.PermuteDimsButton.Enable = 'on';
-            elseif numel(app.SeqDimsSegmenter) == 3
-                app.Dim4Spinner_Segmenter.Enable = 'off';
-                app.Dim5Spinner_Segmenter.Enable = 'off';
+            if strcmp(value, 'None') == 1
+                cla(app.UIAxes_Segmenter)
+                app.SliceSpinner_Segmenter.Value = 1;
                 app.Dim4Spinner_Segmenter.Value = 1;
                 app.Dim5Spinner_Segmenter.Value = 1;
-                app.PermuteDimsButton.Enable = 'off';
-            end
-               
-            app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
-            slice_1 = app.OriginalSegmenterImageData(:,:,1);
-            app.SliceLimits = [min(slice_1, [], 'all'), max(slice_1, [], 'all')];
-            
-            % Create zero arrays to save data into for current sequence
-            app.SavedImageSegmenter = zeros(app.SeqDimsSegmenter);
-            app.SavedMaskSegmenter = zeros(app.SeqDimsSegmenter(1:3));
-            
-            % Display sequence, update slice spinner
-            app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,1), [], 'Parent', app.UIAxes_Segmenter);
-            app.SliceSpinner_Segmenter.Value = 1;
-            
-            % Set interactions of segmenter uiaxes
-            app.UIAxes_Segmenter.Interactions = [regionZoomInteraction zoomInteraction];
-            
-            % Reset zoom
-            app.UIAxes_Segmenter.XLim = [-inf inf];
-            app.UIAxes_Segmenter.YLim = [-inf inf];
+            else
+                % Get selected sequence image data
+                app.OriginalSegmenterImageData = cell2mat(table2array(app.ExperimentPropertyTable({value}, "Image data")));
+                
+                
+                % Get data dimension sizes, set slice and spinner limits/values
+                app.SeqDimsSegmenter = size(app.OriginalSegmenterImageData);
+                dim3_size = app.SeqDimsSegmenter(3);
+                
+                if numel(app.SeqDimsSegmenter) == 4
+                    dim4_size = app.SeqDimsSegmenter(4);
+                    app.Dim4Spinner_Segmenter.Enable = 'on';
+                    app.Dim5Spinner_Segmenter.Enable = 'off';
+                    app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
+                    app.Dim5Spinner_Segmenter.Value = 1;
+                    app.PermuteDimsButton.Enable = 'on';
+                elseif numel(app.SeqDimsSegmenter) == 5
+                    dim4_size = app.SeqDimsSegmenter(4);
+                    app.Dim4Spinner_Segmenter.Enable = 'on';
+                    app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
+                    dim5_size = app.SeqDimsSegmenter(5);
+                    app.Dim5Spinner_Segmenter.Enable = 'on';
+                    app.Dim5Spinner_Segmenter.Limits = [1, dim5_size];
+                    app.PermuteDimsButton.Enable = 'on';
+                elseif numel(app.SeqDimsSegmenter) == 3
+                    app.Dim4Spinner_Segmenter.Enable = 'off';
+                    app.Dim5Spinner_Segmenter.Enable = 'off';
+                    app.Dim4Spinner_Segmenter.Value = 1;
+                    app.Dim5Spinner_Segmenter.Value = 1;
+                    app.PermuteDimsButton.Enable = 'off';
+                end
+                   
+                app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
+                slice_1 = app.OriginalSegmenterImageData(:,:,1);
+                app.SliceLimits = [min(slice_1, [], 'all'), max(slice_1, [], 'all')];
+                
+                % Create zero arrays to save data into for current sequence
+                app.SavedImageSegmenter = zeros(app.SeqDimsSegmenter);
+                app.SavedMaskSegmenter = zeros(app.SeqDimsSegmenter(1:3));
+                
+                % Display sequence, update slice spinner
+                app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,1), [], 'Parent', app.UIAxes_Segmenter);
+                app.SliceSpinner_Segmenter.Value = 1;
+                
+                % Set interactions of segmenter uiaxes
+                app.UIAxes_Segmenter.Interactions = [regionZoomInteraction zoomInteraction];
+                
+                % Reset zoom
+                app.UIAxes_Segmenter.XLim = [-inf inf];
+                app.UIAxes_Segmenter.YLim = [-inf inf];
+            end        
         end
 
         % Value changed function: SliceSpinner_Segmenter
@@ -1047,7 +1074,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
             hold(app.UIAxes_Segmenter, "off")
             mask_overlay_Blue.AlphaData = app.LeftHemi-0.9;
-            mask_overlay_Red.AlphaData = app.RightHemi-0.9;
+            mask_overlay_Red.AlphaData = app.RightHemi-0.9; 
         end
 
         % Button pushed function: MainselectionButton_Lesion
@@ -1869,18 +1896,69 @@ classdef MRItool_exported < matlab.apps.AppBase
         function SelectfixedDropDownValueChanged(app, event)
             fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
             dims = size(fixed_Image);
+            n_dims = size(dims);
+            if n_dims(2)>=4
+                app.FixDim4CheckBox_Fixed.Enable = 'on';
+                app.FixDim4CheckBox_Fixed.Value = 0;
+
+                dim4_size = dims(4);
+                app.Dim4Spinner_Fixed.Limits = [1, dim4_size];
+                app.Dim4Spinner_Fixed.Value = 1;
+            else 
+                app.FixDim4CheckBox_Fixed.Enable = 'off';
+                app.FixDim4CheckBox_Fixed.Value = 0;
+                app.Dim4Spinner_Fixed.Enable = 'off';
+                app.Dim4Spinner_Fixed.Value = 1;
+            end
             dim3_size = dims(3);
             app.SliceSpinner_Fixed.Limits = [1, dim3_size];
             app.SliceSpinner_Fixed.Value = 1;
+        end
+
+        % Value changed function: FixDim4CheckBox_Fixed
+        function FixDim4CheckBox_FixedValueChanged(app, event)
+            value = app.FixDim4CheckBox_Fixed.Value;
+            
+            if value == 1
+                app.Dim4Spinner_Fixed.Enable = 'on';
+            else
+                app.Dim4Spinner_Fixed.Enable = 'off';
+            end
         end
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
             moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
             dims = size(moving_Image);
+            n_dims = size(dims);
             dim3_size = dims(3);
+            if n_dims(2)>=4
+                app.FixDim4CheckBox_Moving.Enable = 'on';
+                app.FixDim4CheckBox_Moving.Value = 0;
+
+                dim4_size = dims(4);
+                app.Dim4Spinner_Moving.Limits = [1, dim4_size];
+                app.Dim4Spinner_Moving.Value = 1;
+            else 
+                app.FixDim4CheckBox_Moving.Enable = 'off';
+                app.FixDim4CheckBox_Moving.Value = 0;
+                app.Dim4Spinner_Moving.Enable = 'off';
+                app.Dim4Spinner_Moving.Value = 1;
+            end
+            
             app.SliceSpinner_Moving.Limits = [1, dim3_size];
             app.SliceSpinner_Moving.Value = 1;
+        end
+
+        % Value changed function: FixDim4CheckBox_Moving
+        function FixDim4CheckBox_MovingValueChanged(app, event)
+            value = app.FixDim4CheckBox_Moving.Value;
+            
+            if value == 1
+                app.Dim4Spinner_Moving.Enable = 'on';
+            else
+                app.Dim4Spinner_Moving.Enable = 'off';
+            end
         end
 
         % Value changed function: UsedifferentparametermapCheckBox
@@ -1900,9 +1978,34 @@ classdef MRItool_exported < matlab.apps.AppBase
         function SelectparameterDropDownValueChanged(app, event)
             parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
             dims = size(parameter_Image);
+            n_dims = size(dims);
+            if n_dims(2)>=4
+                app.FixDim4CheckBox_Parameter.Enable = 'on';
+                app.FixDim4CheckBox_Parameter.Value = 0;
+
+                dim4_size = dims(4);
+                app.Dim4Spinner_Parameter.Limits = [1, dim4_size];
+                app.Dim4Spinner_Parameter.Value = 1;
+            else 
+                app.FixDim4CheckBox_Parameter.Enable = 'off';
+                app.FixDim4CheckBox_Parameter.Value = 0;
+                app.Dim4Spinner_Parameter.Enable = 'off';
+                app.Dim4Spinner_Parameter.Value = 1;
+            end
             dim3_size = dims(3);
             app.SliceSpinner_Parameter.Limits = [1, dim3_size];
             app.SliceSpinner_Parameter.Value = 1;
+        end
+
+        % Value changed function: FixDim4CheckBox_Parameter
+        function FixDim4CheckBox_ParameterValueChanged(app, event)
+            value = app.FixDim4CheckBox_Parameter.Value;
+            
+            if value == 1
+                app.Dim4Spinner_Parameter.Enable = 'on';
+            else
+                app.Dim4Spinner_Parameter.Enable = 'off';
+            end
         end
 
         % Button pushed function: AddsliceButton
@@ -1943,35 +2046,50 @@ classdef MRItool_exported < matlab.apps.AppBase
                 slice_instr = cell2mat(split_instr(i));
                 %disp(slice_instr)
                 F_ind = strfind(slice_instr, 'f');
-                moving_slice = str2num(slice_instr(2:(F_ind-1))); %#ok<ST2NM> 
 
-                
+                moving_slice = str2num(slice_instr(2:(F_ind-1))); %#ok<ST2NM> 
                 moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
-                moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice));
+                if app.FixDim4CheckBox_Moving.Value == 1   
+                    moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice,app.Dim4Spinner_Moving.Value));
+                else
+                    moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice));
+                end
 
                 if ~contains(slice_instr, 'p') == 1
                     fixed_slice = str2num(slice_instr((F_ind+1):end)); %#ok<ST2NM> 
 
                     fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
-                    fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+                    if app.FixDim4CheckBox_Fixed.Value == 1   
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
+                    else
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+                    end
 
                     resultImage_py = pyrunfile("Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
                     resultImage = single(resultImage_py);
-                    app.RegisteredImageData = cat(3, resultImage, app.RegisteredImageData);
+                    app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
                 else
                     P_ind = strfind(slice_instr, 'p');
                     fixed_slice = str2num(slice_instr((F_ind+1):(P_ind-1))); %#ok<ST2NM> 
                     param_slice = str2num(slice_instr((P_ind+1):end)); %#ok<ST2NM> 
 
                     fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
-                    fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+                    if app.FixDim4CheckBox_Fixed.Value == 1   
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
+                    else
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
+                    end
 
                     parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
-                    parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice));
+                    if app.FixDim4CheckBox_Parameter.Value == 1   
+                        parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice,app.Dim4Spinner_Parameter.Value));
+                    else
+                        parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice));
+                    end
     
                     resultImage_py = pyrunfile("Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
                     resultImage = single(resultImage_py);
-                    app.RegisteredImageData = cat(3, resultImage, app.RegisteredImageData);
+                    app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
                 end
                 %disp(moving_slice)
                 %disp(fixed_slice)
@@ -1993,6 +2111,18 @@ classdef MRItool_exported < matlab.apps.AppBase
         function SliceSpinner_RegistrationValueChanged(app, event)
             value = app.SliceSpinner_Registration.Value;
             imshow(app.RegisteredImageData(:,:,value), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+        end
+
+        % Button pushed function: ExportRegisteredDataButton
+        function ExportRegisteredDataButtonPushed(app, event)
+            % Get directory and export image and mask data in NIfTI format
+            temp_dir = uigetdir;
+            temp_dir = append(temp_dir, '\');
+            niftiwrite(app.RegisteredImageData, append(temp_dir, 'RegisteredImageData'))
+            
+            % Update last action label
+            %app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
+            uiconfirm(app.UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
     end
 
@@ -2032,7 +2162,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create RotateButton_Preview
             app.RotateButton_Preview = uibutton(app.PreviewTab, 'push');
             app.RotateButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @RotateButton_PreviewPushed, true);
-            app.RotateButton_Preview.Position = [1121 63 100 22];
+            app.RotateButton_Preview.Position = [1048 63 100 22];
             app.RotateButton_Preview.Text = 'Rotate';
 
             % Create PreviewLabel
@@ -2052,13 +2182,13 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create SliceSpinner_PreviewLabel
             app.SliceSpinner_PreviewLabel = uilabel(app.PreviewTab);
             app.SliceSpinner_PreviewLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_PreviewLabel.Position = [949 63 31 22];
+            app.SliceSpinner_PreviewLabel.Position = [891 63 31 22];
             app.SliceSpinner_PreviewLabel.Text = 'Slice';
 
             % Create SliceSpinner_Preview
             app.SliceSpinner_Preview = uispinner(app.PreviewTab);
             app.SliceSpinner_Preview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreviewValueChanged, true);
-            app.SliceSpinner_Preview.Position = [995 63 100 22];
+            app.SliceSpinner_Preview.Position = [937 63 90 22];
 
             % Create LoadAllButton
             app.LoadAllButton = uibutton(app.PreviewTab, 'push');
@@ -2126,6 +2256,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ResetEnvironment.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonPushed, true);
             app.ResetEnvironment.Position = [660 613 116 22];
             app.ResetEnvironment.Text = 'Reset environment';
+
+            % Create ResetViewButton_Preview
+            app.ResetViewButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.ResetViewButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @ResetViewButton_PreviewPushed, true);
+            app.ResetViewButton_Preview.Position = [1160 63 100 22];
+            app.ResetViewButton_Preview.Text = 'Reset View';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
@@ -2710,7 +2846,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Create SelectfixedLabel
             app.SelectfixedLabel = uilabel(app.RegistrationTab);
             app.SelectfixedLabel.HorizontalAlignment = 'right';
-            app.SelectfixedLabel.Position = [1136 563 130 22];
+            app.SelectfixedLabel.Position = [1101 531 130 22];
             app.SelectfixedLabel.Text = 'Select fixed image data';
 
             % Create SelectfixedDropDown
@@ -2718,13 +2854,13 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Items = {};
             app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
             app.SelectfixedDropDown.Placeholder = 'None';
-            app.SelectfixedDropDown.Position = [1059 533 284 21];
+            app.SelectfixedDropDown.Position = [1059 501 214 21];
             app.SelectfixedDropDown.Value = {};
 
             % Create SelectmovingLabel
             app.SelectmovingLabel = uilabel(app.RegistrationTab);
             app.SelectmovingLabel.HorizontalAlignment = 'right';
-            app.SelectmovingLabel.Position = [1128 630 143 22];
+            app.SelectmovingLabel.Position = [1094 630 143 22];
             app.SelectmovingLabel.Text = 'Select moving image data';
 
             % Create SelectmovingDropDown
@@ -2732,46 +2868,46 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectmovingDropDown.Items = {};
             app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
             app.SelectmovingDropDown.Placeholder = 'None';
-            app.SelectmovingDropDown.Position = [1059 598 283 21];
+            app.SelectmovingDropDown.Position = [1059 598 214 21];
             app.SelectmovingDropDown.Value = {};
 
             % Create RegisterButton
             app.RegisterButton = uibutton(app.RegistrationTab, 'push');
             app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
-            app.RegisterButton.Position = [1181 156 100 22];
+            app.RegisterButton.Position = [1181 128 100 22];
             app.RegisterButton.Text = 'Register';
 
             % Create SliceSpinner_FixedLabel
             app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_FixedLabel.Position = [1376 562 31 22];
+            app.SliceSpinner_FixedLabel.Position = [1305 531 31 22];
             app.SliceSpinner_FixedLabel.Text = 'Slice';
 
             % Create SliceSpinner_Fixed
             app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Fixed.Position = [1365 533 54 22];
+            app.SliceSpinner_Fixed.Position = [1294 502 54 22];
 
             % Create SliceSpinner_MovingLabel
             app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel.Position = [1376 627 31 22];
+            app.SliceSpinner_MovingLabel.Position = [1305 627 31 22];
             app.SliceSpinner_MovingLabel.Text = 'Slice';
 
             % Create SliceSpinner_Moving
             app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Moving.Position = [1365 598 54 22];
+            app.SliceSpinner_Moving.Position = [1294 598 54 22];
 
             % Create UsedifferentparametermapCheckBox
             app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
             app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
             app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
-            app.UsedifferentparametermapCheckBox.Position = [1156 478 175 22];
+            app.UsedifferentparametermapCheckBox.Position = [1156 425 175 22];
 
             % Create SelectparameterLabel
             app.SelectparameterLabel = uilabel(app.RegistrationTab);
             app.SelectparameterLabel.HorizontalAlignment = 'right';
             app.SelectparameterLabel.Enable = 'off';
-            app.SelectparameterLabel.Position = [1081 441 239 22];
+            app.SelectparameterLabel.Position = [1042 385 239 22];
             app.SelectparameterLabel.Text = 'Select image data for parameter generation';
 
             % Create SelectparameterDropDown
@@ -2780,43 +2916,43 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
             app.SelectparameterDropDown.Enable = 'off';
             app.SelectparameterDropDown.Placeholder = 'None';
-            app.SelectparameterDropDown.Position = [1059 409 283 21];
+            app.SelectparameterDropDown.Position = [1059 356 214 21];
             app.SelectparameterDropDown.Value = {};
 
             % Create SliceSpinner_ParameterLabel
             app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
             app.SliceSpinner_ParameterLabel.Enable = 'off';
-            app.SliceSpinner_ParameterLabel.Position = [1376 441 31 22];
+            app.SliceSpinner_ParameterLabel.Position = [1305 385 31 22];
             app.SliceSpinner_ParameterLabel.Text = 'Slice';
 
             % Create SliceSpinner_Parameter
             app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
             app.SliceSpinner_Parameter.Enable = 'off';
-            app.SliceSpinner_Parameter.Position = [1365 408 54 22];
+            app.SliceSpinner_Parameter.Position = [1294 356 54 22];
 
             % Create RegistrationInstructionsTextAreaLabel
             app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationTab);
             app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'right';
-            app.RegistrationInstructionsTextAreaLabel.Position = [1164 321 134 22];
+            app.RegistrationInstructionsTextAreaLabel.Position = [1164 268 134 22];
             app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
 
             % Create RegistrationInstructionsTextArea
             app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationTab);
             app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [1071 254 320 60];
+            app.RegistrationInstructionsTextArea.Position = [1071 201 320 60];
 
             % Create AddsliceButton
             app.AddsliceButton = uibutton(app.RegistrationTab, 'push');
             app.AddsliceButton.ButtonPushedFcn = createCallbackFcn(app, @AddsliceButtonPushed, true);
-            app.AddsliceButton.Position = [1181 356 100 22];
+            app.AddsliceButton.Position = [1181 303 100 22];
             app.AddsliceButton.Text = 'Add slice ';
 
             % Create ManualinstructioninputCheckBox
             app.ManualinstructioninputCheckBox = uicheckbox(app.RegistrationTab);
             app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
             app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
-            app.ManualinstructioninputCheckBox.Position = [1156 219 149 22];
+            app.ManualinstructioninputCheckBox.Position = [1156 166 149 22];
 
             % Create SliceSpinner_SegmenterLabel_2
             app.SliceSpinner_SegmenterLabel_2 = uilabel(app.RegistrationTab);
@@ -2831,13 +2967,71 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
-            app.SaveRegisteredDataButton.Position = [1095 84 133 22];
+            app.SaveRegisteredDataButton.Position = [1095 84 134 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportRegisteredDataButton
             app.ExportRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
-            app.ExportRegisteredDataButton.Position = [1239 84 140 22];
+            app.ExportRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @ExportRegisteredDataButtonPushed, true);
+            app.ExportRegisteredDataButton.Position = [1241 84 140 22];
             app.ExportRegisteredDataButton.Text = 'Export Registered Data';
+
+            % Create FixDim4CheckBox_Moving
+            app.FixDim4CheckBox_Moving = uicheckbox(app.RegistrationTab);
+            app.FixDim4CheckBox_Moving.ValueChangedFcn = createCallbackFcn(app, @FixDim4CheckBox_MovingValueChanged, true);
+            app.FixDim4CheckBox_Moving.Enable = 'off';
+            app.FixDim4CheckBox_Moving.Text = 'Fix Dim - 4';
+            app.FixDim4CheckBox_Moving.Position = [1319 563 80 22];
+
+            % Create SliceSpinner_MovingLabel_2
+            app.SliceSpinner_MovingLabel_2 = uilabel(app.RegistrationTab);
+            app.SliceSpinner_MovingLabel_2.HorizontalAlignment = 'right';
+            app.SliceSpinner_MovingLabel_2.Enable = 'off';
+            app.SliceSpinner_MovingLabel_2.Position = [1359 627 44 22];
+            app.SliceSpinner_MovingLabel_2.Text = 'Dim - 4';
+
+            % Create Dim4Spinner_Moving
+            app.Dim4Spinner_Moving = uispinner(app.RegistrationTab);
+            app.Dim4Spinner_Moving.Enable = 'off';
+            app.Dim4Spinner_Moving.Position = [1355 598 54 22];
+
+            % Create FixDim4CheckBox_Fixed
+            app.FixDim4CheckBox_Fixed = uicheckbox(app.RegistrationTab);
+            app.FixDim4CheckBox_Fixed.ValueChangedFcn = createCallbackFcn(app, @FixDim4CheckBox_FixedValueChanged, true);
+            app.FixDim4CheckBox_Fixed.Enable = 'off';
+            app.FixDim4CheckBox_Fixed.Text = 'Fix Dim - 4';
+            app.FixDim4CheckBox_Fixed.Position = [1319 467 80 22];
+
+            % Create SliceSpinner_MovingLabel_3
+            app.SliceSpinner_MovingLabel_3 = uilabel(app.RegistrationTab);
+            app.SliceSpinner_MovingLabel_3.HorizontalAlignment = 'right';
+            app.SliceSpinner_MovingLabel_3.Enable = 'off';
+            app.SliceSpinner_MovingLabel_3.Position = [1359 531 44 22];
+            app.SliceSpinner_MovingLabel_3.Text = 'Dim - 4';
+
+            % Create Dim4Spinner_Fixed
+            app.Dim4Spinner_Fixed = uispinner(app.RegistrationTab);
+            app.Dim4Spinner_Fixed.Enable = 'off';
+            app.Dim4Spinner_Fixed.Position = [1355 502 54 22];
+
+            % Create FixDim4CheckBox_Parameter
+            app.FixDim4CheckBox_Parameter = uicheckbox(app.RegistrationTab);
+            app.FixDim4CheckBox_Parameter.ValueChangedFcn = createCallbackFcn(app, @FixDim4CheckBox_ParameterValueChanged, true);
+            app.FixDim4CheckBox_Parameter.Enable = 'off';
+            app.FixDim4CheckBox_Parameter.Text = 'Fix Dim - 4';
+            app.FixDim4CheckBox_Parameter.Position = [1319 321 80 22];
+
+            % Create SliceSpinner_MovingLabel_4
+            app.SliceSpinner_MovingLabel_4 = uilabel(app.RegistrationTab);
+            app.SliceSpinner_MovingLabel_4.HorizontalAlignment = 'right';
+            app.SliceSpinner_MovingLabel_4.Enable = 'off';
+            app.SliceSpinner_MovingLabel_4.Position = [1359 385 44 22];
+            app.SliceSpinner_MovingLabel_4.Text = 'Dim - 4';
+
+            % Create Dim4Spinner_Parameter
+            app.Dim4Spinner_Parameter = uispinner(app.RegistrationTab);
+            app.Dim4Spinner_Parameter.Enable = 'off';
+            app.Dim4Spinner_Parameter.Position = [1355 356 54 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
