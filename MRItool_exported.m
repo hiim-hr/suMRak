@@ -1225,9 +1225,9 @@ classdef MRItool_exported < matlab.apps.AppBase
         function SegmentusingexternalmaskButtonPushed(app, event)
             
             % Get external mask data
-            temp_dir = uigetfile;
+            [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.UIFigure)
-            temp_Mask = niftiread(temp_dir);
+            temp_Mask = niftiread(cat(2, temp_dir, temp_file));
             app.SavedMaskSegmenter = temp_Mask;
             
             % Upade saved image data with segmented data using loaded
