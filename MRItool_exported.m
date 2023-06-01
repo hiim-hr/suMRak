@@ -6,7 +6,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
         SliceSlider_Preview             matlab.ui.control.Slider
-        SliderLabel                     matlab.ui.control.Label
+        SliceLabel                      matlab.ui.control.Label
         SliceSpinner_Preview            matlab.ui.control.Spinner
         ResetViewButton_Preview         matlab.ui.control.Button
         ResetEnvironment                matlab.ui.control.Button
@@ -117,18 +117,18 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIAxes_DSCMaps                  matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
         Dim4Spinner_Parameter           matlab.ui.control.Spinner
-        SliceSpinner_MovingLabel_4      matlab.ui.control.Label
+        Dim4Spinner_ParameterLabel      matlab.ui.control.Label
         FixDim4CheckBox_Parameter       matlab.ui.control.CheckBox
         Dim4Spinner_Fixed               matlab.ui.control.Spinner
-        SliceSpinner_MovingLabel_3      matlab.ui.control.Label
+        Dim4Spinner_FixedLabel          matlab.ui.control.Label
         FixDim4CheckBox_Fixed           matlab.ui.control.CheckBox
         Dim4Spinner_Moving              matlab.ui.control.Spinner
-        SliceSpinner_MovingLabel_2      matlab.ui.control.Label
+        Dim4Spinner_MovingLabel         matlab.ui.control.Label
         FixDim4CheckBox_Moving          matlab.ui.control.CheckBox
         ExportRegisteredDataButton      matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
         SliceSpinner_Registration       matlab.ui.control.Spinner
-        SliceSpinner_SegmenterLabel_2   matlab.ui.control.Label
+        SliceSpinner_RegistrationLabel  matlab.ui.control.Label
         ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
         AddsliceButton                  matlab.ui.control.Button
         RegistrationInstructionsTextArea  matlab.ui.control.TextArea
@@ -198,6 +198,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Registration tab
         RegisteredImageData
+        RegistrationCounter = 1;
 
         DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
     end
@@ -356,6 +357,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                     % Reset counters
                     app.LoadCounter = 1;
                     app.ROICounter = 1;
+                    app.RegistrationCounter = 1;
     
                     % Reset drop downs
                     app.PreviewDropDown.Items = {'None'};
@@ -462,6 +464,23 @@ classdef MRItool_exported < matlab.apps.AppBase
             imshow(current_slice, [], 'Parent', app.UIAxes_Preview);
         end
 
+        % Value changed function: SliceSpinner_Preview
+        function SliceSpinner_PreviewValueChanged(app, event)
+            changingValue = round(event.Value);
+            app.SliceSlider_Preview.Value = changingValue;
+
+            % Get current slice image, show image
+            sequence_dims = size(app.PreviewSequenceImageData);
+            if numel(sequence_dims) == 3
+                current_slice = app.PreviewSequenceImageData(:,:,changingValue);
+            elseif numel(sequence_dims) == 4
+                current_slice = app.PreviewSequenceImageData(:,:,changingValue, round(app.Dim4Slider_Preview.Value));
+            elseif numel(sequence_dims) == 5
+                current_slice = app.PreviewSequenceImageData(:,:,changingValue, round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
+            end
+            imshow(current_slice, [], 'Parent', app.UIAxes_Preview);
+        end
+
         % Value changing function: Dim4Slider_Preview
         function Dim4Slider_PreviewValueChanging(app, event)
             changingValue = round(event.Value);
@@ -523,16 +542,17 @@ classdef MRItool_exported < matlab.apps.AppBase
                 
                 % Get data dimension sizes, set slice and spinner limits/values
                 app.SeqDimsSegmenter = size(app.OriginalSegmenterImageData);
-                dim3_size = app.SeqDimsSegmenter(3);
+                try
+                    dim3_size = app.SeqDimsSegmenter(3);
+                    app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
+                    app.SliceSlider_Segmenter.Limits = [1, dim3_size];
+                catch
+                end
                 
-                if numel(app.SeqDimsSegmenter) == 4
-                    dim4_size = app.SeqDimsSegmenter(4);
-                    app.Dim4Spinner_Segmenter.Enable = 'on';
-                    app.Dim5Spinner_Segmenter.Enable = 'off';
-                    app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
-                    app.Dim5Spinner_Segmenter.Value = 1;
-                    app.PermuteDimsButton.Enable = 'on';
-                elseif numel(app.SeqDimsSegmenter) == 5
+            
+                if numel(app.SeqDimsSegmenter) == 5
+                    app.SliceSlider_Segmenter.Enable = 'on';
+                    app.SliceSpinner_Segmenter.Enable = 'on';
                     dim4_size = app.SeqDimsSegmenter(4);
                     app.Dim4Spinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
@@ -540,26 +560,56 @@ classdef MRItool_exported < matlab.apps.AppBase
                     app.Dim5Spinner_Segmenter.Enable = 'on';
                     app.Dim5Spinner_Segmenter.Limits = [1, dim5_size];
                     app.PermuteDimsButton.Enable = 'on';
+                elseif numel(app.SeqDimsSegmenter) == 4
+                    app.SliceSlider_Segmenter.Enable = 'on';
+                    app.SliceSpinner_Segmenter.Enable = 'on';
+                    dim4_size = app.SeqDimsSegmenter(4);
+                    app.Dim4Spinner_Segmenter.Enable = 'on';
+                    app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
+                    app.Dim5Spinner_Segmenter.Value = 1;
+                    app.Dim5Spinner_Segmenter.Enable = 'off';
+                    app.PermuteDimsButton.Enable = 'on';
                 elseif numel(app.SeqDimsSegmenter) == 3
+                    app.SliceSlider_Segmenter.Enable = 'on';
+                    app.SliceSpinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Enable = 'off';
                     app.Dim5Spinner_Segmenter.Enable = 'off';
                     app.Dim4Spinner_Segmenter.Value = 1;
                     app.Dim5Spinner_Segmenter.Value = 1;
                     app.PermuteDimsButton.Enable = 'off';
+                elseif numel(app.SeqDimsSegmenter) == 2
+                    app.SliceSlider_Segmenter.Enable = 'off';
+                    app.SliceSpinner_Segmenter.Enable = 'off';
+                    app.Dim4Spinner_Segmenter.Enable = 'off';
+                    app.Dim5Spinner_Segmenter.Enable = 'off';
+                    app.SliceSlider_Segmenter.Value = 1;
+                    app.SliceSpinner_Segmenter.Value = 1;
+                    app.Dim4Spinner_Segmenter.Value = 1;
+                    app.Dim5Spinner_Segmenter.Value = 1;
+                    app.PermuteDimsButton.Enable = 'off';
                 end
                    
-                app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
-                app.SliceSlider_Segmenter.Limits = [1, dim3_size];
-                slice_1 = app.OriginalSegmenterImageData(:,:,1);
-                app.SliceLimits = [min(slice_1, [], 'all'), max(slice_1, [], 'all')];
-                
-                % Create zero arrays to save data into for current sequence
-                app.SavedImageSegmenter = zeros(app.SeqDimsSegmenter);
-                app.SavedMaskSegmenter = zeros(app.SeqDimsSegmenter(1:3));
-                
-                % Display sequence, update slice spinner
-                app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,1), [], 'Parent', app.UIAxes_Segmenter);
-                app.SliceSpinner_Segmenter.Value = 1;
+
+                if numel(app.SeqDimsSegmenter) > 2
+                    slice_1 = app.OriginalSegmenterImageData(:,:,1);
+                    app.SliceLimits = [min(slice_1, [], 'all'), max(slice_1, [], 'all')];
+
+                    % Create zero arrays to save data into for current sequence
+                    app.SavedImageSegmenter = zeros(app.SeqDimsSegmenter);
+                    app.SavedMaskSegmenter = zeros(app.SeqDimsSegmenter(1:3));
+                    % Display sequence, update slice spinner
+                    app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,1), [], 'Parent', app.UIAxes_Segmenter);
+                    app.SliceSpinner_Segmenter.Value = 1;
+                else
+                    slice_1 = app.OriginalSegmenterImageData;
+                    app.SliceLimits = [min(slice_1, [], 'all'), max(slice_1, [], 'all')];
+
+                    % Create zero arrays to save data into for current sequence
+                    app.SavedImageSegmenter = zeros(app.SeqDimsSegmenter);
+                    app.SavedMaskSegmenter = zeros(app.SeqDimsSegmenter);
+                    % Display sequence, update slice spinner
+                    app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+                end
                 
                 % Set interactions of segmenter uiaxes
                 app.UIAxes_Segmenter.Interactions = [regionZoomInteraction zoomInteraction];
@@ -567,12 +617,41 @@ classdef MRItool_exported < matlab.apps.AppBase
                 % Reset zoom
                 app.UIAxes_Segmenter.XLim = [-inf inf];
                 app.UIAxes_Segmenter.YLim = [-inf inf];
+
+                % Update last action label
+                app.ActionLabel.Text = "Last performed action will be shown here";
             end        
+        end
+
+        % Value changing function: SliceSlider_Segmenter
+        function SliceSlider_SegmenterValueChanging(app, event)
+            changingValue = round(event.Value);
+            app.SliceSpinner_Segmenter.Value = changingValue;
+
+            % Get current slice image, set intensity limits, show image
+            if numel(app.SeqDimsSegmenter) == 3
+                current_slice = app.OriginalSegmenterImageData(:,:,changingValue);
+            elseif numel(app.SeqDimsSegmenter) == 4
+                current_slice = app.OriginalSegmenterImageData(:,:,changingValue, app.Dim4Spinner_Segmenter.Value);
+            elseif numel(app.SeqDimsSegmenter) == 5
+                current_slice = app.OriginalSegmenterImageData(:,:,changingValue, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
+            end
+            
+            app.SliceLimits = [min(current_slice, [], 'all'), max(current_slice, [], 'all')];
+            app.FreeImage = imshow(current_slice, [], 'Parent', app.UIAxes_Segmenter);
+            
+            % Reset zoom
+            app.UIAxes_Segmenter.XLim = [-inf inf];
+            app.UIAxes_Segmenter.YLim = [-inf inf];
+            
+            app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
+            app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
+            app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
         end
 
         % Value changed function: SliceSpinner_Segmenter
         function SliceSpinner_SegmenterValueChanged(app, event)
-            changingValue = round(event.Value)
+            changingValue = round(event.Value);
             app.SliceSlider_Segmenter.Value = changingValue;
 
             % Get current slice image, set intensity limits, show image
@@ -783,7 +862,9 @@ classdef MRItool_exported < matlab.apps.AppBase
             
             % Show current slice, draw initial ROI, create mask and masked
             % image, create mask greenscreen
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 2
+                app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+            elseif numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -824,7 +905,9 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             
             % Show image with mask overlaid on top
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 2
+                app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+            elseif numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -850,7 +933,9 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.Mask = imopen(app.Mask, SE);
             
             % Show image with mask overlaid on top
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 2
+                app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+            elseif numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -875,7 +960,9 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.Mask = imclose(app.Mask, SE);
             
             % Show image with mask overlaid on top
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 2
+                app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+            elseif numel(app.SeqDimsSegmenter) == 3
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -933,7 +1020,9 @@ classdef MRItool_exported < matlab.apps.AppBase
                     added_Mask = app.FreeROI.createMask(app.FreeImage);
                     app.Mask = app.Mask|added_Mask;
                     
-                    if numel(app.SeqDimsSegmenter) == 3
+                    if numel(app.SeqDimsSegmenter) == 2
+                        app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 3
                         app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                     elseif numel(app.SeqDimsSegmenter) == 4
                         app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -957,8 +1046,10 @@ classdef MRItool_exported < matlab.apps.AppBase
                 if app.ImageshownSwitch.Value == "Overlay"
                 removed_Mask = app.FreeROI.createMask(app.FreeImage);
                 app.Mask(removed_Mask) = 0;
-                
-                    if numel(app.SeqDimsSegmenter) == 3
+                    
+                    if numel(app.SeqDimsSegmenter) == 2
+                        app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+                    elseif numel(app.SeqDimsSegmenter) == 3
                         app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                     elseif numel(app.SeqDimsSegmenter) == 4
                         app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -995,7 +1086,9 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Show image based on switch value - masked or original with 
             % overlaid transparent mask
             if value == "Overlay"
-                if numel(app.SeqDimsSegmenter) == 3
+                if numel(app.SeqDimsSegmenter) == 2
+                    app.FreeImage = imshow(app.OriginalSegmenterImageData, [], 'Parent', app.UIAxes_Segmenter);
+                elseif numel(app.SeqDimsSegmenter) == 3
                     app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
                 elseif numel(app.SeqDimsSegmenter) == 4
                     app.FreeImage = imshow(app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value), [], 'Parent', app.UIAxes_Segmenter);
@@ -1007,7 +1100,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 hold(app.UIAxes_Segmenter, "off")
                 mask_Overlay.AlphaData = app.Mask-0.9;
             else
-                if numel(app.SeqDimsSegmenter) == 3
+                if numel(app.SeqDimsSegmenter) == 3|numel(app.SeqDimsSegmenter) == 2 %#ok<OR2> 
                     app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
                 elseif numel(app.SeqDimsSegmenter) == 4
                     app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
@@ -1022,7 +1115,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         function MainselectionButton_HemispherePushed(app, event)
             
             % Update and load masked slice image;
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 3|numel(app.SeqDimsSegmenter) == 2
                 app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
@@ -1089,7 +1182,7 @@ classdef MRItool_exported < matlab.apps.AppBase
         function MainselectionButton_LesionPushed(app, event)
             
             % Update and load masked slice image
-            if numel(app.SeqDimsSegmenter) == 3
+            if numel(app.SeqDimsSegmenter) == 3|numel(app.SeqDimsSegmenter) == 2
                 app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             elseif numel(app.SeqDimsSegmenter) == 4
                 app.MaskedImage = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
@@ -1241,7 +1334,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Upade saved image data with segmented data using loaded
             % external mask
             num_dims = size(app.SeqDimsSegmenter);
-            if num_dims(2) == 4
+            if num_dims(2) == 4|num_dims(2) == 5 %#ok<OR2> 
                 for j=1:app.SeqDimsSegmenter(3)
                     for i=1:app.SeqDimsSegmenter(4)
                         app.SavedImageSegmenter(:,:,j,i) = temp_Mask(:,:,j).*app.OriginalSegmenterImageData(:,:,j,i);
@@ -2107,9 +2200,14 @@ classdef MRItool_exported < matlab.apps.AppBase
             imshow(app.RegisteredImageData(:,:,1), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
 
             dims_reg = size(app.RegisteredImageData);
-            dim3_size = dims_reg(3);
-            app.SliceSpinner_Registration.Limits = [1, dim3_size];
-            app.SliceSpinner_Registration.Value = 1;
+            try
+                dim3_size = dims_reg(3);
+                app.SliceSpinner_Registration.Limits = [1, dim3_size];
+                app.SliceSpinner_Registration.Value = 1;
+            catch
+                app.SliceSpinner_Registration.Enable = 'off';
+                app.SliceSpinner_Registration.Value = 1;
+            end
 
             % Close the dialog box
             close(progress)
@@ -2133,47 +2231,35 @@ classdef MRItool_exported < matlab.apps.AppBase
             uiconfirm(app.UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
-        % Value changed function: SliceSpinner_Preview
-        function SliceSpinner_PreviewValueChanged(app, event)
-            changingValue = round(event.Value)
-            app.SliceSlider_Preview.Value = changingValue;
+        % Button pushed function: SaveRegisteredDataButton
+        function SaveRegisteredDataButtonPushed(app, event)
 
-            % Get current slice image, show image
-            sequence_dims = size(app.PreviewSequenceImageData);
-            if numel(sequence_dims) == 3
-                current_slice = app.PreviewSequenceImageData(:,:,changingValue);
-            elseif numel(sequence_dims) == 4
-                current_slice = app.PreviewSequenceImageData(:,:,changingValue, round(app.Dim4Slider_Preview.Value));
-            elseif numel(sequence_dims) == 5
-                current_slice = app.PreviewSequenceImageData(:,:,changingValue, round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
+            TE_time = 0;
+            TR_time = 0;
+            visu_AcqProt = {append('Registered data ', num2str(app.RegistrationCounter), '.')};
+            try
+                voxel_Dims = table2array(app.ExperimentPropertyTable({app.SelectfixedDropDown.Value}, "Voxel dimensions"));
+            catch 
+                voxel_Dims = [0 0];
             end
-            imshow(current_slice, [], 'Parent', app.UIAxes_Preview);
-        end
+            exp_ImageData = {app.RegisteredImageData};
 
-        % Value changing function: SliceSlider_Segmenter
-        function SliceSlider_SegmenterValueChanging(app, event)
-            changingValue = round(event.Value)
-            app.SliceSpinner_Segmenter.Value = changingValue;
+            % Update registration counter used for naming
+            app.RegistrationCounter = app.RegistrationCounter+1;
 
-            % Get current slice image, set intensity limits, show image
-            if numel(app.SeqDimsSegmenter) == 3
-                current_slice = app.OriginalSegmenterImageData(:,:,changingValue);
-            elseif numel(app.SeqDimsSegmenter) == 4
-                current_slice = app.OriginalSegmenterImageData(:,:,changingValue, app.Dim4Spinner_Segmenter.Value);
-            elseif numel(app.SeqDimsSegmenter) == 5
-                current_slice = app.OriginalSegmenterImageData(:,:,changingValue, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
-            end
             
-            app.SliceLimits = [min(current_slice, [], 'all'), max(current_slice, [], 'all')];
-            app.FreeImage = imshow(current_slice, [], 'Parent', app.UIAxes_Segmenter);
+            % Construct temporary sequence property table and combine with
+            % main
+            exp_ID = visu_AcqProt;
+            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimensions"];
+            temp_Table = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+            app.ExperimentPropertyTable = [app.ExperimentPropertyTable; temp_Table];
+            app.UITable.Data=app.ExperimentPropertyTable;
+            app.UITable.ColumnName = variable_Names;
             
-            % Reset zoom
-            app.UIAxes_Segmenter.XLim = [-inf inf];
-            app.UIAxes_Segmenter.YLim = [-inf inf];
-            
-            app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
-            app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
-            app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+            % Update drop down items
+            app.PreviewDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
+            app.SelectexperimenttosegmentDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
         end
     end
 
@@ -2311,11 +2397,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.Position = [1070 52 53 22];
             app.SliceSpinner_Preview.Value = 1;
 
-            % Create SliderLabel
-            app.SliderLabel = uilabel(app.PreviewTab);
-            app.SliderLabel.HorizontalAlignment = 'right';
-            app.SliderLabel.Position = [774 52 36 22];
-            app.SliderLabel.Text = 'Slider';
+            % Create SliceLabel
+            app.SliceLabel = uilabel(app.PreviewTab);
+            app.SliceLabel.HorizontalAlignment = 'right';
+            app.SliceLabel.Position = [779 52 31 22];
+            app.SliceLabel.Text = 'Slice';
 
             % Create SliceSlider_Preview
             app.SliceSlider_Preview = uislider(app.PreviewTab);
@@ -2409,7 +2495,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ActionLabel.HorizontalAlignment = 'center';
             app.ActionLabel.FontAngle = 'italic';
             app.ActionLabel.Position = [1109 68 293 25];
-            app.ActionLabel.Text = 'Last action';
+            app.ActionLabel.Text = 'Last performed action will be shown here';
 
             % Create SavesequenceButton
             app.SavesequenceButton = uibutton(app.SegmenterTab, 'push');
@@ -3029,11 +3115,11 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
             app.ManualinstructioninputCheckBox.Position = [1156 166 149 22];
 
-            % Create SliceSpinner_SegmenterLabel_2
-            app.SliceSpinner_SegmenterLabel_2 = uilabel(app.RegistrationTab);
-            app.SliceSpinner_SegmenterLabel_2.HorizontalAlignment = 'right';
-            app.SliceSpinner_SegmenterLabel_2.Position = [467 17 31 22];
-            app.SliceSpinner_SegmenterLabel_2.Text = 'Slice';
+            % Create SliceSpinner_RegistrationLabel
+            app.SliceSpinner_RegistrationLabel = uilabel(app.RegistrationTab);
+            app.SliceSpinner_RegistrationLabel.HorizontalAlignment = 'right';
+            app.SliceSpinner_RegistrationLabel.Position = [467 17 31 22];
+            app.SliceSpinner_RegistrationLabel.Text = 'Slice';
 
             % Create SliceSpinner_Registration
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
@@ -3042,6 +3128,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
+            app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
             app.SaveRegisteredDataButton.Position = [1095 84 134 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
@@ -3058,12 +3145,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.FixDim4CheckBox_Moving.Text = 'Fix Dim - 4';
             app.FixDim4CheckBox_Moving.Position = [1319 563 80 22];
 
-            % Create SliceSpinner_MovingLabel_2
-            app.SliceSpinner_MovingLabel_2 = uilabel(app.RegistrationTab);
-            app.SliceSpinner_MovingLabel_2.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel_2.Enable = 'off';
-            app.SliceSpinner_MovingLabel_2.Position = [1359 627 44 22];
-            app.SliceSpinner_MovingLabel_2.Text = 'Dim - 4';
+            % Create Dim4Spinner_MovingLabel
+            app.Dim4Spinner_MovingLabel = uilabel(app.RegistrationTab);
+            app.Dim4Spinner_MovingLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_MovingLabel.Enable = 'off';
+            app.Dim4Spinner_MovingLabel.Position = [1359 627 44 22];
+            app.Dim4Spinner_MovingLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Moving
             app.Dim4Spinner_Moving = uispinner(app.RegistrationTab);
@@ -3077,12 +3164,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.FixDim4CheckBox_Fixed.Text = 'Fix Dim - 4';
             app.FixDim4CheckBox_Fixed.Position = [1319 467 80 22];
 
-            % Create SliceSpinner_MovingLabel_3
-            app.SliceSpinner_MovingLabel_3 = uilabel(app.RegistrationTab);
-            app.SliceSpinner_MovingLabel_3.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel_3.Enable = 'off';
-            app.SliceSpinner_MovingLabel_3.Position = [1359 531 44 22];
-            app.SliceSpinner_MovingLabel_3.Text = 'Dim - 4';
+            % Create Dim4Spinner_FixedLabel
+            app.Dim4Spinner_FixedLabel = uilabel(app.RegistrationTab);
+            app.Dim4Spinner_FixedLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_FixedLabel.Enable = 'off';
+            app.Dim4Spinner_FixedLabel.Position = [1359 531 44 22];
+            app.Dim4Spinner_FixedLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Fixed
             app.Dim4Spinner_Fixed = uispinner(app.RegistrationTab);
@@ -3096,12 +3183,12 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.FixDim4CheckBox_Parameter.Text = 'Fix Dim - 4';
             app.FixDim4CheckBox_Parameter.Position = [1319 321 80 22];
 
-            % Create SliceSpinner_MovingLabel_4
-            app.SliceSpinner_MovingLabel_4 = uilabel(app.RegistrationTab);
-            app.SliceSpinner_MovingLabel_4.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel_4.Enable = 'off';
-            app.SliceSpinner_MovingLabel_4.Position = [1359 385 44 22];
-            app.SliceSpinner_MovingLabel_4.Text = 'Dim - 4';
+            % Create Dim4Spinner_ParameterLabel
+            app.Dim4Spinner_ParameterLabel = uilabel(app.RegistrationTab);
+            app.Dim4Spinner_ParameterLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_ParameterLabel.Enable = 'off';
+            app.Dim4Spinner_ParameterLabel.Position = [1359 385 44 22];
+            app.Dim4Spinner_ParameterLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Parameter
             app.Dim4Spinner_Parameter = uispinner(app.RegistrationTab);
