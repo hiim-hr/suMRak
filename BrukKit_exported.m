@@ -1,4 +1,4 @@
-classdef MRItool_exported < matlab.apps.AppBase
+classdef BrukKit_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -156,9 +156,13 @@ classdef MRItool_exported < matlab.apps.AppBase
         UIAxes_Registration             matlab.ui.control.UIAxes
         ContextMenu_Preview             matlab.ui.container.ContextMenu
         RotateMenu_Preview              matlab.ui.container.Menu
+        FlipVerticallyMenu_Preview      matlab.ui.container.Menu
+        FlipHorizontallyMenu_Preview    matlab.ui.container.Menu
         ResetViewMenu_Preview           matlab.ui.container.Menu
         ContextMenu_Segmenter           matlab.ui.container.ContextMenu
         RotateMenu_Segmenter            matlab.ui.container.Menu
+        FlipVerticallyMenu_Segmenter    matlab.ui.container.Menu
+        FlipHorizontallyMenu_Segmenter  matlab.ui.container.Menu
         ResetViewMenu_Segmenter         matlab.ui.container.Menu
         PermuteDimensionsMenu           matlab.ui.container.Menu
         PermuteMenu_3_4                 matlab.ui.container.Menu
@@ -509,7 +513,7 @@ classdef MRItool_exported < matlab.apps.AppBase
             end
             
             % Get selected sequence image data
-            app.PreviewSequenceImageData = cell2mat(table2array(app.ExperimentPropertyTable({value}, "Image data")));
+            app.PreviewSequenceImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
             
             % Initialize default slider values
             app.Dim5Slider_Preview.Value = 1;
@@ -551,10 +555,10 @@ classdef MRItool_exported < matlab.apps.AppBase
             
             % Display sequence
             RefreshImage(app, 'preview');
-            %disableDefaultInteractivity(app.UIAxes_Preview);
+            disableDefaultInteractivity(app.UIAxes_Preview);
             
             % Set interactions of preview uiaxes
-            %app.UIAxes_Preview.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Preview.Interactions = [regionZoomInteraction zoomInteraction];
             
         end
 
@@ -604,7 +608,27 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Menu selected function: RotateMenu_Preview
         function RotateMenu_PreviewSelected(app, event)
+            
+            % Rotate image data, show image
             app.PreviewSequenceImageData = rot90(app.PreviewSequenceImageData, -1);
+            
+            RefreshImage(app, 'preview');
+        end
+
+        % Menu selected function: FlipVerticallyMenu_Preview
+        function FlipVerticallyMenu_PreviewSelected(app, event)
+            
+            % Flip image data, show image
+            app.PreviewSequenceImageData = flipud(app.PreviewSequenceImageData);
+            
+            RefreshImage(app, 'preview');
+        end
+
+        % Menu selected function: FlipHorizontallyMenu_Preview
+        function FlipHorizontallyMenu_PreviewSelected(app, event)
+            
+            % Flip image data, show image
+            app.PreviewSequenceImageData = fliplr(app.PreviewSequenceImageData);
             
             RefreshImage(app, 'preview');
         end
@@ -638,7 +662,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             end
 
             % Get selected sequence image data
-            app.OriginalSegmenterImageData = cell2mat(table2array(app.ExperimentPropertyTable({value}, "Image data")));
+            app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+
 
             % Initialize default slider values
             app.Dim5Spinner_Segmenter.Value = 1;
@@ -817,6 +842,30 @@ classdef MRItool_exported < matlab.apps.AppBase
             RefreshImage(app, 'segmenter');
         end
 
+        % Menu selected function: FlipVerticallyMenu_Segmenter
+        function FlipVerticallyMenu_SegmenterSelected(app, event)
+            
+            % Flip image data, update dimensions, show image
+            app.OriginalSegmenterImageData = flipud(app.OriginalSegmenterImageData);
+            app.Mask = flipud(app.Mask);
+            app.GreenScreen = flipud(app.GreenScreen);
+            app.SavedImageSegmenter = flipud(app.SavedImageSegmenter);
+            app.SavedMaskSegmenter = flipud(app.SavedMaskSegmenter);
+            RefreshImage(app, 'segmenter');
+        end
+
+        % Menu selected function: FlipHorizontallyMenu_Segmenter
+        function FlipHorizontallyMenu_SegmenterSelected(app, event)
+            
+            % Flip image data, update dimensions, show image
+            app.OriginalSegmenterImageData = fliplr(app.OriginalSegmenterImageData);
+            app.Mask = fliplr(app.Mask);
+            app.GreenScreen = fliplr(app.GreenScreen);
+            app.SavedImageSegmenter = fliplr(app.SavedImageSegmenter);
+            app.SavedMaskSegmenter = fliplr(app.SavedMaskSegmenter);
+            RefreshImage(app, 'segmenter');
+        end
+
         % Menu selected function: ResetViewMenu_Segmenter
         function ResetViewMenu_SegmenterSelected(app, event)
             
@@ -897,6 +946,11 @@ classdef MRItool_exported < matlab.apps.AppBase
                 case 'Cancel'
                     return
             end
+        end
+
+        % Selection changed function: ColormapButtonGroup
+        function ColormapButtonGroupSelectionChanged(app, event)
+            RefreshImage(app, 'segmenter');
         end
 
         % Button pushed function: InitialselectionButton
@@ -1203,21 +1257,46 @@ classdef MRItool_exported < matlab.apps.AppBase
         % Button pushed function: SavesequenceButton
         function SavesequenceButtonPushed(app, event)
             
-            % Move temporarily saved data to permanent app table
+            % Construct temporary table of saved data
             temp_Table = table({app.SavedImageSegmenter}, {app.SavedMaskSegmenter}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
-            app.SavedTableSegmenter = [app.SavedTableSegmenter; temp_Table];
+
+            try
+                % Move temporarily saved data to permanent app table
+                app.SavedTableSegmenter = [app.SavedTableSegmenter; temp_Table];
+
+                % Update DSC and Registration tab drop down menus
+                app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, {app.SegmentDropDown.Value});
+                app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
+                app.SelectASLDropDown.Items = app.DropDownItemsSaved;
+                app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
+                app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
+                app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
+                
+                % Display confirmation figure
+                uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+
+            catch ME
+                switch ME.identifier
+                    case 'MATLAB:table:DuplicateRowNames'
+                        selection = uiconfirm(app.UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
+                        switch selection
+                            case 'OK'
+
+                                % Overwrite data of currently saved experiment under same identifier
+                                app.SavedTableSegmenter.Image(app.SegmentDropDown.Value) = {app.SavedImageSegmenter};
+                                app.SavedTableSegmenter.Mask(app.SegmentDropDown.Value) = {app.SavedMaskSegmenter};
+                                
+                                % Display confirmation figure
+                                uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+
+                            case 'Cancel'
+                                return
+                        end
+                    otherwise
+                end
+            end
             
-            % Update DSC and Registration tab drop down menus
-            app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, {app.SegmentDropDown.Value});
-            app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
-            app.SelectASLDropDown.Items = app.DropDownItemsSaved;
-            app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
-            app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
-            app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
             
-            % Update last action label
-            %app.ActionLabel.Text = "Segmented sequence saved to permanent data.";
-            uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: ExportsequenceButton
@@ -1273,8 +1352,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             drop_Value = app.SelectvolumetricdataDropDown.Value; 
             TE = table2array(app.ExperimentPropertyTable({drop_Value}, "TE"));
             TR = table2array(app.ExperimentPropertyTable({drop_Value}, "TR"));            
-            work_Data = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Image")));
-            app.WorkMaskDSC = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Mask")));
+            work_Data = cell2mat(app.SavedTableSegmenter.Image(drop_Value));
+            app.WorkMaskDSC = cell2mat(app.SavedTableSegmenter.Mask(drop_Value));
             
             % Calculate and display DSC maps
             if numel(size(work_Data)) == 4   
@@ -1519,8 +1598,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             % Display chosen ASL map image from saved segmented data,
             % update slice spinner
             drop_Value = app.SelectASLDropDown.Value; 
-            app.ImageDataASL = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Image")));
-            app.WorkMaskASL = cell2mat(table2array(app.SavedTableSegmenter({drop_Value}, "Mask")));
+            app.ImageDataASL = cell2mat(app.SavedTableSegmenter.Image(drop_Value));
+            app.WorkMaskASL = cell2mat(app.SavedTableSegmenter.Mask(drop_Value));
             app.ASLImage = imshow(app.ImageDataASL(:,:,1), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
             app.ASLImage.AlphaData = app.WorkMaskASL(:,:,1);
         
@@ -1907,7 +1986,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
-            fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+            fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
             dims = size(fixed_Image);
             n_dims = size(dims);
             if n_dims(2)>=4
@@ -1941,7 +2020,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
-            moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
+            moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
             dims = size(moving_Image);
             n_dims = size(dims);
             dim3_size = dims(3);
@@ -1989,7 +2068,7 @@ classdef MRItool_exported < matlab.apps.AppBase
 
         % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
-            parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
+            parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
             dims = size(parameter_Image);
             n_dims = size(dims);
             if n_dims(2)>=4
@@ -2061,7 +2140,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 F_ind = strfind(slice_instr, 'f');
 
                 moving_slice = str2num(slice_instr(2:(F_ind-1))); %#ok<ST2NM> 
-                moving_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectmovingDropDown.Value}, "Image")));
+                moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
                 if app.FixDim4CheckBox_Moving.Value == 1   
                     moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice,app.Dim4Spinner_Moving.Value));
                 else
@@ -2071,7 +2150,7 @@ classdef MRItool_exported < matlab.apps.AppBase
                 if ~contains(slice_instr, 'p') == 1
                     fixed_slice = str2num(slice_instr((F_ind+1):end)); %#ok<ST2NM> 
 
-                    fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+                    fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
                     if app.FixDim4CheckBox_Fixed.Value == 1   
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
                     else
@@ -2086,14 +2165,14 @@ classdef MRItool_exported < matlab.apps.AppBase
                     fixed_slice = str2num(slice_instr((F_ind+1):(P_ind-1))); %#ok<ST2NM> 
                     param_slice = str2num(slice_instr((P_ind+1):end)); %#ok<ST2NM> 
 
-                    fixed_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectfixedDropDown.Value}, "Image")));
+                    fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
                     if app.FixDim4CheckBox_Fixed.Value == 1   
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
                     else
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
                     end
 
-                    parameter_Image = cell2mat(table2array(app.SavedTableSegmenter({app.SelectparameterDropDown.Value}, "Image")));
+                    parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
                     if app.FixDim4CheckBox_Parameter.Value == 1   
                         parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice,app.Dim4Spinner_Parameter.Value));
                     else
@@ -2170,13 +2249,8 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.UITable.ColumnName = variable_Names;
             
             % Update drop down items
-            app.PreviewDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
-            app.SegmentDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
-        end
-
-        % Selection changed function: ColormapButtonGroup
-        function ColormapButtonGroupSelectionChanged(app, event)
-            RefreshImage(app, 'segmenter');
+            app.PreviewDropDown.Items = app.ExperimentPropertyTable.(1);
+            app.SegmentDropDown.Items = app.ExperimentPropertyTable.(1);
         end
     end
 
@@ -3176,6 +3250,16 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.RotateMenu_Preview.MenuSelectedFcn = createCallbackFcn(app, @RotateMenu_PreviewSelected, true);
             app.RotateMenu_Preview.Text = 'Rotate';
 
+            % Create FlipVerticallyMenu_Preview
+            app.FlipVerticallyMenu_Preview = uimenu(app.ContextMenu_Preview);
+            app.FlipVerticallyMenu_Preview.MenuSelectedFcn = createCallbackFcn(app, @FlipVerticallyMenu_PreviewSelected, true);
+            app.FlipVerticallyMenu_Preview.Text = 'Flip Vertically';
+
+            % Create FlipHorizontallyMenu_Preview
+            app.FlipHorizontallyMenu_Preview = uimenu(app.ContextMenu_Preview);
+            app.FlipHorizontallyMenu_Preview.MenuSelectedFcn = createCallbackFcn(app, @FlipHorizontallyMenu_PreviewSelected, true);
+            app.FlipHorizontallyMenu_Preview.Text = 'Flip Horizontally';
+
             % Create ResetViewMenu_Preview
             app.ResetViewMenu_Preview = uimenu(app.ContextMenu_Preview);
             app.ResetViewMenu_Preview.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_PreviewSelected, true);
@@ -3188,6 +3272,16 @@ classdef MRItool_exported < matlab.apps.AppBase
             app.RotateMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
             app.RotateMenu_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @RotateMenu_SegmenterSelected, true);
             app.RotateMenu_Segmenter.Text = 'Rotate';
+
+            % Create FlipVerticallyMenu_Segmenter
+            app.FlipVerticallyMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
+            app.FlipVerticallyMenu_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @FlipVerticallyMenu_SegmenterSelected, true);
+            app.FlipVerticallyMenu_Segmenter.Text = 'Flip Vertically';
+
+            % Create FlipHorizontallyMenu_Segmenter
+            app.FlipHorizontallyMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
+            app.FlipHorizontallyMenu_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @FlipHorizontallyMenu_SegmenterSelected, true);
+            app.FlipHorizontallyMenu_Segmenter.Text = 'Flip Horizontally';
 
             % Create ResetViewMenu_Segmenter
             app.ResetViewMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
@@ -3222,7 +3316,7 @@ classdef MRItool_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = MRItool_exported
+        function app = BrukKit_exported
 
             runningApp = getRunningApp(app);
 
