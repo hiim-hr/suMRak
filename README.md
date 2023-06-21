@@ -8,6 +8,5 @@
 
 ------------------------------------------------------------------------
 
-![GitHub contributors (via allcontributors.org)](https://img.shields.io/github/all-contributors/all-contributors/all-contributors)
 
 
