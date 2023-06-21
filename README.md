@@ -1,6 +1,6 @@
 # BrukKit
 
-<b> BrukKit is a comprehensible multipurpose tool for Bruker MRI data processing </b>
+<b> A simpler way of processing your MRI data </b>
 
 ------------------------------------------------------------------------
 
@@ -8,5 +8,13 @@
 
 ------------------------------------------------------------------------
 
+BrukKit is a MATLAB application created with the sole purpose of simplifying pre-clinical MRI data processing in addition to reducing the associated workload.
+
+------------------------------------------------------------------------
+
 ![Alt](https://repobeats.axiom.co/api/embed/0aede456283b07c3549addaf43a23a760de55048.svg "Repobeats analytics image")
+
+------------------------------------------------------------------------
+
+ 
 
