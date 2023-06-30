@@ -5,6 +5,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        ArchivefileLabel                matlab.ui.control.Label
+        WeightEditFieldLabel_2          matlab.ui.control.Label
+        WeightEditField                 matlab.ui.control.EditField
+        WeightEditFieldLabel            matlab.ui.control.Label
+        SexEditField                    matlab.ui.control.EditField
+        SexEditFieldLabel               matlab.ui.control.Label
+        SubjectTypeEditField            matlab.ui.control.EditField
+        SubjectTypeEditFieldLabel       matlab.ui.control.Label
+        StudyStartDateEditField         matlab.ui.control.EditField
+        StudyStartDateEditFieldLabel    matlab.ui.control.Label
+        StudyStartTimeEditField         matlab.ui.control.EditField
+        StudyStartTimeEditFieldLabel    matlab.ui.control.Label
+        SubjectAgeEditFieldLabel_2      matlab.ui.control.Label
+        SubjectAgeEditField             matlab.ui.control.EditField
+        SubjectAgeEditFieldLabel        matlab.ui.control.Label
+        StudyCommentEditField           matlab.ui.control.EditField
+        StudyCommentEditFieldLabel      matlab.ui.control.Label
+        SubjectCommentEditField         matlab.ui.control.EditField
+        SubjectCommentEditFieldLabel    matlab.ui.control.Label
+        StudyIDEditField                matlab.ui.control.EditField
+        StudyIDEditFieldLabel           matlab.ui.control.Label
+        SubjectIDEditField              matlab.ui.control.EditField
+        SubjectIDEditFieldLabel         matlab.ui.control.Label
+        ResetEnvironment                matlab.ui.control.Button
+        UITable                         matlab.ui.control.Table
+        ArchiveFileEditField            matlab.ui.control.EditField
+        LoadPvDatasetsFileButton        matlab.ui.control.Button
         ContrastSlider_Preview          matlab.ui.control.Slider
         ContrastSliderLabel             matlab.ui.control.Label
         BrightnessSlider_Preview        matlab.ui.control.Slider
@@ -12,20 +39,44 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SliceSlider_Preview             matlab.ui.control.Slider
         SliceLabel                      matlab.ui.control.Label
         SliceSpinner_Preview            matlab.ui.control.Spinner
-        ResetEnvironment                matlab.ui.control.Button
         Dim4Slider_Preview              matlab.ui.control.Slider
         Dim4Slider_PreviewLabel         matlab.ui.control.Label
         Dim5Slider_Preview              matlab.ui.control.Slider
         Dim5Slider_PreviewLabel         matlab.ui.control.Label
-        LoadsingleButton                matlab.ui.control.Button
-        UITable                         matlab.ui.control.Table
-        StudyfolderEditField            matlab.ui.control.EditField
-        StudyfolderEditFieldLabel       matlab.ui.control.Label
-        LoadAllButton                   matlab.ui.control.Button
         PreviewDropDown                 matlab.ui.control.DropDown
         PreviewLabel                    matlab.ui.control.Label
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
+        BrainSegmentationToolsPanel     matlab.ui.container.Panel
+        SaveBrainButton                 matlab.ui.control.Button
+        ResetBrainButton                matlab.ui.control.Button
+        ImageshownSwitch                matlab.ui.control.Switch
+        ImageshownSwitchLabel           matlab.ui.control.Label
+        LoadexternalmaskButton          matlab.ui.control.Button
+        AutoClusterButton               matlab.ui.control.Button
+        InitialSelectionButton          matlab.ui.control.Button
+        MorphologyLabel                 matlab.ui.control.Label
+        CloseMaskButton                 matlab.ui.control.Button
+        OpenMaskButton                  matlab.ui.control.Button
+        DiskradiusSpinner               matlab.ui.control.Spinner
+        DiskradiusSpinnerLabel          matlab.ui.control.Label
+        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
+        MainselectionButton_Hemisphere  matlab.ui.control.Button
+        CorrectionButton_Hemisphere     matlab.ui.control.Button
+        SaveHemiButton                  matlab.ui.control.Button
+        ResetHemiButton                 matlab.ui.control.Button
+        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
+        RightredButton                  matlab.ui.control.RadioButton
+        LeftblueButton                  matlab.ui.control.RadioButton
+        ROIToolsPanel                   matlab.ui.container.Panel
+        DeleteButton                    matlab.ui.control.Button
+        ConfirmButton                   matlab.ui.control.Button
+        FreeButton_Remove               matlab.ui.control.Button
+        PolyButton_Remove               matlab.ui.control.Button
+        PolyButton_Add                  matlab.ui.control.Button
+        FreeButton_Add                  matlab.ui.control.Button
+        CurrentSegmentationDropDown     matlab.ui.control.DropDown
+        CurrentsegmentationLabel        matlab.ui.control.Label
         ContrastSlider_Segmenter        matlab.ui.control.Slider
         ColormapButtonGroup             matlab.ui.container.ButtonGroup
         TurboButton                     matlab.ui.control.RadioButton
@@ -35,43 +86,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BrightnessSliderLabel_2         matlab.ui.control.Label
         SliceSlider_Segmenter           matlab.ui.control.Slider
         SliceSliderLabel                matlab.ui.control.Label
-        DeleteButton                    matlab.ui.control.Button
-        ConfirmButton                   matlab.ui.control.Button
-        FreeButton_Remove               matlab.ui.control.Button
-        PolyButton_Remove               matlab.ui.control.Button
-        PolyButton_Add                  matlab.ui.control.Button
-        FreeButton_Add                  matlab.ui.control.Button
-        ROILabel                        matlab.ui.control.Label
-        MorphologyLabel                 matlab.ui.control.Label
-        CloseMaskButton                 matlab.ui.control.Button
-        OpenMaskButton                  matlab.ui.control.Button
-        DiskradiusSpinner               matlab.ui.control.Spinner
-        DiskradiusSpinnerLabel          matlab.ui.control.Label
-        AutoClusterButton               matlab.ui.control.Button
-        InitialselectionButton          matlab.ui.control.Button
-        FreeButton_Remove_Lesion        matlab.ui.control.Button
-        FreeButton_Add_Lesion           matlab.ui.control.Button
-        MainselectionButton_Lesion      matlab.ui.control.Button
-        IIILesionselectionLabel         matlab.ui.control.Label
-        MainselectionButton_Hemisphere  matlab.ui.control.Button
-        CorrectionButton_Hemisphere     matlab.ui.control.Button
-        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
-        RightredButton                  matlab.ui.control.RadioButton
-        LeftblueButton                  matlab.ui.control.RadioButton
-        IIHemisphereselectionLabel      matlab.ui.control.Label
-        SegmentusingexternalmaskButton  matlab.ui.control.Button
         Dim5Spinner_Segmenter           matlab.ui.control.Spinner
         Dim5Spinner_SegmenterLabel      matlab.ui.control.Label
         Dim4Spinner_Segmenter           matlab.ui.control.Spinner
         Dim4Spinner_SegmenterLabel      matlab.ui.control.Label
         ExportsequenceButton            matlab.ui.control.Button
         SavesequenceButton              matlab.ui.control.Button
-        ActionLabel                     matlab.ui.control.Label
-        SavesliceButton                 matlab.ui.control.Button
-        IBrainsegmentationLabel         matlab.ui.control.Label
-        ResetsliceButton                matlab.ui.control.Button
-        ImageshownSwitch                matlab.ui.control.Switch
-        ImageshownSwitchLabel           matlab.ui.control.Label
         SliceSpinner_Segmenter          matlab.ui.control.Spinner
         SegmentDropDown                 matlab.ui.control.DropDown
         SelectexperimenttosegmentDropDownLabel  matlab.ui.control.Label
@@ -175,24 +195,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Loading and preview tab properties
         LoadCounter = 1
+        PvDatasetsFile % Filepath of selected archive file
         StudyPath % Filepath of selected study directory
         ExperimentPropertyTable % Table of loaded sequence properties
-        PreviewSequenceImageData % Image matrix of preview sequence
-        PreviewImage % Property for storing imshow of PreviewSequenceImageData
+        WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
+        DropDownItemsSegmenter = {'None'};
+        PreviewImageData % Preview experiment image data matrix
+        PreviewImage % Property for storing imshow of PreviewImageData
+        ExpDimsPreview % Dimensions of preview experiment 
         
         % Segmenter tab
         % Initial segmentation
         CurrentSlice % Points to current slice matrix
-        OriginalSegmenterImageData % Original slice image data
-        SequenceDims % Dimensions of selected sequence for segmentation 
+        OriginalSegmenterImageData % Original experiment image data matrix
+        WorkingSegmenterImageData % Working experiment image data matrix
+        ExpDimsSegmenter % Dimensions of selected experiment for segmentation 
         FreeImage % Property for storing imshow of OriginalSegmenterImageData image without a mask overlay or MaskedImage
         FreeROI % Property for storing current manual ROI object
-        ROI_id = "" % Manual ROI identifier
-        SliceLimits % Current slice pixel intensity range
+        ROI_OperationID = "" % Manually set ROI operation identifier
         MaskedImage % Masked image of current slice
         Mask % Binary mask of current slice
         GreenScreen % Mask green screen of current slice
-        
+         
         % Hemisphere and lesion segmentation
         BlueScreen % Hemisphere mask blue screen of current slice
         RedScreen % Hemisphere mask red screen of current slice
@@ -201,9 +225,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Lesion % Lesion mask
         
         % Saved segmenter data
-        SavedImageSegmenter % Saved segmented data of current sequence
         SavedMaskSegmenter % Saved mask data of current sequence
         SavedTableSegmenter = table(); % Table with all saved segmented sequences
+        DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
         
         % DSC/ASL tab
         WorkMaskDSC % Working mask of currently displayed DSC sequence
@@ -219,10 +243,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SavedROI % Table for Comparation ROI storage
 
         % Registration tab
-        RegisteredImageData
-        RegistrationCounter = 1;
+        RegisteredImageData % Property for storing registered image data
+        RegisteredMask % Property for storing mask of fixed image data used in registration
+        RegistrationCounter = 1; % Counter used for registration data nomenclature and storage
+        SavedTableRegistration % Table of saved registration experiment properties used for returning of data back to segmenter
 
-        DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
     end
     
     methods (Access = private)
@@ -230,14 +255,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function RefreshImage(app, UIaxes)
             switch UIaxes
                 case 'preview'
-                    app.SequenceDims = size(app.PreviewSequenceImageData);
-                    switch numel(app.SequenceDims)
+                    app.ExpDimsPreview = size(app.PreviewImageData);
+                    switch numel(app.ExpDimsPreview)
                         case 3
-                            app.CurrentSlice = app.PreviewSequenceImageData(:,:, round(app.SliceSlider_Preview.Value));
+                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value));
                         case 4
-                            app.CurrentSlice = app.PreviewSequenceImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value));
+                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value));
                         case 5
-                            app.CurrentSlice = app.PreviewSequenceImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
+                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
                         otherwise
                             %error alert missing
                     end
@@ -246,16 +271,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview);
                     app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
                 case 'segmenter'
-                    app.SequenceDims = size(app.OriginalSegmenterImageData);
-                    switch numel(app.SequenceDims)
+                    app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+                    switch numel(app.ExpDimsSegmenter)
                         case 2
-                            app.CurrentSlice = app.OriginalSegmenterImageData(:,:);
+                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
                         case 3
-                            app.CurrentSlice = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
                         case 4
-                            app.CurrentSlice = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
+                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
                         case 5
-                            app.CurrentSlice = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
+                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
                         otherwise
                             %error alert missing
                     end
@@ -265,22 +290,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Overlay"
                             switch app.TurboButton.Value
                                 case true
-                                     app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                     app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                             end
                                  
                             try
                                 hold(app.UIAxes_Segmenter, "on");
                                 mask_Overlay = imshow(app.GreenScreen, "Parent", app.UIAxes_Segmenter);
                                 hold(app.UIAxes_Segmenter, "off");
-                                mask_Overlay.AlphaData = app.Mask-0.7;
+                                mask_Overlay.AlphaData = app.Mask(:,:,app.SliceSpinner_Segmenter.Value)-0.75;
                             catch
                                 return
                             end
                             mask_Overlay.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
-                            app.MaskedImage = double(app.CurrentSlice).*app.Mask;
+                            app.MaskedImage = double(app.CurrentSlice).*app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
                             switch app.TurboButton.Value
                                 case true
                                      app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
@@ -289,7 +314,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             end
                             app.FreeImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
-                    
+                case 'DSC'
+                    switch app.DSCMapDropDown.Value
+                        case "CBF"
+                            if app.SVDButton.Value == true
+                                app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                            elseif app.cSVDButton.Value == true
+                                app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                            elseif app.oSVDButton.Value == true
+                                app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                            end
+                        case"CBV"
+                            app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                        case "MTT"
+                            if app.SVDButton.Value == true
+                                app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                            elseif app.cSVDButton.Value == true
+                                app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
+                            elseif app.oSVDButton.Value == true
+                                app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                            end
+                    end
+
                 otherwise
                     %error alert missing
             end
@@ -300,199 +346,32 @@ classdef BrukKit_exported < matlab.apps.AppBase
     % Callbacks that handle component events
     methods (Access = private)
 
-        % Button pushed function: LoadAllButton
-        function LoadAllButtonPushed(app, event)
+        % Key press function: UIFigure
+        function UIFigureKeyPress(app, event)
+            key = event.Key;
             
-            % Select study directory and update the edit field text
-            app.StudyPath = uigetdir; 
-            app.StudyfolderEditField.Value = app.StudyPath; 
-            figure(app.UIFigure);
+            switch key
+                case 'rightarrow'
+                    key = 1;
+                case 'leftarrow'
+                    key = -1;
+            end
 
-            progress = uiprogressdlg(app.UIFigure,'Title','Please wait',...
-                'Indeterminate','on', 'Message', 'Loading data');
-            drawnow
-            
-            % Create property arrays of sequences in selected study
-            visu_AcqProt = {'None'};
-            TE_time = 0;
-            TR_time = 0;  
-            exp_ImageData = {[]};
-            voxel_Dims = [0 0];
-
-            filelist_studyPath = dir(app.StudyPath);
-            filelist_studyPath = rmmissing(str2double({filelist_studyPath.name}));
-            
-            for i=filelist_studyPath % List through experiments 
-                experiment_dir = fullfile(app.StudyPath, filesep, num2str(i), filesep, 'pdata');
-                filelist_expDir = dir(experiment_dir);
-                filelist_expDir = rmmissing(str2double({filelist_expDir.name}));
-
-                for j=filelist_expDir % List through processings
+            switch app.TabGroup.SelectedTab.Title
+                case 'Preview'
                     try
-                        % Create image object
-                        processing_dir = fullfile(experiment_dir, filesep, num2str(j));
-                        imageObj = ImageDataObject(processing_dir);
-                        try
-                            attempt_AcqProt = imageObj.Visu.VisuAcquisitionProtocol;
-                        catch
-                            attempt_AcqProt = imageObj.Visu.VisuSeriesTypeId;
-                        end
-                        
-                        % Store properties into respective arrays if a
-                        % minimum of 3 dimensions is sastisfied
-                        n_dims = size(size(squeeze(imageObj.data)));
-                        if n_dims(2)>=3 
-                            exp_ImageData = cat(1, exp_ImageData, {squeeze(rot90(imageObj.data, -1))});
-                            visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '-', num2str(j), '. ', attempt_AcqProt));
-                            try
-                                voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
-                                try
-                                    TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^-3);
-                                    TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
-                                catch
-                                    TE_time = cat(1, TE_time, 0);
-                                    TR_time = cat(1, TR_time, 0);
-                                end
-                            catch
-                                voxel_Dims = cat(1, voxel_Dims, [0 0]);
-                                TE_time = cat(1, TE_time, 0);
-                                TR_time = cat(1, TR_time, 0);
-                            end
-                        else
-                        end
+                        app.SliceSpinner_Preview.Value = app.SliceSpinner_Preview.Value+key;
+                        app.SliceSlider_Preview.Value = app.SliceSpinner_Preview.Value;
+                        RefreshImage(app, 'preview');
                     catch
                     end
-                end
-            end
-
-            % Construct experiment property table
-            exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimensions"];
-            app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
-            app.UITable.Data=app.ExperimentPropertyTable;
-            app.UITable.ColumnName = variable_Names;
-            
-            % Update drop down items
-            app.PreviewDropDown.Items = visu_AcqProt;
-            app.SegmentDropDown.Items = visu_AcqProt;
-            
-            % close the dialog box
-            close(progress);
-        end
-
-        % Button pushed function: LoadsingleButton
-        function LoadsingleButtonPushed(app, event)
-            
-            % Get filepath of single experiment image data, create image
-            % object and get properties
-            single_Path = uigetdir;
-            figure(app.UIFigure)
-            imageObj = ImageDataObject(single_Path);
-            
-            progress = uiprogressdlg(app.UIFigure,'Title','Please wait',...
-                'Indeterminate','on', 'Message', 'Loading data');
-            drawnow
-            
-            try
-                imageObj.Visu.VisuAcqEchoTime < imageObj.Visu.VisuAcqRepetitionTime; %#ok<VUNUS> 
-                TE_time = imageObj.Visu.VisuAcqEchoTime*10^-3;
-                TR_time = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
-            catch
-                TE_time = 0;
-                TR_time = 0;
-            end
-            try
-                visu_AcqProt = {append('Manual load ', num2str(app.LoadCounter), '. ', imageObj.Visu.VisuAcquisitionProtocol)};
-            catch 
-                visu_AcqProt = {['Unnamed_manual_seq ', num2str(app.LoadCounter)]};
-            end      
-            try
-                voxel_Dims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
-            catch 
-                voxel_Dims = [0 0];
-            end
-            
-            % Update load counter used for naming
-            app.LoadCounter = app.LoadCounter+1;
-            exp_ImageData = {squeeze(rot90(imageObj.data, -1))};
-            
-            % Construct temporary sequence property table and combine with
-            % main
-            exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimensions"];
-            temp_Table = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
-            app.ExperimentPropertyTable = [app.ExperimentPropertyTable; temp_Table];
-            app.UITable.Data=app.ExperimentPropertyTable;
-            app.UITable.ColumnName = variable_Names;
-            
-            % Update drop down items
-            app.PreviewDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
-            app.SegmentDropDown.Items = table2array(app.ExperimentPropertyTable(:,"Experiment ID"));
-            
-            % close the dialog box
-            close(progress)
-        end
-
-        % Button pushed function: ResetEnvironment
-        function ResetEnvironmentButtonPushed(app, event)
-            selection = uiconfirm(app.UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
-                        'Icon','warning');
-            switch selection 
-                case 'OK'  
-                    % Reset tables
-                    app.ExperimentPropertyTable = table();
-                    app.UITable.Data=app.ExperimentPropertyTable;
-                    app.SavedTableSegmenter = table();
-    
-                    % Reset counters
-                    app.LoadCounter = 1;
-                    app.ROICounter = 1;
-                    app.RegistrationCounter = 1;
-    
-                    % Reset drop downs
-                    app.PreviewDropDown.Items = {'None'};
-                    app.SegmentDropDown.Items = {'None'};
-                    app.DropDownItemsSaved = {'None'};
-                    app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
-                    app.SelectASLDropDown.Items = app.DropDownItemsSaved;
-                    app.DSCMapDropDown.Value = 'CBF';
-                    app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
-                    app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
-                    app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
-    
-                    % Reset UIAxes
-                    cla(app.UIAxes_Preview);
-                    cla(app.UIAxes_Segmenter);
-                    cla(app.UIAxes_ASL);
-                    cla(app.UIAxes_DSCMaps);
-                    cla(app.UIAxes_Registration);
-                    
-                    % Reset sliders and spinners
-                    app.BrightnessSlider_Preview.Value = 0;
-                    app.BrightnessSlider_Preview.Enable = 'off';
-                    app.ContrastSlider_Preview.Value = 0;
-                    app.ContrastSlider_Preview.Enable = 'off';
-                    app.SliceSpinner_Preview.Value = 1;
-                    app.SliceSpinner_Preview.Enable = 'off';
-                    app.SliceSlider_Preview.Value = 1;
-                    app.SliceSlider_Preview.Enable = 'off';
-                    app.Dim4Slider_Preview.Value = 1;
-                    app.Dim5Slider_Preview.Value = 1;
-                    app.SliceSlider_Segmenter.Value = 1;
-                    app.SliceSpinner_Segmenter.Value = 1;
-                    app.Dim4Spinner_Segmenter.Value = 1;
-                    app.Dim5Spinner_Segmenter.Value = 1;
-                    app.ContrastSlider_Segmenter.Value = 1;
-                    app.BrightnessSlider_Segmenter.Value = 1;
-                    app.SliceSpinner_ASL.Value = 1;
-                    app.SliceSpinner_DSCMaps.Value = 1;
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Parameter.Value = 1;
-    
-                    % Reset UI items
-                case 'Cancel'
-                    return
+                case 'Segmenter'
+                    try
+                        app.SliceSpinner_Segmenter.Value = app.SliceSpinner_Segmenter.Value+key;
+                        app.SliceSlider_Segmenter.Value = app.SliceSpinner_Segmenter.Value;
+                        RefreshImage(app, 'segmenter');
+                    catch
+                    end
             end
         end
 
@@ -513,7 +392,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
             % Get selected sequence image data
-            app.PreviewSequenceImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            app.PreviewImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
             
             % Initialize default slider values
             app.Dim5Slider_Preview.Value = 1;
@@ -524,22 +403,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Value = 0;
 
             % Get data dimension sizes, set slider limits
-            app.SequenceDims = size(app.PreviewSequenceImageData);
-            dim3_size = app.SequenceDims(3);
+            app.ExpDimsPreview = size(app.PreviewImageData);
+            dim3_size = app.ExpDimsPreview(3);
             app.SliceSlider_Preview.Limits = [1, dim3_size];
             app.SliceSpinner_Preview.Limits = [1, dim3_size];
             
-            switch numel(app.SequenceDims)
+            switch numel(app.ExpDimsPreview)
                 case 4
-                    dim4_size = app.SequenceDims(4);
+                    dim4_size = app.ExpDimsPreview(4);
                     app.Dim4Slider_Preview.Enable = 'on';
                     app.Dim5Slider_Preview.Enable = 'off';
                     app.Dim4Slider_Preview.Limits = [1, dim4_size];
                 case 5
-                    dim4_size = app.SequenceDims(4);
+                    dim4_size = app.ExpDimsPreview(4);
                     app.Dim4Slider_Preview.Enable = 'on';
                     app.Dim4Slider_Preview.Limits = [1, dim4_size];
-                    dim5_size = app.SequenceDims(5);
+                    dim5_size = app.ExpDimsPreview(5);
                     app.Dim5Slider_Preview.Enable = 'on';
                     app.Dim5Slider_Preview.Limits = [1, dim5_size];
                 case 3
@@ -610,7 +489,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function RotateMenu_PreviewSelected(app, event)
             
             % Rotate image data, show image
-            app.PreviewSequenceImageData = rot90(app.PreviewSequenceImageData, -1);
+            app.PreviewImageData = rot90(app.PreviewImageData, -1);
             
             RefreshImage(app, 'preview');
         end
@@ -619,7 +498,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function FlipVerticallyMenu_PreviewSelected(app, event)
             
             % Flip image data, show image
-            app.PreviewSequenceImageData = flipud(app.PreviewSequenceImageData);
+            app.PreviewImageData = flipud(app.PreviewImageData);
             
             RefreshImage(app, 'preview');
         end
@@ -628,7 +507,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function FlipHorizontallyMenu_PreviewSelected(app, event)
             
             % Flip image data, show image
-            app.PreviewSequenceImageData = fliplr(app.PreviewSequenceImageData);
+            app.PreviewImageData = fliplr(app.PreviewImageData);
             
             RefreshImage(app, 'preview');
         end
@@ -661,8 +540,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 return
             end
 
-            % Get selected sequence image data
-            app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            % Get selected sequence image data from loaded experiments or saved registration experiments
+            try
+                app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            catch
+                try
+                    app.OriginalSegmenterImageData = cell2mat(app.SavedTableRegistration.(2)(value));
+                catch
+                end
+            end
+            app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
 
 
             % Initialize default slider values
@@ -674,24 +561,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Segmenter.Value = 0;
             
             % Get data dimension sizes, define mask, set slice and spinner limits/values
-            app.SequenceDims = size(app.OriginalSegmenterImageData);
-            app.Mask = false(app.SequenceDims(1:2));
-            app.GreenScreen = cat(3, zeros(app.SequenceDims(1:2)), ones(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)));
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+            app.Mask = false(app.ExpDimsSegmenter(1:3));
+            app.GreenScreen = cat(3, zeros(app.ExpDimsSegmenter(1:2)), ones(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)));
             try
-                dim3_size = app.SequenceDims(3);
+                dim3_size = app.ExpDimsSegmenter(3);
                 app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
                 app.SliceSlider_Segmenter.Limits = [1, dim3_size];
             catch
             end
             
-            switch numel(app.SequenceDims)
+            switch numel(app.ExpDimsSegmenter)
                 case 5
                     app.SliceSlider_Segmenter.Enable = 'on';
                     app.SliceSpinner_Segmenter.Enable = 'on';
-                    dim4_size = app.SequenceDims(4);
+                    dim4_size = app.ExpDimsSegmenter(4);
                     app.Dim4Spinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
-                    dim5_size = app.SequenceDims(5);
+                    dim5_size = app.ExpDimsSegmenter(5);
                     app.Dim5Spinner_Segmenter.Enable = 'on';
                     app.Dim5Spinner_Segmenter.Limits = [1, dim5_size];
                     app.PermuteDimensionsMenu.Enable = 'on';
@@ -699,14 +586,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteMenu_3_5.Enable ='on';
                     app.PermuteMenu_4_5.Enable ='on';
 
-                    % Create zero arrays to save data into for current sequence
-                    app.SavedImageSegmenter = zeros(app.SequenceDims);
-                    app.SavedMaskSegmenter = zeros(app.SequenceDims(1:3));
+                    % Create zero array to save mask data into for current sequence
+                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
 
                 case 4
                     app.SliceSlider_Segmenter.Enable = 'on';
                     app.SliceSpinner_Segmenter.Enable = 'on';
-                    dim4_size = app.SequenceDims(4);
+                    dim4_size = app.ExpDimsSegmenter(4);
                     app.Dim4Spinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
                     app.Dim5Spinner_Segmenter.Enable = 'off';
@@ -715,9 +601,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteMenu_3_5.Enable ='off';
                     app.PermuteMenu_4_5.Enable ='off';
 
-                    % Create zero arrays to save data into for current sequence
-                    app.SavedImageSegmenter = zeros(app.SequenceDims);
-                    app.SavedMaskSegmenter = zeros(app.SequenceDims(1:3));
+                    % Create zero array to save mask data into for current sequence
+                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
                 case 3
                     app.SliceSlider_Segmenter.Enable = 'on';
                     app.SliceSpinner_Segmenter.Enable = 'on';
@@ -726,18 +611,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteDimensionsMenu.Enable = 'off';
                     
 
-                    % Create zero arrays to save data into for current sequence
-                    app.SavedImageSegmenter = zeros(app.SequenceDims);
-                    app.SavedMaskSegmenter = zeros(app.SequenceDims(1:3));
+                    % Create zero array to save mask data into for current sequence
+                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
                 case 2
                     app.SliceSlider_Segmenter.Enable = 'off';
                     app.SliceSpinner_Segmenter.Enable = 'off';
                     app.Dim4Spinner_Segmenter.Enable = 'off';
                     app.Dim5Spinner_Segmenter.Enable = 'off';
 
-                    % Create zero arrays to save data into for current sequence
-                    app.SavedImageSegmenter = zeros(app.SequenceDims);
-                    app.SavedMaskSegmenter = zeros(app.SequenceDims);
+                    % Create zero array to save mask data into for current sequence
+                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter);
             end
 
             % Display sequence
@@ -753,9 +636,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
-
-            % Update last action label
-            app.ActionLabel.Text = "Last performed action will be shown here";        
         end
 
         % Value changing function: SliceSlider_Segmenter
@@ -763,8 +643,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.SliceSpinner_Segmenter.Value = event.Source.Value;
             
-            RefreshImage(app, 'segmenter');
-            
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
@@ -772,6 +650,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+
+            RefreshImage(app, 'segmenter');
         end
 
         % Value changed function: SliceSpinner_Segmenter
@@ -779,8 +659,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.SliceSlider_Segmenter.Value = event.Source.Value;
 
-            RefreshImage(app, 'segmenter');
-
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
@@ -788,12 +666,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+
+            RefreshImage(app, 'segmenter');
         end
 
         % Value changed function: Dim4Spinner_Segmenter
         function Dim4Spinner_SegmenterValueChanged(app, event)
-            
-            RefreshImage(app, 'segmenter');
 
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
@@ -802,12 +680,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+
+            RefreshImage(app, 'segmenter');
         end
 
         % Value changed function: Dim5Spinner_Segmenter
         function Dim5Spinner_SegmenterValueChanged(app, event)
-             
-            RefreshImage(app, 'segmenter');
 
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
@@ -816,6 +694,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+
+            RefreshImage(app, 'segmenter');
         end
 
         % Value changing function: ContrastSlider_Segmenter
@@ -835,10 +715,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Rotate image data, update dimensions, show image
             app.OriginalSegmenterImageData = rot90(app.OriginalSegmenterImageData, -1);
+            app.WorkingSegmenterImageData = rot90(app.WorkingSegmenterImageData, -1);
             app.Mask = rot90(app.Mask, -1);
-            app.GreenScreen = rot90(app.GreenScreen, -1);
-            app.SavedImageSegmenter = rot90(app.SavedImageSegmenter, -1);
             app.SavedMaskSegmenter = rot90(app.SavedMaskSegmenter, -1);
+            app.GreenScreen = rot90(app.GreenScreen, -1);
             RefreshImage(app, 'segmenter');
         end
 
@@ -847,10 +727,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = flipud(app.OriginalSegmenterImageData);
+            app.WorkingSegmenterImageData = flipud(app.WorkingSegmenterImageData);
             app.Mask = flipud(app.Mask);
-            app.GreenScreen = flipud(app.GreenScreen);
-            app.SavedImageSegmenter = flipud(app.SavedImageSegmenter);
             app.SavedMaskSegmenter = flipud(app.SavedMaskSegmenter);
+            app.GreenScreen = flipud(app.GreenScreen);
             RefreshImage(app, 'segmenter');
         end
 
@@ -859,10 +739,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = fliplr(app.OriginalSegmenterImageData);
+            app.WorkingSegmenterImageData = fliplr(app.WorkingSegmenterImageData);
             app.Mask = fliplr(app.Mask);
-            app.GreenScreen = fliplr(app.GreenScreen);
-            app.SavedImageSegmenter = fliplr(app.SavedImageSegmenter);
             app.SavedMaskSegmenter = fliplr(app.SavedMaskSegmenter);
+            app.GreenScreen = fliplr(app.GreenScreen);
             RefreshImage(app, 'segmenter');
         end
 
@@ -882,21 +762,32 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: PermuteMenu_3_4
         function PermuteMenu_3_4Selected(app, event)
                 
-            selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 4th dimensions?','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
-                    app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,4,3]);
-                    app.SavedImageSegmenter = permute(app.SavedImageSegmenter, [1,2,4,3]);
-                    app.SavedMaskSegmenter = permute(app.SavedMaskSegmenter, [1,2,4,3]);
+                    n_dims = size(app.ExpDimsSegmenter);
+                    switch n_dims(2)
+                        case 4
+                            app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,4,3]);
+                        case 5
+                            app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,4,3,5]);
+                    end
+                    app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
+                    app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+                    app.Mask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
 
                     temp_limits = app.SliceSpinner_Segmenter.Limits;
                     temp_value = app.SliceSpinner_Segmenter.Value;
+
                     app.SliceSpinner_Segmenter.Limits = app.Dim4Spinner_Segmenter.Limits;
                     app.SliceSpinner_Segmenter.Value = app.Dim4Spinner_Segmenter.Value;
                     app.SliceSlider_Segmenter.Limits = app.Dim4Spinner_Segmenter.Limits;
                     app.SliceSlider_Segmenter.Value = app.Dim4Spinner_Segmenter.Value;
                     app.Dim4Spinner_Segmenter.Limits = temp_limits;
                     app.Dim4Spinner_Segmenter.Value = temp_value;
+
+                    RefreshImage(app, 'segmenter')
 
                 case 'Cancel'
                     return
@@ -905,12 +796,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Menu selected function: PermuteMenu_3_5
         function PermuteMenu_3_5Selected(app, event)
-            selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 5th dimensions?','Permute Dimensions', 'Icon','question');
+            
+            selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,5,4,3]);
-                    app.SavedImageSegmenter = permute(app.SavedImageSegmenter, [1,2,5,4,3]);
-                    app.SavedMaskSegmenter = permute(app.SavedMaskSegmenter, [1,2,5,4,3]);
+                    app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
+                    app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+                    app.Mask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
 
                     temp_value_slice = app.SliceSpinner_Segmenter.Value;
                     temp_limits_slice = app.SliceSpinner_Segmenter.Limits;
@@ -922,6 +816,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_Segmenter.Limits = temp_limits_slice;
                     app.Dim5Spinner_Segmenter.Value = temp_value_slice;
 
+                    RefreshImage(app, 'segmenter')
+
                 case 'Cancel'
                     return
             end
@@ -929,19 +825,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Menu selected function: PermuteMenu_4_5
         function PermuteMenu_4_5Selected(app, event)
-            selection = uiconfirm(app.UIFigure,'Permute experiment 4th and 5th dimensions?','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,3,5,4]);
-                    app.SavedImageSegmenter = permute(app.SavedImageSegmenter, [1,2,3,5,4]);
-                    app.SavedMaskSegmenter = permute(app.SavedMaskSegmenter, [1,2,3,5,4]);
+                    app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
+                    app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+                    app.Mask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
 
                     temp_limits = app.Dim5Spinner_Segmenter.Limits;
                     temp_value = app.Dim5Spinner_Segmenter.Value;
+
                     app.Dim5Spinner_Segmenter.Limits = app.Dim4Spinner_Segmenter.Limits;
                     app.Dim5Spinner_Segmenter.Value = app.Dim4Spinner_Segmenter.Value;
                     app.Dim4Spinner_Segmenter.Limits = temp_limits;
                     app.Dim4Spinner_Segmenter.Value = temp_value;
+
+                    RefreshImage(app, 'segmenter')
 
                 case 'Cancel'
                     return
@@ -953,14 +854,34 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImage(app, 'segmenter');
         end
 
-        % Button pushed function: InitialselectionButton
-        function InitialselectionButtonPushed(app, event)
-            app.Mask = false(app.SequenceDims(1:2));
+        % Value changed function: CurrentSegmentationDropDown
+        function CurrentSegmentationDropDownValueChanged(app, event)
+
+            switch app.CurrentSegmentationDropDown.Value
+                case 'Brain'
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
+                    app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.ROIToolsPanel.Position = [1199,118,149,140];
+                case 'Hemisphere'
+                    app.BrainSegmentationToolsPanel.Visible = 'off';
+                    app.HemisphereSegmentationToolsPanel.Visible ='on';
+                    app.ROIToolsPanel.Position = [1197,268,149,140];
+                case 'ROI'
+                    app.BrainSegmentationToolsPanel.Visible = 'off';
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
+                    app.ROIToolsPanel.Position = [1197,420,149,140];
+                otherwise
+            end
+        end
+
+        % Button pushed function: InitialSelectionButton
+        function InitialSelectionButtonPushed(app, event)
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
             RefreshImage(app, 'segmenter');
 
             % Draw initial ROI, create mask and masked image
             init_Region = drawfreehand(app.UIAxes_Segmenter);
-            app.Mask = createMask(init_Region, app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value));
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = createMask(init_Region, app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value));
             delete(init_Region);
             
             % Show image with mask overlaid on top
@@ -975,13 +896,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
             % select best cluster
-            clusters = imsegkmeans(single(app.CurrentSlice).*app.Mask,2,'NumAttempts',2);
-            cluster_1_dice = dice(clusters==1, app.Mask);
-            cluster_2_dice = dice(clusters==2, app.Mask);
+            clusters = imsegkmeans(single(app.CurrentSlice).*app.Mask(:,:,app.SliceSpinner_Segmenter.Value),2,'NumAttempts',2);
+            cluster_1_dice = dice(clusters==1, logical(app.Mask(:,:,app.SliceSpinner_Segmenter.Value)));
+            cluster_2_dice = dice(clusters==2, logical(app.Mask(:,:,app.SliceSpinner_Segmenter.Value)));
             if cluster_1_dice > cluster_2_dice
-                app.Mask = clusters == 1;
+                app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 1;
             else 
-                app.Mask = clusters == 2;
+                app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 2;
             end
             
             % Show image with mask overlaid on top
@@ -997,11 +918,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, open image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.Mask = imopen(app.Mask, SE);
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = imopen(app.Mask(:,:,app.SliceSpinner_Segmenter.Value), SE);
             
             % Show image with mask overlaid on top
             RefreshImage(app, 'segmenter');
-            
         end
 
         % Button pushed function: CloseMaskButton
@@ -1010,11 +930,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, close image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.Mask = imclose(app.Mask, SE);
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = imclose(app.Mask(:,:,app.SliceSpinner_Segmenter.Value), SE);
             
             % Show image with mask overlaid on top
             RefreshImage(app, 'segmenter');
-            
         end
 
         % Button pushed function: FreeButton_Add
@@ -1022,7 +941,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Draw freehand ROI
             app.FreeROI = drawfreehand(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.4660 0.6740 0.1880]);
-            app.ROI_id = "add";
+            app.ROI_OperationID = "add";
         end
 
         % Button pushed function: FreeButton_Remove
@@ -1030,7 +949,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Draw freehand ROI
             app.FreeROI = drawfreehand(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.6350 0.0780 0.1840]);
-            app.ROI_id = "remove";
+            app.ROI_OperationID = "remove";
         end
 
         % Button pushed function: PolyButton_Add
@@ -1038,7 +957,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Draw polygon ROI
             app.FreeROI = drawpolygon(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.4660 0.6740 0.1880]);
-            app.ROI_id = "add";
+            app.ROI_OperationID = "add";
         end
 
         % Button pushed function: PolyButton_Remove
@@ -1046,7 +965,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Draw polygon ROI
             app.FreeROI = drawpolygon(app.UIAxes_Segmenter, 'InteractionsAllowed', "reshape", 'FaceAlpha', 0.1, 'Color', [0.6350 0.0780 0.1840]);
-            app.ROI_id = "remove";
+            app.ROI_OperationID = "remove";
         end
 
         % Button pushed function: ConfirmButton
@@ -1054,23 +973,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         
             % Update mask using new ROI based on current image displayed -
             % masked or original with overlaid transparent mask
-            switch app.ROI_id
+            switch app.ROI_OperationID
                 case 'add'
                     try
                         added_Mask = app.FreeROI.createMask(app.FreeImage);
-                        app.Mask = app.Mask|added_Mask;
+                        app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value)|added_Mask;
                     catch
                     end
                     RefreshImage(app, 'segmenter');
                 case 'remove'
                     try
                         removed_Mask = app.FreeROI.createMask(app.FreeImage);
-                        app.Mask(removed_Mask) = 0;
+                        temp = app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
+                        temp(removed_Mask) = 0;
+                        app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = temp;
                     catch
                     end
                     RefreshImage(app, 'segmenter');
             end
-            
         end
 
         % Button pushed function: DeleteButton
@@ -1087,13 +1007,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: MainselectionButton_Hemisphere
         function MainselectionButton_HemispherePushed(app, event)
-            app.SequenceDims = size(app.OriginalSegmenterImageData);
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
             app.ImageshownSwitch.Value = 'Masked';
             RefreshImage(app, 'segmenter');
 
             % Create hemisphere mask screens
-            app.BlueScreen = cat(3, zeros(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)), ones(app.SequenceDims(1:2)));
-            app.RedScreen = cat(3, ones(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)));
+            app.BlueScreen = cat(3, zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), ones(app.ExpDimsSegmenter(1:2)));
+            app.RedScreen = cat(3, ones(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)));
             
             % Draw freehand ROI
             initial_Hemi = drawfreehand(app.UIAxes_Segmenter);
@@ -1146,87 +1066,34 @@ classdef BrukKit_exported < matlab.apps.AppBase
             mask_overlay_Red.AlphaData = app.RightHemi-0.9; 
         end
 
-        % Button pushed function: MainselectionButton_Lesion
-        function MainselectionButton_LesionPushed(app, event)
-            app.SequenceDims = size(app.OriginalSegmenterImageData);
-            app.ImageshownSwitch.Value = 'Masked';
-            RefreshImage(app, 'segmenter');
-            
-            % Create lesion mask screen
-            app.RedScreen = cat(3, ones(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)), zeros(app.SequenceDims(1:2)));
-             
-            % Draw freehand ROI, update lesion mask, display overlaid image
-            initial_Lesion = drawfreehand(app.UIAxes_Segmenter);
-            app.Lesion = initial_Lesion.createMask(app.FreeImage);
-            delete(initial_Lesion);
-            
-            hold(app.UIAxes_Segmenter, "on");
-            mask_overlay_Lesion = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-            hold(app.UIAxes_Segmenter, "off");
-            mask_overlay_Lesion.AlphaData = app.Lesion-0.9;
-        end
-
-        % Button pushed function: FreeButton_Add_Lesion
-        function FreeButton_Add_LesionPushed(app, event)
-            app.ImageshownSwitch.Value = 'Masked';
-            RefreshImage(app, 'segmenter');
-
-            % Draw freehand ROI, update lesion mask, display overlaid image
-            add_Lesion = drawfreehand(app.UIAxes_Segmenter);
-            add_lesion_Mask = add_Lesion.createMask(app.FreeImage);
-            app.Lesion = app.Lesion|add_lesion_Mask;
-            delete(add_Lesion);
-            
-            hold(app.UIAxes_Segmenter, "on");
-            mask_overlay_Lesion = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-            hold(app.UIAxes_Segmenter, "off");
-            mask_overlay_Lesion.AlphaData = app.Lesion-0.9;
-        end
-
-        % Button pushed function: FreeButton_Remove_Lesion
-        function FreeButton_Remove_LesionPushed(app, event)
-            app.ImageshownSwitch.Value = 'Masked';
-            RefreshImage(app, 'segmenter');
-
-            % Draw freehand ROI, update lesion mask, display overlaid image
-            remove_Lesion = drawfreehand(app.UIAxes_Segmenter);
-            remove_lesion_Mask = remove_Lesion.createMask(app.FreeImage);
-            app.Lesion(remove_lesion_Mask) = 0;
-            delete(remove_Lesion);
-            
-            hold(app.UIAxes_Segmenter, "on");
-            mask_overlay_Lesion = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-            hold(app.UIAxes_Segmenter, "off");
-            mask_overlay_Lesion.AlphaData = app.Lesion-0.9;
-        end
-
-        % Button pushed function: SavesliceButton
-        function SavesliceButtonPushed(app, event)
-           app.SequenceDims = size(app.OriginalSegmenterImageData);
+        % Button pushed function: SaveBrainButton
+        function SaveBrainButtonPushed(app, event)
+           app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
 
             % Save slice image based on number of dimensions in original matrix
-            num_dims = size(app.SequenceDims);
+            num_dims = size(app.ExpDimsSegmenter);
             if num_dims(2) == 4 % What if num_dims = 5?
-                for i=1:app.SequenceDims(4)
-                    app.SavedImageSegmenter(:,:,app.SliceSpinner_Segmenter.Value,i) = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                for i=1:app.ExpDimsSegmenter(4)
+                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
                 end
             else
-                app.SavedImageSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask.*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             end
             
             % Save slice mask
-            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask;
-            
-            % Update last action label
-            app.ActionLabel.Text = "Slice " + num2str(app.SliceSpinner_Segmenter.Value) + " saved to temporary data.";
+            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+
+            app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
+            app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
+            app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
+
+            RefreshImage(app, 'segmenter');
         end
 
-        % Button pushed function: ResetsliceButton
-        function ResetsliceButtonPushed(app, event)
-            app.SequenceDims = size(app.OriginalSegmenterImageData);
-
-            % Display original slice image
-            RefreshImage(app, 'segmenter'); 
+        % Button pushed function: ResetBrainButton
+        function ResetBrainButtonPushed(app, event)
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData); 
             
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
@@ -1234,31 +1101,31 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Reset slice image based on number of dimensions in original
             % matrix
-            num_dims = size(app.SequenceDims);
+            num_dims = size(app.ExpDimsSegmenter);
             if num_dims(2) == 4 %What if num_dims(2) = 5?
-                for i=1:app.SequenceDims(4)
-                    app.SavedImageSegmenter(:,:,app.SliceSpinner_Segmenter.Value,i) = zeros(app.SequenceDims(1:2));
+                for i=1:app.ExpDimsSegmenter(4)
+                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
                 end
             else
-                app.SavedImageSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = zeros(app.SequenceDims(1:2));
+                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             end
-            
+
             % Reset slice mask
-            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = zeros(app.SequenceDims(1:2));
+            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = zeros(app.ExpDimsSegmenter(1:2));
+            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
             
             app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % Turn off auto cluster button
-            
-            % Update last action label
-            app.ActionLabel.Text = "Slice " + num2str(app.SliceSpinner_Segmenter.Value) + " reset in temporary data.";
+
+            RefreshImage(app, 'segmenter');
         end
 
         % Button pushed function: SavesequenceButton
         function SavesequenceButtonPushed(app, event)
             
             % Construct temporary table of saved data
-            temp_Table = table({app.SavedImageSegmenter}, {app.SavedMaskSegmenter}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
+            temp_Table = table({app.WorkingSegmenterImageData}, {app.SavedMaskSegmenter}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
 
             try
                 % Move temporarily saved data to permanent app table
@@ -1283,7 +1150,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             case 'OK'
 
                                 % Overwrite data of currently saved experiment under same identifier
-                                app.SavedTableSegmenter.Image(app.SegmentDropDown.Value) = {app.SavedImageSegmenter};
+                                app.SavedTableSegmenter.Image(app.SegmentDropDown.Value) = {app.WorkingSegmenterImageData};
                                 app.SavedTableSegmenter.Mask(app.SegmentDropDown.Value) = {app.SavedMaskSegmenter};
                                 
                                 % Display confirmation figure
@@ -1305,38 +1172,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Get directory and export image and mask data in NIfTI format
             temp_dir = uigetdir;
             temp_dir = append(temp_dir, '\');
-            niftiwrite(app.SavedImageSegmenter, append(temp_dir, 'Image'))
+            niftiwrite(app.WorkingSegmenterImageData, append(temp_dir, 'Image'))
             niftiwrite(app.SavedMaskSegmenter, append(temp_dir, 'Mask'))
             
-            % Update last action label
-            %app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
             uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
-        % Button pushed function: SegmentusingexternalmaskButton
-        function SegmentusingexternalmaskButtonPushed(app, event)
+        % Button pushed function: LoadexternalmaskButton
+        function LoadexternalmaskButtonPushed(app, event)
             
             % Get external mask data
             [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.UIFigure)
             temp_Mask = niftiread(cat(2, temp_dir, temp_file));
-            app.SavedMaskSegmenter = temp_Mask;
+            app.Mask = temp_Mask;
             
-            % Upade saved image data with segmented data using loaded
-            % external mask
-            num_dims = size(app.SequenceDims);
-            if num_dims(2) == 4|num_dims(2) == 5 %#ok<OR2> 
-                for j=1:app.SequenceDims(3)
-                    for i=1:app.SequenceDims(4)
-                        app.SavedImageSegmenter(:,:,j,i) = temp_Mask(:,:,j).*app.OriginalSegmenterImageData(:,:,j,i);
-                    end
-                end
-            elseif num_dims(2) == 3
-                for i=1:app.SequenceDims(3)
-                    app.SavedImageSegmenter(:,:,i) = temp_Mask(:,:,i).*app.OriginalSegmenterImageData(:,:,i);
-                end
-            end
-            uiconfirm(app.UIFigure, "Data segmented successfully using external mask.", "External Segmentation","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            RefreshImage(app, 'segmenter')
+            uiconfirm(app.UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: CalculateDSCmapsButton
@@ -1350,8 +1202,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Get volumetric data and sequence parameters for map
             % calculation
             drop_Value = app.SelectvolumetricdataDropDown.Value; 
-            TE = table2array(app.ExperimentPropertyTable({drop_Value}, "TE"));
-            TR = table2array(app.ExperimentPropertyTable({drop_Value}, "TR"));            
+            TE = cell2mat(app.ExperimentPropertyTable.(3)(drop_Value));
+            TR = cell2mat(app.ExperimentPropertyTable.(4)(drop_Value));            
             work_Data = cell2mat(app.SavedTableSegmenter.Image(drop_Value));
             app.WorkMaskDSC = cell2mat(app.SavedTableSegmenter.Mask(drop_Value));
             
@@ -1375,25 +1227,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceSpinner_DSCMaps.Enable = 'on';
                 app.SliceSpinner_DSCMaps.Value = 1;
     
-                if app.DSCMapDropDown.Value == "CBF"
-                    if app.SVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.svd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    elseif app.cSVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.csvd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    elseif app.oSVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.osvd.map(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    end
-                elseif app.DSCMapDropDown.Value == "CBV"
-                    app.DSCImage = imshow(app.CBVData(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "MTT"
-                    if app.SVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.svd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    elseif app.cSVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.csvd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    elseif app.oSVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.osvd(:,:,1), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    end 
-                end
+                RefreshImage(app, 'DSC')
                 app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
             else
                 uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
@@ -1415,26 +1249,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function DSCMapDropDownValueChanged(app, event)
             
             % Display chosen map image based on method selected
-            if app.DSCMapDropDown.Value == "CBF"
-                if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
-                elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                end
-            elseif app.DSCMapDropDown.Value == "CBV"
-                app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-            elseif app.DSCMapDropDown.Value == "MTT"
-                if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
-                elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
-                end
-            end
+            RefreshImage(app, 'DSC')
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+
+            if app.DSCMapDropDown.Value == "CBV"
+                app.SVDButton.Enable = 'off';
+                app.cSVDButton.Enable = 'off';
+                app.oSVDButton.Enable = 'off';
+            else
+                app.SVDButton.Enable = 'on';
+                app.cSVDButton.Enable = 'on';
+                app.oSVDButton.Enable = 'on';
+            end
             
             % Reset zoom and comparation data
             app.UIAxes_DSCMaps.XLim = [-inf inf];
@@ -1447,25 +1273,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Display chosen map image based on method selected and spinner
             % Value
-            if app.DSCMapDropDown.Value == "CBF"
-                if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
-                elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
-                end
-            elseif app.DSCMapDropDown.Value == "CBV"
-                app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-            elseif app.DSCMapDropDown.Value == "MTT"
-                if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
-                elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
-                elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
-                end
-            end
+            RefreshImage(app, 'DSC')
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
             % Reset zoom and comparation data
@@ -1478,32 +1286,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function MethodButtonGroupSelectionChanged(app, event)
             
             % Display chosen map image based on method selected
-            selectedButton = app.MethodButtonGroup.SelectedObject.Text;
-            if selectedButton == "SVD"
-                if app.DSCMapDropDown.Value == "CBF"
-                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "CBV"
-                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "MTT"
-                    app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
-                end
-            elseif selectedButton == "cSVD"
-                if app.DSCMapDropDown.Value == "CBF"
-                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "CBV"
-                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "MTT"
-                    app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
-                end
-            elseif selectedButton == "oSVD"
-                if app.DSCMapDropDown.Value == "CBF"
-                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "CBV"
-                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                elseif app.DSCMapDropDown.Value == "MTT"
-                    app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
-                end
-            end
+            RefreshImage(app, 'DSC')
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
             % Reset zoom
@@ -2132,15 +1915,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             split_instr = split_instr(2:end);
 
             app.RegisteredImageData = [];
-            %disp(split_instr)
+            app.RegisteredMask = [];
+
+            moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
+            fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
+            fixed_Mask = cell2mat(app.SavedTableSegmenter.Mask(app.SelectfixedDropDown.Value)); 
+
+            if app.UsedifferentparametermapCheckBox.Value == 1
+                parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
+            end
+            
             for i=1:length(split_instr)
 
                 slice_instr = cell2mat(split_instr(i));
-                %disp(slice_instr)
                 F_ind = strfind(slice_instr, 'f');
 
                 moving_slice = str2num(slice_instr(2:(F_ind-1))); %#ok<ST2NM> 
-                moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
+                
                 if app.FixDim4CheckBox_Moving.Value == 1   
                     moving_Image_py = py.numpy.array(moving_Image(:,:,moving_slice,app.Dim4Spinner_Moving.Value));
                 else
@@ -2150,7 +1941,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 if ~contains(slice_instr, 'p') == 1
                     fixed_slice = str2num(slice_instr((F_ind+1):end)); %#ok<ST2NM> 
 
-                    fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
                     if app.FixDim4CheckBox_Fixed.Value == 1   
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
                     else
@@ -2160,19 +1950,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     resultImage_py = pyrunfile("Basic.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
                     resultImage = single(resultImage_py);
                     app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
+                    app.RegisteredMask = cat(3,app.RegisteredMask, fixed_Mask(:,:,fixed_slice));
                 else
                     P_ind = strfind(slice_instr, 'p');
                     fixed_slice = str2num(slice_instr((F_ind+1):(P_ind-1))); %#ok<ST2NM> 
                     param_slice = str2num(slice_instr((P_ind+1):end)); %#ok<ST2NM> 
 
-                    fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
                     if app.FixDim4CheckBox_Fixed.Value == 1   
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice,app.Dim4Spinner_Fixed.Value));
                     else
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,fixed_slice));
                     end
 
-                    parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
+
                     if app.FixDim4CheckBox_Parameter.Value == 1   
                         parameter_Image_py = py.numpy.array(parameter_Image(:,:,param_slice,app.Dim4Spinner_Parameter.Value));
                     else
@@ -2182,10 +1972,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     resultImage_py = pyrunfile("Transformix.py", "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
                     resultImage = single(resultImage_py);
                     app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
+                    app.RegisteredMask = cat(3,app.RegisteredMask, fixed_Mask(:,:,fixed_slice));
                 end
-                %disp(moving_slice)
-                %disp(fixed_slice)
-                %disp(param_slice)
             end
 
             imshow(app.RegisteredImageData(:,:,1), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
@@ -2218,7 +2006,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             niftiwrite(app.RegisteredImageData, append(temp_dir, 'RegisteredImageData'))
             
             % Update last action label
-            %app.ActionLabel.Text = "Segmented sequence mask and image data exported in NIfTI format.";
             uiconfirm(app.UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
@@ -2227,30 +2014,268 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             TE_time = 0;
             TR_time = 0;
-            visu_AcqProt = {append('Registered data ', num2str(app.RegistrationCounter), '.')};
+            exp_ID = {append('Registered data ', num2str(app.RegistrationCounter), '.')};
             try
-                voxel_Dims = table2array(app.ExperimentPropertyTable({app.SelectfixedDropDown.Value}, "Voxel dimensions"));
+                voxel_Dims = cell2mat(app.ExperimentPropertyTable.(5)(app.SelectfixedDropDown.Value));
             catch 
                 voxel_Dims = [0 0];
             end
             exp_ImageData = {app.RegisteredImageData};
+            exp_MaskData = {app.RegisteredMask};
 
             % Update registration counter used for naming
             app.RegistrationCounter = app.RegistrationCounter+1;
-
             
-            % Construct temporary sequence property table and combine with
-            % main
-            exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimensions"];
-            temp_Table = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
-            app.ExperimentPropertyTable = [app.ExperimentPropertyTable; temp_Table];
-            app.UITable.Data=app.ExperimentPropertyTable;
-            app.UITable.ColumnName = variable_Names;
+            selection = uiconfirm(app.UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
+            switch selection
+                case 'Save Mask'
+                    exp_MaskData = {app.RegisteredMask};
+                case 'Save without Mask'
+                    exp_MaskData = zeros(size(exp_ImageData));
+            end
+            % Construct temporary sequence property table and combine with main
+            variable_Names = ["Experiment ID", "Image data", "Mask data","TE", "TR", "Voxel dimensions"];
+            temp_Table = table(exp_ID, exp_ImageData, exp_MaskData, TE_time, TR_time, voxel_Dims, 'RowNames', exp_ID, 'VariableNames', variable_Names);
+            app.SavedTableRegistration = [app.SavedTableRegistration; temp_Table];
+%             app.UITable.Data=app.ExperimentPropertyTable;
+%             app.UITable.ColumnName = variable_Names;
             
             % Update drop down items
-            app.PreviewDropDown.Items = app.ExperimentPropertyTable.(1);
-            app.SegmentDropDown.Items = app.ExperimentPropertyTable.(1);
+            app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
+            app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+
+            % Display confirmation figure
+            uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+        end
+
+        % Callback function
+        function ButtonPushed(app, event)
+            app.BrainSegmentationToolsPanel.Visible='on';
+        end
+
+        % Button pushed function: LoadPvDatasetsFileButton
+        function LoadPvDatasetsFileButtonPushed(app, event)
+                        
+            % Draw a progress box 
+
+            progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
+                 'Message', "Purging old temporary data");
+            drawnow
+
+            % Purge old temporary data
+            try
+                rmdir(app.WorkingFolder, "s");
+            catch
+            end
+            
+            % Select .PvDatasets file, check for cancel and update the edit field text
+            progress.Value = 0.2;
+            progress.Message = "Selecting an archive file";
+            [file, folder] = uigetfile('*.PvDatasets', 'Select a Bruker archive file');
+            figure(app.UIFigure);
+            if isequal(file, 0)
+                close(progress);
+                return;
+            end
+            app.PvDatasetsFile = fullfile(folder, file);
+            app.ArchiveFileEditField.Value = app.PvDatasetsFile;
+            
+            % Extract the archive file to TEMP folder
+            progress.Value = 0.4;
+            progress.Message = "Unzipping selected archive";
+            unzip(app.PvDatasetsFile, app.WorkingFolder);
+            temp = struct2cell(dir(fullfile(app.WorkingFolder, '*')));
+            
+            % Check if selected archive is a study or a subject file
+            progress.Value = 0.6;
+            progress.Message = "Selecting a study to load";
+            if regexp(temp{1,end}, '.*\.study$') == 1
+                app.StudyPath = fullfile(app.WorkingFolder, temp{1,end-1});
+            elseif regexp(temp{1,end}, '.*\.subject$') == 1
+                app.StudyPath = uigetdir(app.WorkingFolder, 'Select a study folder to use');
+                figure(app.UIFigure);
+            else
+                uiconfirm(app.UIFigure, "Unkown archive type.", "","Options",{'OK'},"DefaultOption",1, "Icon","error");
+                return;
+            end
+
+            
+            % Create property arrays of sequences in selected study
+            progress.Value = 0.8;
+            progress.Message = "Importing individual experiments";
+            visu_AcqProt = {'None'};
+            TE_time = 0;
+            TR_time = 0;  
+            exp_ImageData = {[]};
+            voxel_Dims = [0 0];
+
+            filelist_studyPath = dir(app.StudyPath);
+            filelist_studyPath = sort(rmmissing(str2double({filelist_studyPath.name})));
+            
+            for i=filelist_studyPath % List through experiments 
+                experiment_dir = fullfile(app.StudyPath, filesep, num2str(i), filesep, 'pdata');
+                filelist_expDir = dir(experiment_dir);
+                filelist_expDir = rmmissing(str2double({filelist_expDir.name}));
+
+                for j=filelist_expDir % List through processings
+                    progress.Message = "Importing experiment nr." + num2str(i) + " processing nr." + num2str(j);
+                    try
+                        % Create image object
+                        processing_dir = fullfile(experiment_dir, filesep, num2str(j));
+                        imageObj = ImageDataObject(processing_dir);
+                        try
+                            attempt_AcqProt = imageObj.Visu.VisuAcquisitionProtocol;
+                        catch
+                            attempt_AcqProt = imageObj.Visu.VisuSeriesTypeId;
+                        end
+                        
+                        % Store properties into respective arrays if a
+                        % minimum of 3 dimensions is sastisfied
+                        n_dims = size(size(squeeze(imageObj.data)));
+                        if n_dims(2)>=3 
+                            exp_ImageData = cat(1, exp_ImageData, {squeeze(pagetranspose(imageObj.data))});
+                            visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '-', num2str(j), '. ', attempt_AcqProt));
+                            try
+                                voxel_Dims = cat(1, voxel_Dims, imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize);
+                                try
+                                    TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^-3);
+                                    TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
+                                catch
+                                    TE_time = cat(1, TE_time, 0);
+                                    TR_time = cat(1, TR_time, 0);
+                                end
+                            catch
+                                voxel_Dims = cat(1, voxel_Dims, [0 0]);
+                                TE_time = cat(1, TE_time, 0);
+                                TR_time = cat(1, TR_time, 0);
+                            end
+                        else
+                        end
+                    catch
+                    end
+                end
+            end
+
+            % Construct experiment property table
+            progress.Value = 0.9;
+            progress.Message = "Constructing property table";
+            exp_ID = visu_AcqProt;
+            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimensions"];
+            app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+            app.UITable.Data=app.ExperimentPropertyTable;
+            app.UITable.ColumnName = variable_Names;
+
+            % Populate text fields from last loaded imageObj for study info
+            progress.Message = "Populating information fields";
+            app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
+            app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
+            app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
+            app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
+            app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
+            app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
+            app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
+            app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
+            app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
+            BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
+                str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
+            StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
+                str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
+                str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
+            app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+
+
+            
+            % Update drop down items
+            app.PreviewDropDown.Items = visu_AcqProt;
+            app.SegmentDropDown.Items = visu_AcqProt;
+            
+            % close the dialog box
+            progress.Value = 1;
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+        end
+
+        % Button pushed function: ResetEnvironment
+        function ResetEnvironmentButtonPushed(app, event)
+            selection = uiconfirm(app.UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
+                        'Icon','warning');
+            switch selection 
+                case 'OK'  
+                    % Reset tables
+                    app.ExperimentPropertyTable = table();
+                    app.UITable.Data=app.ExperimentPropertyTable;
+                    app.SavedTableSegmenter = table();
+    
+                    % Reset counters
+                    app.LoadCounter = 1;
+                    app.ROICounter = 1;
+                    app.RegistrationCounter = 1;
+    
+                    % Reset drop downs and text fields
+                    app.PreviewDropDown.Items = {'None'};
+                    app.SegmentDropDown.Items = {'None'};
+                    app.DropDownItemsSaved = {'None'};
+                    app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectASLDropDown.Items = app.DropDownItemsSaved;
+                    app.DSCMapDropDown.Value = 'CBF';
+                    app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
+                    app.ArchiveFileEditField.Value = "";
+    
+                    % Reset UIAxes
+                    cla(app.UIAxes_Preview);
+                    cla(app.UIAxes_Segmenter);
+                    cla(app.UIAxes_ASL);
+                    cla(app.UIAxes_DSCMaps);
+                    cla(app.UIAxes_Registration);
+                    
+                    % Reset sliders and spinners
+                    app.RotateButton_Preview.Enable = 'off';
+                    app.BrightnessSlider_Preview.Value = 0;
+                    app.BrightnessSlider_Preview.Enable = 'off';
+                    app.ContrastSlider_Preview.Value = 0;
+                    app.ContrastSlider_Preview.Enable = 'off';
+                    app.SliceSpinner_Preview.Value = 1;
+                    app.SliceSpinner_Preview.Enable = 'off';
+                    app.SliceSlider_Preview.Value = 1;
+                    app.SliceSlider_Preview.Enable = 'off';
+                    app.Dim4Slider_Preview.Value = 1;
+                    app.Dim5Slider_Preview.Value = 1;
+                    app.SliceSlider_Segmenter.Value = 1;
+                    app.SliceSpinner_Segmenter.Value = 1;
+                    app.Dim4Spinner_Segmenter.Value = 1;
+                    app.Dim5Spinner_Segmenter.Value = 1;
+                    app.ContrastSlider_Segmenter.Value = 1;
+                    app.BrightnessSlider_Segmenter.Value = 1;
+                    app.SliceSpinner_ASL.Value = 1;
+                    app.SliceSpinner_DSCMaps.Value = 1;
+                    app.SliceSpinner_Fixed.Value = 1;
+                    app.SliceSpinner_Moving.Value = 1;
+                    app.SliceSpinner_Parameter.Value = 1;
+    
+                    % Populate text fields from last loaded imageObj for study info
+                    app.SubjectIDEditField.Value = "";
+                    app.StudyIDEditField.Value = "";
+                    app.SubjectCommentEditField.Value = "";
+                    app.StudyCommentEditField.Value = "";
+                    app.SubjectTypeEditField.Value = "";
+                    app.SexEditField.Value = "";
+                    app.WeightEditField.Value = "";
+                    app.StudyStartDateEditField.Value = "";
+                    app.StudyStartTimeEditField.Value = "";
+                    app.SubjectAgeEditField.Value = "";
+                case 'Cancel'
+                    return
+            end
         end
     end
 
@@ -2265,11 +2290,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIFigure.AutoResizeChildren = 'off';
             app.UIFigure.Position = [100 100 1436 746];
             app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.KeyPressFcn = createCallbackFcn(app, @UIFigureKeyPress, true);
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
             app.TabGroup.AutoResizeChildren = 'off';
-            app.TabGroup.Position = [2 -1 1434 748];
+            app.TabGroup.Position = [1 -1 1437 748];
 
             % Create PreviewTab
             app.PreviewTab = uitab(app.TabGroup);
@@ -2285,12 +2311,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Preview.XTickLabel = '';
             app.UIAxes_Preview.YTick = [];
             app.UIAxes_Preview.YTickLabel = '';
-            app.UIAxes_Preview.Position = [741 123 607 425];
+            app.UIAxes_Preview.Position = [750 57 607 425];
 
             % Create PreviewLabel
             app.PreviewLabel = uilabel(app.PreviewTab);
             app.PreviewLabel.HorizontalAlignment = 'right';
-            app.PreviewLabel.Position = [918 550 48 22];
+            app.PreviewLabel.Position = [927 484 48 22];
             app.PreviewLabel.Text = 'Preview';
 
             % Create PreviewDropDown
@@ -2298,42 +2324,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = {};
             app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
             app.PreviewDropDown.Placeholder = 'None';
-            app.PreviewDropDown.Position = [981 550 229 22];
+            app.PreviewDropDown.Position = [990 484 229 22];
             app.PreviewDropDown.Value = {};
-
-            % Create LoadAllButton
-            app.LoadAllButton = uibutton(app.PreviewTab, 'push');
-            app.LoadAllButton.ButtonPushedFcn = createCallbackFcn(app, @LoadAllButtonPushed, true);
-            app.LoadAllButton.Position = [823 648 100 22];
-            app.LoadAllButton.Text = 'Load All';
-
-            % Create StudyfolderEditFieldLabel
-            app.StudyfolderEditFieldLabel = uilabel(app.PreviewTab);
-            app.StudyfolderEditFieldLabel.HorizontalAlignment = 'right';
-            app.StudyfolderEditFieldLabel.Position = [401 647 70 22];
-            app.StudyfolderEditFieldLabel.Text = {'Study folder'; ''};
-
-            % Create StudyfolderEditField
-            app.StudyfolderEditField = uieditfield(app.PreviewTab, 'text');
-            app.StudyfolderEditField.Editable = 'off';
-            app.StudyfolderEditField.Position = [479 647 337 22];
-
-            % Create UITable
-            app.UITable = uitable(app.PreviewTab);
-            app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
-            app.UITable.RowName = {};
-            app.UITable.Position = [67 96 599 452];
-
-            % Create LoadsingleButton
-            app.LoadsingleButton = uibutton(app.PreviewTab, 'push');
-            app.LoadsingleButton.ButtonPushedFcn = createCallbackFcn(app, @LoadsingleButtonPushed, true);
-            app.LoadsingleButton.Position = [932 648 100 22];
-            app.LoadsingleButton.Text = 'Load single';
 
             % Create Dim5Slider_PreviewLabel
             app.Dim5Slider_PreviewLabel = uilabel(app.PreviewTab);
             app.Dim5Slider_PreviewLabel.HorizontalAlignment = 'right';
-            app.Dim5Slider_PreviewLabel.Position = [691 338 44 22];
+            app.Dim5Slider_PreviewLabel.Position = [700 272 44 22];
             app.Dim5Slider_PreviewLabel.Text = 'Dim - 5';
 
             % Create Dim5Slider_Preview
@@ -2344,12 +2341,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim5Slider_Preview.ValueChangingFcn = createCallbackFcn(app, @Dim5Slider_PreviewValueChanging, true);
             app.Dim5Slider_Preview.MinorTicks = [];
             app.Dim5Slider_Preview.Enable = 'off';
-            app.Dim5Slider_Preview.Position = [714 366 3 150];
+            app.Dim5Slider_Preview.Position = [723 300 3 150];
 
             % Create Dim4Slider_PreviewLabel
             app.Dim4Slider_PreviewLabel = uilabel(app.PreviewTab);
             app.Dim4Slider_PreviewLabel.HorizontalAlignment = 'right';
-            app.Dim4Slider_PreviewLabel.Position = [691 139 44 22];
+            app.Dim4Slider_PreviewLabel.Position = [700 73 44 22];
             app.Dim4Slider_PreviewLabel.Text = 'Dim - 4';
 
             % Create Dim4Slider_Preview
@@ -2360,13 +2357,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Slider_Preview.ValueChangingFcn = createCallbackFcn(app, @Dim4Slider_PreviewValueChanging, true);
             app.Dim4Slider_Preview.MinorTicks = [];
             app.Dim4Slider_Preview.Enable = 'off';
-            app.Dim4Slider_Preview.Position = [714 167 3 150];
-
-            % Create ResetEnvironment
-            app.ResetEnvironment = uibutton(app.PreviewTab, 'push');
-            app.ResetEnvironment.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonPushed, true);
-            app.ResetEnvironment.Position = [660 613 116 22];
-            app.ResetEnvironment.Text = 'Reset environment';
+            app.Dim4Slider_Preview.Position = [723 101 3 150];
 
             % Create SliceSpinner_Preview
             app.SliceSpinner_Preview = uispinner(app.PreviewTab);
@@ -2374,13 +2365,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreviewValueChanged, true);
             app.SliceSpinner_Preview.HorizontalAlignment = 'center';
             app.SliceSpinner_Preview.Enable = 'off';
-            app.SliceSpinner_Preview.Position = [1184 81 53 22];
+            app.SliceSpinner_Preview.Position = [1193 15 53 22];
             app.SliceSpinner_Preview.Value = 1;
 
             % Create SliceLabel
             app.SliceLabel = uilabel(app.PreviewTab);
             app.SliceLabel.HorizontalAlignment = 'right';
-            app.SliceLabel.Position = [893 81 31 22];
+            app.SliceLabel.Position = [902 15 31 22];
             app.SliceLabel.Text = 'Slice';
 
             % Create SliceSlider_Preview
@@ -2390,13 +2381,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Preview.MajorTickLabels = {};
             app.SliceSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreviewValueChanging, true);
             app.SliceSlider_Preview.MinorTicks = [];
-            app.SliceSlider_Preview.Position = [945 90 221 3];
+            app.SliceSlider_Preview.Position = [954 24 221 3];
             app.SliceSlider_Preview.Value = 1;
 
             % Create BrightnessSliderLabel
             app.BrightnessSliderLabel = uilabel(app.PreviewTab);
             app.BrightnessSliderLabel.HorizontalAlignment = 'center';
-            app.BrightnessSliderLabel.Position = [1355 341 62 22];
+            app.BrightnessSliderLabel.Position = [1364 275 62 22];
             app.BrightnessSliderLabel.Text = 'Brightness';
 
             % Create BrightnessSlider_Preview
@@ -2407,12 +2398,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @BrightnessSlider_PreviewValueChanging, true);
             app.BrightnessSlider_Preview.MinorTicks = [];
             app.BrightnessSlider_Preview.Enable = 'off';
-            app.BrightnessSlider_Preview.Position = [1384 371 3 150];
+            app.BrightnessSlider_Preview.Position = [1393 305 3 150];
 
             % Create ContrastSliderLabel
             app.ContrastSliderLabel = uilabel(app.PreviewTab);
             app.ContrastSliderLabel.HorizontalAlignment = 'center';
-            app.ContrastSliderLabel.Position = [1359 143 51 22];
+            app.ContrastSliderLabel.Position = [1368 77 51 22];
             app.ContrastSliderLabel.Text = 'Contrast';
 
             % Create ContrastSlider_Preview
@@ -2423,12 +2414,180 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @ContrastSlider_PreviewValueChanging, true);
             app.ContrastSlider_Preview.MinorTicks = [];
             app.ContrastSlider_Preview.Enable = 'off';
-            app.ContrastSlider_Preview.Position = [1383 173 3 150];
+            app.ContrastSlider_Preview.Position = [1392 107 3 150];
+
+            % Create LoadPvDatasetsFileButton
+            app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
+            app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
+            app.LoadPvDatasetsFileButton.Position = [531 645 142 22];
+            app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
+
+            % Create ArchiveFileEditField
+            app.ArchiveFileEditField = uieditfield(app.PreviewTab, 'text');
+            app.ArchiveFileEditField.Editable = 'off';
+            app.ArchiveFileEditField.Position = [116 669 558 22];
+
+            % Create UITable
+            app.UITable = uitable(app.PreviewTab);
+            app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
+            app.UITable.RowName = {};
+            app.UITable.Position = [44 21 630 576];
+
+            % Create ResetEnvironment
+            app.ResetEnvironment = uibutton(app.PreviewTab, 'push');
+            app.ResetEnvironment.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonPushed, true);
+            app.ResetEnvironment.Position = [411 645 116 22];
+            app.ResetEnvironment.Text = 'Reset environment';
+
+            % Create SubjectIDEditFieldLabel
+            app.SubjectIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectIDEditFieldLabel.HorizontalAlignment = 'right';
+            app.SubjectIDEditFieldLabel.Position = [718 673 61 22];
+            app.SubjectIDEditFieldLabel.Text = 'Subject ID';
+
+            % Create SubjectIDEditField
+            app.SubjectIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectIDEditField.Editable = 'off';
+            app.SubjectIDEditField.HorizontalAlignment = 'center';
+            app.SubjectIDEditField.FontSize = 14;
+            app.SubjectIDEditField.FontWeight = 'bold';
+            app.SubjectIDEditField.Position = [794 673 263 22];
+
+            % Create StudyIDEditFieldLabel
+            app.StudyIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyIDEditFieldLabel.HorizontalAlignment = 'right';
+            app.StudyIDEditFieldLabel.Position = [1066 673 52 22];
+            app.StudyIDEditFieldLabel.Text = 'Study ID';
+
+            % Create StudyIDEditField
+            app.StudyIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyIDEditField.Editable = 'off';
+            app.StudyIDEditField.HorizontalAlignment = 'center';
+            app.StudyIDEditField.FontSize = 14;
+            app.StudyIDEditField.FontWeight = 'bold';
+            app.StudyIDEditField.Position = [1133 673 276 22];
+
+            % Create SubjectCommentEditFieldLabel
+            app.SubjectCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectCommentEditFieldLabel.HorizontalAlignment = 'right';
+            app.SubjectCommentEditFieldLabel.Position = [718 641 101 22];
+            app.SubjectCommentEditFieldLabel.Text = 'Subject Comment';
+
+            % Create SubjectCommentEditField
+            app.SubjectCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectCommentEditField.Editable = 'off';
+            app.SubjectCommentEditField.Position = [834 641 223 22];
+
+            % Create StudyCommentEditFieldLabel
+            app.StudyCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyCommentEditFieldLabel.HorizontalAlignment = 'right';
+            app.StudyCommentEditFieldLabel.Position = [1066 643 92 22];
+            app.StudyCommentEditFieldLabel.Text = 'Study Comment';
+
+            % Create StudyCommentEditField
+            app.StudyCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyCommentEditField.Editable = 'off';
+            app.StudyCommentEditField.FontSize = 14;
+            app.StudyCommentEditField.FontWeight = 'bold';
+            app.StudyCommentEditField.Position = [1165 640 243 22];
+
+            % Create SubjectAgeEditFieldLabel
+            app.SubjectAgeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel.HorizontalAlignment = 'right';
+            app.SubjectAgeEditFieldLabel.Position = [718 609 70 22];
+            app.SubjectAgeEditFieldLabel.Text = 'Subject Age';
+
+            % Create SubjectAgeEditField
+            app.SubjectAgeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectAgeEditField.Editable = 'off';
+            app.SubjectAgeEditField.HorizontalAlignment = 'right';
+            app.SubjectAgeEditField.FontSize = 14;
+            app.SubjectAgeEditField.FontWeight = 'bold';
+            app.SubjectAgeEditField.Position = [834 609 181 22];
+
+            % Create SubjectAgeEditFieldLabel_2
+            app.SubjectAgeEditFieldLabel_2 = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel_2.Position = [1024 609 33 22];
+            app.SubjectAgeEditFieldLabel_2.Text = 'days';
+
+            % Create StudyStartTimeEditFieldLabel
+            app.StudyStartTimeEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartTimeEditFieldLabel.HorizontalAlignment = 'right';
+            app.StudyStartTimeEditFieldLabel.Position = [1066 610 94 22];
+            app.StudyStartTimeEditFieldLabel.Text = 'Study Start Time';
+
+            % Create StudyStartTimeEditField
+            app.StudyStartTimeEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartTimeEditField.Editable = 'off';
+            app.StudyStartTimeEditField.HorizontalAlignment = 'right';
+            app.StudyStartTimeEditField.FontSize = 14;
+            app.StudyStartTimeEditField.FontWeight = 'bold';
+            app.StudyStartTimeEditField.Position = [1170 608 239 22];
+
+            % Create StudyStartDateEditFieldLabel
+            app.StudyStartDateEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartDateEditFieldLabel.HorizontalAlignment = 'right';
+            app.StudyStartDateEditFieldLabel.Position = [1066 576 94 22];
+            app.StudyStartDateEditFieldLabel.Text = 'Study Start Date';
+
+            % Create StudyStartDateEditField
+            app.StudyStartDateEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartDateEditField.Editable = 'off';
+            app.StudyStartDateEditField.HorizontalAlignment = 'right';
+            app.StudyStartDateEditField.FontSize = 14;
+            app.StudyStartDateEditField.FontWeight = 'bold';
+            app.StudyStartDateEditField.Position = [1170 576 238 22];
+
+            % Create SubjectTypeEditFieldLabel
+            app.SubjectTypeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectTypeEditFieldLabel.HorizontalAlignment = 'right';
+            app.SubjectTypeEditFieldLabel.Position = [718 577 75 22];
+            app.SubjectTypeEditFieldLabel.Text = 'Subject Type';
+
+            % Create SubjectTypeEditField
+            app.SubjectTypeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectTypeEditField.Editable = 'off';
+            app.SubjectTypeEditField.Position = [835 577 223 22];
+
+            % Create SexEditFieldLabel
+            app.SexEditFieldLabel = uilabel(app.PreviewTab);
+            app.SexEditFieldLabel.HorizontalAlignment = 'right';
+            app.SexEditFieldLabel.Position = [718 545 26 22];
+            app.SexEditFieldLabel.Text = 'Sex';
+
+            % Create SexEditField
+            app.SexEditField = uieditfield(app.PreviewTab, 'text');
+            app.SexEditField.Editable = 'off';
+            app.SexEditField.Position = [759 545 132 22];
+
+            % Create WeightEditFieldLabel
+            app.WeightEditFieldLabel = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel.HorizontalAlignment = 'right';
+            app.WeightEditFieldLabel.Position = [895 545 43 22];
+            app.WeightEditFieldLabel.Text = 'Weight';
+
+            % Create WeightEditField
+            app.WeightEditField = uieditfield(app.PreviewTab, 'text');
+            app.WeightEditField.Editable = 'off';
+            app.WeightEditField.HorizontalAlignment = 'right';
+            app.WeightEditField.Position = [948 545 88 22];
+
+            % Create WeightEditFieldLabel_2
+            app.WeightEditFieldLabel_2 = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel_2.Position = [1042 544 16 22];
+            app.WeightEditFieldLabel_2.Text = 'kg';
+
+            % Create ArchivefileLabel
+            app.ArchivefileLabel = uilabel(app.PreviewTab);
+            app.ArchivefileLabel.HorizontalAlignment = 'right';
+            app.ArchivefileLabel.Position = [44 669 64 22];
+            app.ArchivefileLabel.Text = 'Archive file';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
             app.SegmenterTab.AutoResizeChildren = 'off';
             app.SegmenterTab.Title = 'Segmenter';
+            app.SegmenterTab.BackgroundColor = [0.9412 0.9412 0.9412];
 
             % Create UIAxes_Segmenter
             app.UIAxes_Segmenter = uiaxes(app.SegmenterTab);
@@ -2458,44 +2617,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_SegmenterValueChanged, true);
             app.SliceSpinner_Segmenter.Position = [460 18 47 22];
             app.SliceSpinner_Segmenter.Value = 1;
-
-            % Create ImageshownSwitchLabel
-            app.ImageshownSwitchLabel = uilabel(app.SegmenterTab);
-            app.ImageshownSwitchLabel.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel.Position = [1237 546 77 22];
-            app.ImageshownSwitchLabel.Text = {'Image shown'; ''};
-
-            % Create ImageshownSwitch
-            app.ImageshownSwitch = uiswitch(app.SegmenterTab, 'slider');
-            app.ImageshownSwitch.Items = {'Overlay', 'Masked'};
-            app.ImageshownSwitch.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitchValueChanged, true);
-            app.ImageshownSwitch.Enable = 'off';
-            app.ImageshownSwitch.Position = [1252 575 45 20];
-            app.ImageshownSwitch.Value = 'Overlay';
-
-            % Create ResetsliceButton
-            app.ResetsliceButton = uibutton(app.SegmenterTab, 'push');
-            app.ResetsliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetsliceButtonPushed, true);
-            app.ResetsliceButton.Position = [1166 102 100 22];
-            app.ResetsliceButton.Text = 'Reset slice';
-
-            % Create IBrainsegmentationLabel
-            app.IBrainsegmentationLabel = uilabel(app.SegmenterTab);
-            app.IBrainsegmentationLabel.Position = [1216 513 119 22];
-            app.IBrainsegmentationLabel.Text = {'I. Brain segmentation'; ''};
-
-            % Create SavesliceButton
-            app.SavesliceButton = uibutton(app.SegmenterTab, 'push');
-            app.SavesliceButton.ButtonPushedFcn = createCallbackFcn(app, @SavesliceButtonPushed, true);
-            app.SavesliceButton.Position = [1276 102 100 22];
-            app.SavesliceButton.Text = 'Save slice';
-
-            % Create ActionLabel
-            app.ActionLabel = uilabel(app.SegmenterTab);
-            app.ActionLabel.HorizontalAlignment = 'center';
-            app.ActionLabel.FontAngle = 'italic';
-            app.ActionLabel.Position = [1124 70 293 25];
-            app.ActionLabel.Text = 'Last performed action will be shown here';
 
             % Create SavesequenceButton
             app.SavesequenceButton = uibutton(app.SegmenterTab, 'push');
@@ -2534,157 +2655,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim5Spinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_SegmenterValueChanged, true);
             app.Dim5Spinner_Segmenter.Enable = 'off';
             app.Dim5Spinner_Segmenter.Position = [698 18 51 22];
-
-            % Create SegmentusingexternalmaskButton
-            app.SegmentusingexternalmaskButton = uibutton(app.SegmenterTab, 'push');
-            app.SegmentusingexternalmaskButton.ButtonPushedFcn = createCallbackFcn(app, @SegmentusingexternalmaskButtonPushed, true);
-            app.SegmentusingexternalmaskButton.Position = [1190 615 174 22];
-            app.SegmentusingexternalmaskButton.Text = 'Segment using external mask';
-
-            % Create IIHemisphereselectionLabel
-            app.IIHemisphereselectionLabel = uilabel(app.SegmenterTab);
-            app.IIHemisphereselectionLabel.Position = [1208 331 134 22];
-            app.IIHemisphereselectionLabel.Text = {'II. Hemisphere selection'; ''};
-
-            % Create HemisphereButtonGroup
-            app.HemisphereButtonGroup = uibuttongroup(app.SegmenterTab);
-            app.HemisphereButtonGroup.AutoResizeChildren = 'off';
-            app.HemisphereButtonGroup.BorderType = 'none';
-            app.HemisphereButtonGroup.TitlePosition = 'centertop';
-            app.HemisphereButtonGroup.Title = 'Hemisphere ';
-            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.HemisphereButtonGroup.Position = [1162 249 100 74];
-
-            % Create LeftblueButton
-            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.LeftblueButton.Text = 'Left - blue';
-            app.LeftblueButton.Position = [11 29 75 22];
-            app.LeftblueButton.Value = true;
-
-            % Create RightredButton
-            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.RightredButton.Text = 'Right - red';
-            app.RightredButton.Position = [11 7 78 22];
-
-            % Create CorrectionButton_Hemisphere
-            app.CorrectionButton_Hemisphere = uibutton(app.SegmenterTab, 'push');
-            app.CorrectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @CorrectionButton_HemispherePushed, true);
-            app.CorrectionButton_Hemisphere.Position = [1277 255 96 22];
-            app.CorrectionButton_Hemisphere.Text = {'Correction ROI'; ''};
-
-            % Create MainselectionButton_Hemisphere
-            app.MainselectionButton_Hemisphere = uibutton(app.SegmenterTab, 'push');
-            app.MainselectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_HemispherePushed, true);
-            app.MainselectionButton_Hemisphere.Position = [1277 291 96 22];
-            app.MainselectionButton_Hemisphere.Text = {'Main selection'; ''};
-
-            % Create IIILesionselectionLabel
-            app.IIILesionselectionLabel = uilabel(app.SegmenterTab);
-            app.IIILesionselectionLabel.Position = [1217 205 108 22];
-            app.IIILesionselectionLabel.Text = {'III. Lesion selection'; ''};
-
-            % Create MainselectionButton_Lesion
-            app.MainselectionButton_Lesion = uibutton(app.SegmenterTab, 'push');
-            app.MainselectionButton_Lesion.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_LesionPushed, true);
-            app.MainselectionButton_Lesion.Position = [1223 175 96 22];
-            app.MainselectionButton_Lesion.Text = {'Main selection'; ''};
-
-            % Create FreeButton_Add_Lesion
-            app.FreeButton_Add_Lesion = uibutton(app.SegmenterTab, 'push');
-            app.FreeButton_Add_Lesion.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_Add_LesionPushed, true);
-            app.FreeButton_Add_Lesion.Position = [1216 142 50 22];
-            app.FreeButton_Add_Lesion.Text = {'+ Free'; ''};
-
-            % Create FreeButton_Remove_Lesion
-            app.FreeButton_Remove_Lesion = uibutton(app.SegmenterTab, 'push');
-            app.FreeButton_Remove_Lesion.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_Remove_LesionPushed, true);
-            app.FreeButton_Remove_Lesion.Position = [1275 142 50 22];
-            app.FreeButton_Remove_Lesion.Text = {'- Free'; ''};
-
-            % Create InitialselectionButton
-            app.InitialselectionButton = uibutton(app.SegmenterTab, 'push');
-            app.InitialselectionButton.ButtonPushedFcn = createCallbackFcn(app, @InitialselectionButtonPushed, true);
-            app.InitialselectionButton.Position = [1171 482 100 22];
-            app.InitialselectionButton.Text = {'Initial selection'; ''};
-
-            % Create AutoClusterButton
-            app.AutoClusterButton = uibutton(app.SegmenterTab, 'push');
-            app.AutoClusterButton.ButtonPushedFcn = createCallbackFcn(app, @AutoClusterButtonPushed, true);
-            app.AutoClusterButton.Enable = 'off';
-            app.AutoClusterButton.Position = [1281 482 100 22];
-            app.AutoClusterButton.Text = 'Auto Cluster';
-
-            % Create DiskradiusSpinnerLabel
-            app.DiskradiusSpinnerLabel = uilabel(app.SegmenterTab);
-            app.DiskradiusSpinnerLabel.HorizontalAlignment = 'right';
-            app.DiskradiusSpinnerLabel.Position = [1223 413 65 22];
-            app.DiskradiusSpinnerLabel.Text = {'Disk radius'; ''};
-
-            % Create DiskradiusSpinner
-            app.DiskradiusSpinner = uispinner(app.SegmenterTab);
-            app.DiskradiusSpinner.Limits = [1 100];
-            app.DiskradiusSpinner.Position = [1230 380 58 22];
-            app.DiskradiusSpinner.Value = 3;
-
-            % Create OpenMaskButton
-            app.OpenMaskButton = uibutton(app.SegmenterTab, 'push');
-            app.OpenMaskButton.ButtonPushedFcn = createCallbackFcn(app, @OpenMaskButtonPushed, true);
-            app.OpenMaskButton.Position = [1129 412 82 22];
-            app.OpenMaskButton.Text = {'Open Mask'; ''};
-
-            % Create CloseMaskButton
-            app.CloseMaskButton = uibutton(app.SegmenterTab, 'push');
-            app.CloseMaskButton.ButtonPushedFcn = createCallbackFcn(app, @CloseMaskButtonPushed, true);
-            app.CloseMaskButton.Position = [1129 380 82 22];
-            app.CloseMaskButton.Text = {'Close Mask'; ''};
-
-            % Create MorphologyLabel
-            app.MorphologyLabel = uilabel(app.SegmenterTab);
-            app.MorphologyLabel.Position = [1175 443 68 15];
-            app.MorphologyLabel.Text = {'Morphology'; ''};
-
-            % Create ROILabel
-            app.ROILabel = uilabel(app.SegmenterTab);
-            app.ROILabel.Position = [1355 454 25 15];
-            app.ROILabel.Text = {'ROI'; ''; ''};
-
-            % Create FreeButton_Add
-            app.FreeButton_Add = uibutton(app.SegmenterTab, 'push');
-            app.FreeButton_Add.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_AddPushed, true);
-            app.FreeButton_Add.Position = [1313 423 50 22];
-            app.FreeButton_Add.Text = {'+ Free'; ''};
-
-            % Create PolyButton_Add
-            app.PolyButton_Add = uibutton(app.SegmenterTab, 'push');
-            app.PolyButton_Add.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_AddPushed, true);
-            app.PolyButton_Add.Position = [1313 391 50 22];
-            app.PolyButton_Add.Text = '+ Poly';
-
-            % Create PolyButton_Remove
-            app.PolyButton_Remove = uibutton(app.SegmenterTab, 'push');
-            app.PolyButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_RemovePushed, true);
-            app.PolyButton_Remove.Position = [1372 391 50 22];
-            app.PolyButton_Remove.Text = {'- Poly'; ''};
-
-            % Create FreeButton_Remove
-            app.FreeButton_Remove = uibutton(app.SegmenterTab, 'push');
-            app.FreeButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_RemovePushed, true);
-            app.FreeButton_Remove.Position = [1372 423 50 22];
-            app.FreeButton_Remove.Text = {'- Free'; ''};
-
-            % Create ConfirmButton
-            app.ConfirmButton = uibutton(app.SegmenterTab, 'push');
-            app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
-            app.ConfirmButton.Icon = 'check icon.png';
-            app.ConfirmButton.Position = [1337 362 26 22];
-            app.ConfirmButton.Text = '';
-
-            % Create DeleteButton
-            app.DeleteButton = uibutton(app.SegmenterTab, 'push');
-            app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
-            app.DeleteButton.Icon = 'x icon.png';
-            app.DeleteButton.Position = [1372 362 27 22];
-            app.DeleteButton.Text = '';
 
             % Create SliceSliderLabel
             app.SliceSliderLabel = uilabel(app.SegmenterTab);
@@ -2754,6 +2724,199 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Segmenter.MinorTicks = [];
             app.ContrastSlider_Segmenter.Enable = 'off';
             app.ContrastSlider_Segmenter.Position = [1070 102 3 230];
+
+            % Create CurrentsegmentationLabel
+            app.CurrentsegmentationLabel = uilabel(app.SegmenterTab);
+            app.CurrentsegmentationLabel.HorizontalAlignment = 'right';
+            app.CurrentsegmentationLabel.Position = [1212 609 121 22];
+            app.CurrentsegmentationLabel.Text = 'Current segmentation';
+
+            % Create CurrentSegmentationDropDown
+            app.CurrentSegmentationDropDown = uidropdown(app.SegmenterTab);
+            app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            app.CurrentSegmentationDropDown.ValueChangedFcn = createCallbackFcn(app, @CurrentSegmentationDropDownValueChanged, true);
+            app.CurrentSegmentationDropDown.Placeholder = 'None';
+            app.CurrentSegmentationDropDown.Position = [1175 579 202 21];
+            app.CurrentSegmentationDropDown.Value = 'Brain';
+
+            % Create ROIToolsPanel
+            app.ROIToolsPanel = uipanel(app.SegmenterTab);
+            app.ROIToolsPanel.AutoResizeChildren = 'off';
+            app.ROIToolsPanel.BorderType = 'none';
+            app.ROIToolsPanel.TitlePosition = 'centertop';
+            app.ROIToolsPanel.Title = 'ROI';
+            app.ROIToolsPanel.Position = [1199 118 149 140];
+
+            % Create FreeButton_Add
+            app.FreeButton_Add = uibutton(app.ROIToolsPanel, 'push');
+            app.FreeButton_Add.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_AddPushed, true);
+            app.FreeButton_Add.Position = [20 80 50 22];
+            app.FreeButton_Add.Text = {'+ Free'; ''};
+
+            % Create PolyButton_Add
+            app.PolyButton_Add = uibutton(app.ROIToolsPanel, 'push');
+            app.PolyButton_Add.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_AddPushed, true);
+            app.PolyButton_Add.Position = [20 48 50 22];
+            app.PolyButton_Add.Text = '+ Poly';
+
+            % Create PolyButton_Remove
+            app.PolyButton_Remove = uibutton(app.ROIToolsPanel, 'push');
+            app.PolyButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_RemovePushed, true);
+            app.PolyButton_Remove.Position = [79 48 50 22];
+            app.PolyButton_Remove.Text = {'- Poly'; ''};
+
+            % Create FreeButton_Remove
+            app.FreeButton_Remove = uibutton(app.ROIToolsPanel, 'push');
+            app.FreeButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_RemovePushed, true);
+            app.FreeButton_Remove.Position = [79 80 50 22];
+            app.FreeButton_Remove.Text = {'- Free'; ''};
+
+            % Create ConfirmButton
+            app.ConfirmButton = uibutton(app.ROIToolsPanel, 'push');
+            app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
+            app.ConfirmButton.Icon = 'check icon.png';
+            app.ConfirmButton.Position = [44 19 26 22];
+            app.ConfirmButton.Text = '';
+
+            % Create DeleteButton
+            app.DeleteButton = uibutton(app.ROIToolsPanel, 'push');
+            app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
+            app.DeleteButton.Icon = 'x icon.png';
+            app.DeleteButton.Position = [79 19 27 22];
+            app.DeleteButton.Text = '';
+
+            % Create HemisphereSegmentationToolsPanel
+            app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.HemisphereSegmentationToolsPanel.AutoResizeChildren = 'off';
+            app.HemisphereSegmentationToolsPanel.BorderType = 'none';
+            app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
+            app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
+            app.HemisphereSegmentationToolsPanel.Visible = 'off';
+            app.HemisphereSegmentationToolsPanel.Position = [1133 406 253 155];
+
+            % Create HemisphereButtonGroup
+            app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
+            app.HemisphereButtonGroup.AutoResizeChildren = 'off';
+            app.HemisphereButtonGroup.BorderType = 'none';
+            app.HemisphereButtonGroup.TitlePosition = 'centertop';
+            app.HemisphereButtonGroup.Title = 'Hemisphere ';
+            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
+            app.HemisphereButtonGroup.Position = [17 47 100 74];
+
+            % Create LeftblueButton
+            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.LeftblueButton.Text = 'Left - blue';
+            app.LeftblueButton.Position = [11 29 75 22];
+            app.LeftblueButton.Value = true;
+
+            % Create RightredButton
+            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.RightredButton.Text = 'Right - red';
+            app.RightredButton.Position = [11 7 78 22];
+
+            % Create ResetHemiButton
+            app.ResetHemiButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.ResetHemiButton.Position = [19 12 100 22];
+            app.ResetHemiButton.Text = 'Reset Hemi';
+
+            % Create SaveHemiButton
+            app.SaveHemiButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.SaveHemiButton.Position = [129 12 100 22];
+            app.SaveHemiButton.Text = 'Save Hemi';
+
+            % Create CorrectionButton_Hemisphere
+            app.CorrectionButton_Hemisphere = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.CorrectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @CorrectionButton_HemispherePushed, true);
+            app.CorrectionButton_Hemisphere.Position = [136 91 96 22];
+            app.CorrectionButton_Hemisphere.Text = {'Correction ROI'; ''};
+
+            % Create MainselectionButton_Hemisphere
+            app.MainselectionButton_Hemisphere = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.MainselectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_HemispherePushed, true);
+            app.MainselectionButton_Hemisphere.Position = [136 58 96 22];
+            app.MainselectionButton_Hemisphere.Text = {'Main selection'; ''};
+
+            % Create BrainSegmentationToolsPanel
+            app.BrainSegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.BrainSegmentationToolsPanel.AutoResizeChildren = 'off';
+            app.BrainSegmentationToolsPanel.BorderType = 'none';
+            app.BrainSegmentationToolsPanel.TitlePosition = 'centertop';
+            app.BrainSegmentationToolsPanel.Title = 'Brain Segmentation Tools';
+            app.BrainSegmentationToolsPanel.Position = [1143 261 255 309];
+
+            % Create DiskradiusSpinnerLabel
+            app.DiskradiusSpinnerLabel = uilabel(app.BrainSegmentationToolsPanel);
+            app.DiskradiusSpinnerLabel.HorizontalAlignment = 'right';
+            app.DiskradiusSpinnerLabel.Position = [142 87 65 22];
+            app.DiskradiusSpinnerLabel.Text = {'Disk radius'; ''};
+
+            % Create DiskradiusSpinner
+            app.DiskradiusSpinner = uispinner(app.BrainSegmentationToolsPanel);
+            app.DiskradiusSpinner.Limits = [1 100];
+            app.DiskradiusSpinner.Position = [149 54 58 22];
+            app.DiskradiusSpinner.Value = 3;
+
+            % Create OpenMaskButton
+            app.OpenMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.OpenMaskButton.ButtonPushedFcn = createCallbackFcn(app, @OpenMaskButtonPushed, true);
+            app.OpenMaskButton.Position = [48 86 75 22];
+            app.OpenMaskButton.Text = {'Open Mask'; ''};
+
+            % Create CloseMaskButton
+            app.CloseMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.CloseMaskButton.ButtonPushedFcn = createCallbackFcn(app, @CloseMaskButtonPushed, true);
+            app.CloseMaskButton.Position = [48 54 76 22];
+            app.CloseMaskButton.Text = {'Close Mask'; ''};
+
+            % Create MorphologyLabel
+            app.MorphologyLabel = uilabel(app.BrainSegmentationToolsPanel);
+            app.MorphologyLabel.Position = [94 117 68 15];
+            app.MorphologyLabel.Text = {'Morphology'; ''};
+
+            % Create InitialSelectionButton
+            app.InitialSelectionButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.InitialSelectionButton.ButtonPushedFcn = createCallbackFcn(app, @InitialSelectionButtonPushed, true);
+            app.InitialSelectionButton.Position = [22 145 100 22];
+            app.InitialSelectionButton.Text = {'Initial Selection'; ''};
+
+            % Create AutoClusterButton
+            app.AutoClusterButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.AutoClusterButton.ButtonPushedFcn = createCallbackFcn(app, @AutoClusterButtonPushed, true);
+            app.AutoClusterButton.Enable = 'off';
+            app.AutoClusterButton.Position = [132 145 100 22];
+            app.AutoClusterButton.Text = 'Auto Cluster';
+
+            % Create LoadexternalmaskButton
+            app.LoadexternalmaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.LoadexternalmaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadexternalmaskButtonPushed, true);
+            app.LoadexternalmaskButton.Position = [68 259 120 22];
+            app.LoadexternalmaskButton.Text = 'Load external mask';
+
+            % Create ImageshownSwitchLabel
+            app.ImageshownSwitchLabel = uilabel(app.BrainSegmentationToolsPanel);
+            app.ImageshownSwitchLabel.HorizontalAlignment = 'center';
+            app.ImageshownSwitchLabel.Position = [90 188 77 22];
+            app.ImageshownSwitchLabel.Text = {'Image shown'; ''};
+
+            % Create ImageshownSwitch
+            app.ImageshownSwitch = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
+            app.ImageshownSwitch.Items = {'Overlay', 'Masked'};
+            app.ImageshownSwitch.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitchValueChanged, true);
+            app.ImageshownSwitch.Enable = 'off';
+            app.ImageshownSwitch.Position = [105 217 45 20];
+            app.ImageshownSwitch.Value = 'Overlay';
+
+            % Create ResetBrainButton
+            app.ResetBrainButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.ResetBrainButton.ButtonPushedFcn = createCallbackFcn(app, @ResetBrainButtonPushed, true);
+            app.ResetBrainButton.Position = [22 20 100 22];
+            app.ResetBrainButton.Text = 'Reset Brain';
+
+            % Create SaveBrainButton
+            app.SaveBrainButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.SaveBrainButton.ButtonPushedFcn = createCallbackFcn(app, @SaveBrainButtonPushed, true);
+            app.SaveBrainButton.Position = [132 20 100 22];
+            app.SaveBrainButton.Text = 'Save Brain';
 
             % Create DSCASLTab
             app.DSCASLTab = uitab(app.TabGroup);
