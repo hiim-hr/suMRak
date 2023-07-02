@@ -47,9 +47,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PreviewLabel                    matlab.ui.control.Label
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
+        ROIListPanel                    matlab.ui.container.Panel
+        DeleteROIButton                 matlab.ui.control.Button
+        AddROIButton                    matlab.ui.control.Button
+        ROIListListBox                  matlab.ui.control.ListBox
+        ROIListListBoxLabel             matlab.ui.control.Label
         BrainSegmentationToolsPanel     matlab.ui.container.Panel
-        SaveBrainButton                 matlab.ui.control.Button
-        ResetBrainButton                matlab.ui.control.Button
+        SaveSliceButton                 matlab.ui.control.Button
+        ResetSliceButton                matlab.ui.control.Button
         ImageshownSwitch                matlab.ui.control.Switch
         ImageshownSwitchLabel           matlab.ui.control.Label
         LoadexternalmaskButton          matlab.ui.control.Button
@@ -61,14 +66,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         DiskradiusSpinner               matlab.ui.control.Spinner
         DiskradiusSpinnerLabel          matlab.ui.control.Label
         HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
-        MainselectionButton_Hemisphere  matlab.ui.control.Button
-        CorrectionButton_Hemisphere     matlab.ui.control.Button
-        SaveHemiButton                  matlab.ui.control.Button
-        ResetHemiButton                 matlab.ui.control.Button
+        ResetHemispheresButton          matlab.ui.control.Button
         HemisphereButtonGroup           matlab.ui.container.ButtonGroup
         RightredButton                  matlab.ui.control.RadioButton
         LeftblueButton                  matlab.ui.control.RadioButton
-        ROIToolsPanel                   matlab.ui.container.Panel
+        ROIPanel                        matlab.ui.container.Panel
         DeleteButton                    matlab.ui.control.Button
         ConfirmButton                   matlab.ui.control.Button
         FreeButton_Remove               matlab.ui.control.Button
@@ -204,28 +206,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPreview % Dimensions of preview experiment 
         
         % Segmenter tab
-        % Initial segmentation
+        % Brain segmentation
         CurrentSlice % Points to current slice matrix
         OriginalSegmenterImageData % Original experiment image data matrix
         WorkingSegmenterImageData % Working experiment image data matrix
-        ExpDimsSegmenter % Dimensions of selected experiment for segmentation 
-        FreeImage % Property for storing imshow of OriginalSegmenterImageData image without a mask overlay or MaskedImage
+        ExpDimsSegmenter % Dimensions of selected experiment for segmentation
+        FreeImage % Property for storing imshow of segmenter image without a mask overlay or MaskedImage
         FreeROI % Property for storing current manual ROI object
         ROI_OperationID = "" % Manually set ROI operation identifier
         MaskedImage % Masked image of current slice
-        Mask % Binary mask of current slice
+        BrainMask % Binary mask of current slice brain
         GreenScreen % Mask green screen of current slice
          
-        % Hemisphere and lesion segmentation
+        % Hemisphere segmentation
         BlueScreen % Hemisphere mask blue screen of current slice
         RedScreen % Hemisphere mask red screen of current slice
+        HemisphereMask % 4D Matrix with right and left hemisphere masks stored in 4th dimension for each slice - 1 = left, 2 = right
         LeftHemi % Left hemisphere mask
         RightHemi % Right hemisphere mask
-        Lesion % Lesion mask
+
+        % ROI segmentation
         
         % Saved segmenter data
-        SavedMaskSegmenter % Saved mask data of current sequence
-        SavedTableSegmenter = table(); % Table with all saved segmented sequences
+        SavedBrainMask % Saved brain mask data of current experiment
+        SavedTableSegmenter = table(); % Table with all saved segmented experiments
         DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
         
         % DSC/ASL tab
@@ -250,41 +254,45 @@ classdef BrukKit_exported < matlab.apps.AppBase
     end
     
     methods (Access = private)
+
+        % Preview UIAxes image updating
+        function RefreshImagePreview(app)
+            app.ExpDimsPreview = size(app.PreviewImageData);
+            switch numel(app.ExpDimsPreview)
+                case 3
+                    app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value));
+                case 4
+                    app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value));
+                case 5
+                    app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
+                otherwise
+                    %error alert missing
+            end
+            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(2 * app.ContrastSlider_Preview.Value) +  255 * app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
+            app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview);
+            app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
+        end
         
-        function RefreshImage(app, UIaxes)
-            switch UIaxes
-                case 'preview'
-                    app.ExpDimsPreview = size(app.PreviewImageData);
-                    switch numel(app.ExpDimsPreview)
-                        case 3
-                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value));
-                        case 4
-                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value));
-                        case 5
-                            app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
-                        otherwise
-                            %error alert missing
-                    end
-                    app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-                    app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(2 * app.ContrastSlider_Preview.Value) +  255 * app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
-                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview);
-                    app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
-                case 'segmenter'
-                    app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-                    switch numel(app.ExpDimsSegmenter)
-                        case 2
-                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
-                        case 3
-                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
-                        case 4
-                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
-                        case 5
-                            app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
-                        otherwise
-                            %error alert missing
-                    end
-                    app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-                    app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+        % Segmenter UIAxes image updating
+        function RefreshImageSegmenter(app)
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+            switch numel(app.ExpDimsSegmenter)
+                case 2
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
+                case 3
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+                case 4
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
+                case 5
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
+                otherwise
+                    %error alert missing
+            end
+            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            switch app.CurrentSegmentationDropDown.Value
+                case 'Brain'
                     switch app.ImageshownSwitch.Value
                         case "Overlay"
                             switch app.TurboButton.Value
@@ -298,13 +306,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 hold(app.UIAxes_Segmenter, "on");
                                 mask_Overlay = imshow(app.GreenScreen, "Parent", app.UIAxes_Segmenter);
                                 hold(app.UIAxes_Segmenter, "off");
-                                mask_Overlay.AlphaData = app.Mask(:,:,app.SliceSpinner_Segmenter.Value)-0.75;
+                                mask_Overlay.AlphaData = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)-0.75;
                             catch
                                 return
                             end
                             mask_Overlay.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
-                            app.MaskedImage = double(app.CurrentSlice).*app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
+                            app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
                             switch app.TurboButton.Value
                                 case true
                                      app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
@@ -313,30 +321,61 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             end
                             app.FreeImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
-                case 'DSC'
-                    switch app.DSCMapDropDown.Value
-                        case "CBF"
-                            if app.SVDButton.Value == true
-                                app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                            elseif app.cSVDButton.Value == true
-                                app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
-                            elseif app.oSVDButton.Value == true
-                                app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                            end
-                        case"CBV"
-                            app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                        case "MTT"
-                            if app.SVDButton.Value == true
-                                app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                            elseif app.cSVDButton.Value == true
-                                app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
-                            elseif app.oSVDButton.Value == true
-                                app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
-                            end
+                case 'Hemisphere'
+                    switch app.TurboButton.Value
+                        case true
+                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                        otherwise
+                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                     end
-
+                    try
+                        hold(app.UIAxes_Segmenter, "on");
+                        mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
+                        mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
+                        hold(app.UIAxes_Segmenter, "off");
+                        if numel(app.ExpDimsSegmenter) ~= 2
+                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1)-0.9;
+                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2)-0.9;
+                        else
+                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,1)-0.9;
+                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,2)-0.9;
+                        end
+                    catch
+                        return
+                    end
+                case 'ROI'
+                    switch app.TurboButton.Value
+                        case true
+                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                        otherwise
+                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                    end
                 otherwise
-                    %error alert missing
+            end
+        end
+
+        % DSC UIAxes image updating
+        function RefreshImageDSC(app)
+            switch app.DSCMapDropDown.Value
+                case "CBF"
+                    if app.SVDButton.Value == true
+                        app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.cSVDButton.Value == true
+                        app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                    elseif app.oSVDButton.Value == true
+                        app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    end
+                case"CBV"
+                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                case "MTT"
+                    if app.SVDButton.Value == true
+                        app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    elseif app.cSVDButton.Value == true
+                        app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
+                    elseif app.oSVDButton.Value == true
+                        app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                    end
+                otherwise
             end
         end
     end
@@ -361,14 +400,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     try
                         app.SliceSpinner_Preview.Value = app.SliceSpinner_Preview.Value+key;
                         app.SliceSlider_Preview.Value = app.SliceSpinner_Preview.Value;
-                        RefreshImage(app, 'preview');
+                        RefreshImagePreview(app);
                     catch
                     end
                 case 'Segmenter'
                     try
                         app.SliceSpinner_Segmenter.Value = app.SliceSpinner_Segmenter.Value+key;
                         app.SliceSlider_Segmenter.Value = app.SliceSpinner_Segmenter.Value;
-                        RefreshImage(app, 'segmenter');
+                        RefreshImageSegmenter(app);
+
+                        % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
+                        if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                            app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+                        else
+                            app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+                        end
                     catch
                     end
             end
@@ -584,7 +630,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Moving.Value = 1;
                     app.SliceSpinner_Parameter.Value = 1;
     
-                    % Populate text fields from last loaded imageObj for study info
+                    % Reset text fields
                     app.SubjectIDEditField.Value = "";
                     app.StudyIDEditField.Value = "";
                     app.SubjectCommentEditField.Value = "";
@@ -658,7 +704,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Enable = 'on';
             
             % Display sequence
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
             disableDefaultInteractivity(app.UIAxes_Preview);
             
             % Set interactions of preview uiaxes
@@ -671,7 +717,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.SliceSpinner_Preview.Value = event.Source.Value;
 
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changed function: SliceSpinner_Preview
@@ -679,7 +725,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             changingValue = round(event.Value);
             app.SliceSlider_Preview.Value = changingValue;
 
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changing function: Dim4Slider_Preview
@@ -687,7 +733,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.Dim4Slider_Preview.Value = event.Source.Value;
 
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changing function: Dim5Slider_Preview
@@ -695,19 +741,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.Dim5Slider_Preview.Value = event.Source.Value;
             
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changing function: ContrastSlider_Preview
         function ContrastSlider_PreviewValueChanging(app, event)
             app.ContrastSlider_Preview.Value = event.Value;
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changing function: BrightnessSlider_Preview
         function BrightnessSlider_PreviewValueChanging(app, event)
             app.BrightnessSlider_Preview.Value = event.Value;
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Menu selected function: RotateMenu_Preview
@@ -716,7 +762,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Rotate image data, show image
             app.PreviewImageData = rot90(app.PreviewImageData, -1);
             
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Menu selected function: FlipVerticallyMenu_Preview
@@ -725,7 +771,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Flip image data, show image
             app.PreviewImageData = flipud(app.PreviewImageData);
             
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Menu selected function: FlipHorizontallyMenu_Preview
@@ -734,7 +780,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Flip image data, show image
             app.PreviewImageData = fliplr(app.PreviewImageData);
             
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Menu selected function: ResetViewMenu_Preview
@@ -746,7 +792,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset contrast and brightness then refresh
             app.BrightnessSlider_Preview.Value = 0;
             app.ContrastSlider_Preview.Value = 0;
-            RefreshImage(app, 'preview');
+            RefreshImagePreview(app);
         end
 
         % Value changed function: SegmentDropDown
@@ -771,6 +817,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             catch
                 try
                     app.OriginalSegmenterImageData = cell2mat(app.SavedTableRegistration.(2)(value));
+                    app.SavedBrainMask = cell2mat(app.SavedTableRegistration.(3)(value));
                 catch
                 end
             end
@@ -785,10 +832,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Segmenter.Value = 0;
             app.ContrastSlider_Segmenter.Value = 0;
             
-            % Get data dimension sizes, define mask, set slice and spinner limits/values
+            % Get data dimension sizes
             app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-            app.Mask = false(app.ExpDimsSegmenter(1:3));
+
+            % Create mask screens
             app.GreenScreen = cat(3, zeros(app.ExpDimsSegmenter(1:2)), ones(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)));
+            app.BlueScreen = cat(3, zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), ones(app.ExpDimsSegmenter(1:2)));
+            app.RedScreen = cat(3, ones(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)));
+
             try
                 dim3_size = app.ExpDimsSegmenter(3);
                 app.SliceSpinner_Segmenter.Limits = [1, dim3_size];
@@ -796,6 +847,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             catch
             end
             
+            % Disable/Enable UI items based on number of dimensions
             switch numel(app.ExpDimsSegmenter)
                 case 5
                     app.SliceSlider_Segmenter.Enable = 'on';
@@ -811,8 +863,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteMenu_3_5.Enable ='on';
                     app.PermuteMenu_4_5.Enable ='on';
 
-                    % Create zero array to save mask data into for current sequence
-                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
+                    % Define Mask matrices
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                 case 4
                     app.SliceSlider_Segmenter.Enable = 'on';
@@ -826,8 +880,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteMenu_3_5.Enable ='off';
                     app.PermuteMenu_4_5.Enable ='off';
 
-                    % Create zero array to save mask data into for current sequence
-                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
+                    % Define Mask matrices
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
+
                 case 3
                     app.SliceSlider_Segmenter.Enable = 'on';
                     app.SliceSpinner_Segmenter.Enable = 'on';
@@ -836,20 +893,32 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteDimensionsMenu.Enable = 'off';
                     
 
-                    % Create zero array to save mask data into for current sequence
-                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter(1:3));
+                    % Define Mask matrices
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
+
                 case 2
                     app.SliceSlider_Segmenter.Enable = 'off';
                     app.SliceSpinner_Segmenter.Enable = 'off';
                     app.Dim4Spinner_Segmenter.Enable = 'off';
                     app.Dim5Spinner_Segmenter.Enable = 'off';
 
-                    % Create zero array to save mask data into for current sequence
-                    app.SavedMaskSegmenter = zeros(app.ExpDimsSegmenter);
+                    % Define Mask matrices
+                    app.BrainMask = false(app.ExpDimsSegmenter());
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter);
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter, 2));
+            end
+
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentationzeros
+            if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            else
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
             end
 
             % Display sequence
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
 
             % Enable contrast and brightness controls
             app.BrightnessSlider_Segmenter.Enable = 'on';
@@ -875,7 +944,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
+
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
+            if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            else
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+            end
         end
 
         % Value changed function: SliceSpinner_Segmenter
@@ -890,7 +966,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
+
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
+            if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            else
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+            end
         end
 
         % Value changed function: Dim4Spinner_Segmenter
@@ -903,7 +986,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Value changed function: Dim5Spinner_Segmenter
@@ -916,19 +999,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Value changing function: ContrastSlider_Segmenter
         function ContrastSlider_SegmenterValueChanging(app, event)
             app.ContrastSlider_Segmenter.Value = event.Value;
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Value changing function: BrightnessSlider_Segmenter
         function BrightnessSlider_SegmenterValueChanging(app, event)
             app.BrightnessSlider_Segmenter.Value = event.Value;
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Menu selected function: RotateMenu_Segmenter
@@ -937,10 +1020,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Rotate image data, update dimensions, show image
             app.OriginalSegmenterImageData = rot90(app.OriginalSegmenterImageData, -1);
             app.WorkingSegmenterImageData = rot90(app.WorkingSegmenterImageData, -1);
-            app.Mask = rot90(app.Mask, -1);
-            app.SavedMaskSegmenter = rot90(app.SavedMaskSegmenter, -1);
+            app.BrainMask = rot90(app.BrainMask, -1);
+            app.SavedBrainMask = rot90(app.SavedBrainMask, -1);
             app.GreenScreen = rot90(app.GreenScreen, -1);
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Menu selected function: FlipVerticallyMenu_Segmenter
@@ -949,10 +1032,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = flipud(app.OriginalSegmenterImageData);
             app.WorkingSegmenterImageData = flipud(app.WorkingSegmenterImageData);
-            app.Mask = flipud(app.Mask);
-            app.SavedMaskSegmenter = flipud(app.SavedMaskSegmenter);
+            app.BrainMask = flipud(app.BrainMask);
+            app.SavedBrainMask = flipud(app.SavedBrainMask);
             app.GreenScreen = flipud(app.GreenScreen);
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Menu selected function: FlipHorizontallyMenu_Segmenter
@@ -961,10 +1044,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = fliplr(app.OriginalSegmenterImageData);
             app.WorkingSegmenterImageData = fliplr(app.WorkingSegmenterImageData);
-            app.Mask = fliplr(app.Mask);
-            app.SavedMaskSegmenter = fliplr(app.SavedMaskSegmenter);
+            app.BrainMask = fliplr(app.BrainMask);
+            app.SavedBrainMask = fliplr(app.SavedBrainMask);
             app.GreenScreen = fliplr(app.GreenScreen);
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Menu selected function: ResetViewMenu_Segmenter
@@ -977,7 +1060,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset contrast and brightness then refresh
             app.BrightnessSlider_Segmenter.Value = 0;
             app.ContrastSlider_Segmenter.Value = 0;
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Menu selected function: PermuteMenu_3_4
@@ -995,8 +1078,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     end
                     app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
                     app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-                    app.Mask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                     temp_limits = app.SliceSpinner_Segmenter.Limits;
                     temp_value = app.SliceSpinner_Segmenter.Value;
@@ -1008,7 +1092,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim4Spinner_Segmenter.Limits = temp_limits;
                     app.Dim4Spinner_Segmenter.Value = temp_value;
 
-                    RefreshImage(app, 'segmenter')
+                    RefreshImageSegmenter(app);
 
                 case 'Cancel'
                     return
@@ -1024,8 +1108,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,5,4,3]);
                     app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
                     app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-                    app.Mask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                     temp_value_slice = app.SliceSpinner_Segmenter.Value;
                     temp_limits_slice = app.SliceSpinner_Segmenter.Limits;
@@ -1037,7 +1122,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_Segmenter.Limits = temp_limits_slice;
                     app.Dim5Spinner_Segmenter.Value = temp_value_slice;
 
-                    RefreshImage(app, 'segmenter')
+                    RefreshImageSegmenter(app);
 
                 case 'Cancel'
                     return
@@ -1052,8 +1137,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,3,5,4]);
                     app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
                     app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-                    app.Mask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedMaskSegmenter = false(app.ExpDimsSegmenter(1:3));
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                     temp_limits = app.Dim5Spinner_Segmenter.Limits;
                     temp_value = app.Dim5Spinner_Segmenter.Value;
@@ -1063,7 +1149,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim4Spinner_Segmenter.Limits = temp_limits;
                     app.Dim4Spinner_Segmenter.Value = temp_value;
 
-                    RefreshImage(app, 'segmenter')
+                    RefreshImageSegmenter(app);
 
                 case 'Cancel'
                     return
@@ -1072,7 +1158,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Selection changed function: ColormapButtonGroup
         function ColormapButtonGroupSelectionChanged(app, event)
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Value changed function: CurrentSegmentationDropDown
@@ -1082,31 +1168,35 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'Brain'
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.BrainSegmentationToolsPanel.Visible = 'on';
-                    app.ROIToolsPanel.Position = [1199,118,149,140];
+                    app.ROIListPanel.Visible = 'off';
+                    app.ROIPanel.Position = [1199,118,149,140];
                 case 'Hemisphere'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='on';
-                    app.ROIToolsPanel.Position = [1197,268,149,140];
+                    app.ROIListPanel.Visible = 'off';
+                    app.ROIPanel.Position = [1197,268,149,140];
                 case 'ROI'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
-                    app.ROIToolsPanel.Position = [1197,420,149,140];
+                    app.ROIListPanel.Visible = 'on';
+                    app.ROIPanel.Position = [1197,420,149,140];
                 otherwise
             end
+            RefreshImageSegmenter(app);
         end
 
         % Button pushed function: InitialSelectionButton
         function InitialSelectionButtonPushed(app, event)
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
-            RefreshImage(app, 'segmenter');
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+            RefreshImageSegmenter(app);
 
             % Draw initial ROI, create mask and masked image
             init_Region = drawfreehand(app.UIAxes_Segmenter);
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = createMask(init_Region, app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value));
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = createMask(init_Region, app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value));
             delete(init_Region);
             
             % Show image with mask overlaid on top
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
             
             app.AutoClusterButton.Enable = 'on'; % Turn on auto cluster button
         end
@@ -1116,19 +1206,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
             % select best cluster
-            clusters = imsegkmeans(single(app.CurrentSlice).*app.Mask(:,:,app.SliceSpinner_Segmenter.Value),2,'NumAttempts',2);
-            cluster_1_dice = dice(clusters==1, logical(app.Mask(:,:,app.SliceSpinner_Segmenter.Value)));
-            cluster_2_dice = dice(clusters==2, logical(app.Mask(:,:,app.SliceSpinner_Segmenter.Value)));
+            clusters = imsegkmeans(single(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value),2,'NumAttempts',2);
+            cluster_1_dice = dice(clusters==1, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
+            cluster_2_dice = dice(clusters==2, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
             if cluster_1_dice > cluster_2_dice
-                app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 1;
+                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 1;
             else 
-                app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 2;
+                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 2;
             end  
             
             app.AutoClusterButton.Enable = 'off'; % Turn off auto cluster button
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             
-            RefreshImage(app, 'segmenter'); 
+            RefreshImageSegmenter(app); 
         end
 
         % Button pushed function: OpenMaskButton
@@ -1137,10 +1227,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, open image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = imopen(app.Mask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imopen(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
             
             % Show image with mask overlaid on top
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Button pushed function: CloseMaskButton
@@ -1149,10 +1239,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, close image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = imclose(app.Mask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imclose(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
             
             % Show image with mask overlaid on top
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
         % Button pushed function: FreeButton_Add
@@ -1192,23 +1282,108 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         
             % Update mask using new ROI based on current image displayed -
             % masked or original with overlaid transparent mask
-            switch app.ROI_OperationID
-                case 'add'
-                    try
-                        added_Mask = app.FreeROI.createMask(app.FreeImage);
-                        app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value)|added_Mask;
-                    catch
+            switch app.CurrentSegmentationDropDown.Value
+                case 'Brain'
+                    switch app.ROI_OperationID
+                        case 'add'
+                            try
+                                added_Mask = app.FreeROI.createMask(app.FreeImage);
+                                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)|added_Mask;
+                            catch
+                            end
+                            RefreshImageSegmenter(app);
+                        case 'remove'
+                            try
+                                removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                                temp = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
+                                temp(removed_Mask) = 0;
+                                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = temp;
+                            catch
+                            end
+                            RefreshImageSegmenter(app);
                     end
-                    RefreshImage(app, 'segmenter');
-                case 'remove'
-                    try
-                        removed_Mask = app.FreeROI.createMask(app.FreeImage);
-                        temp = app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
-                        temp(removed_Mask) = 0;
-                        app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = temp;
-                    catch
+                case 'Hemisphere'
+                    switch app.ROI_OperationID
+                        case 'add'
+                            added_Mask = app.FreeROI.createMask(app.FreeImage);
+                            if app.RightredButton.Value == true
+                                % Check for 2D image data
+                                if numel(app.ExpDimsSegmenter) ~= 2
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = added_Mask|app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+    
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) == 0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                else
+                                    app.HemisphereMask(:,:,2) = added_Mask|app.HemisphereMask(:,:,2);
+                                    app.HemisphereMask(:,:,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,2);
+    
+                                    app.HemisphereMask(:,:,1) = app.HemisphereMask(:,:,2) == 0;
+                                    app.HemisphereMask(:,:,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,1);
+                                end
+
+                            else
+                                %Check for 2D image data
+                                if numel(app.ExpDimsSegmenter) ~= 2
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = added_Mask|app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                    
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) == 0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+                                else
+                                    app.HemisphereMask(:,:,1) = added_Mask|app.HemisphereMask(:,:,1);
+                                    app.HemisphereMask(:,:,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,1);
+                                    
+                                    app.HemisphereMask(:,:,2) = app.HemisphereMask(:,:,1) == 0;
+                                    app.HemisphereMask(:,:,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,2);
+                                end
+                            end
+                            RefreshImageSegmenter(app);
+                        case 'remove'
+                            removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                            if app.RightredButton.Value == true
+                                % Check for 2D image data
+                                if numel(app.ExpDimsSegmenter) ~= 2
+                                    temp_Hemi = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+                                    temp_Hemi(removed_Mask)=0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = temp_Hemi;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+    
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) == 0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                else
+                                    temp_Hemi = app.HemisphereMask(:,:,2);
+                                    temp_Hemi(removed_Mask)=0;
+                                    app.HemisphereMask(:,:,2) = temp_Hemi;
+                                    app.HemisphereMask(:,:,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,2);
+    
+                                    app.HemisphereMask(:,:,1) = app.HemisphereMask(:,:,2) == 0;
+                                    app.HemisphereMask(:,:,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,1);
+                                end
+
+                            else
+                                % Check for 2D image data
+                                if numel(app.ExpDimsSegmenter) ~= 2
+                                    temp_Hemi = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                    temp_Hemi(removed_Mask)=0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = temp_Hemi;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1);
+                                    
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) == 0;
+                                    app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2);
+                                else
+                                    temp_Hemi = app.HemisphereMask(:,:,1);
+                                    temp_Hemi(removed_Mask)=0;
+                                    app.HemisphereMask(:,:,1) = temp_Hemi;
+                                    app.HemisphereMask(:,:,1) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,1);
+                                    
+                                    app.HemisphereMask(:,:,2) = app.HemisphereMask(:,:,1) == 0;
+                                    app.HemisphereMask(:,:,2) = app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value)&app.HemisphereMask(:,:,2);
+                                end
+                            end
+                            RefreshImageSegmenter(app);
                     end
-                    RefreshImage(app, 'segmenter');
+                case 'ROI'
             end
         end
 
@@ -1221,97 +1396,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: ImageshownSwitch
         function ImageshownSwitchValueChanged(app, event)
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
         end
 
-        % Button pushed function: MainselectionButton_Hemisphere
-        function MainselectionButton_HemispherePushed(app, event)
-            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-            app.ImageshownSwitch.Value = 'Masked';
-            RefreshImage(app, 'segmenter');
-
-            % Create hemisphere mask screens
-            app.BlueScreen = cat(3, zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), ones(app.ExpDimsSegmenter(1:2)));
-            app.RedScreen = cat(3, ones(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)), zeros(app.ExpDimsSegmenter(1:2)));
-            
-            % Draw freehand ROI
-            initial_Hemi = drawfreehand(app.UIAxes_Segmenter);
-            initial_hemiMask = initial_Hemi.createMask(app.FreeImage);
-            delete(initial_Hemi);
-            
-            % Get hemisphere masks and display overlaid image
-            if app.RightredButton.Value == true
-                app.RightHemi = initial_hemiMask & app.Mask;
-                app.LeftHemi = app.Mask;
-                app.LeftHemi(app.RightHemi) = 0;
-            else
-                app.LeftHemi = initial_hemiMask & app.Mask;
-                app.RightHemi = app.Mask;
-                app.RightHemi(app.LeftHemi) = 0;
-            end
-            
-            hold(app.UIAxes_Segmenter, "on");
-            mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
-            mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-            hold(app.UIAxes_Segmenter, "off");
-            mask_overlay_Blue.AlphaData = app.LeftHemi-0.9;
-            mask_overlay_Red.AlphaData = app.RightHemi-0.9;
-        end
-
-        % Button pushed function: CorrectionButton_Hemisphere
-        function CorrectionButton_HemispherePushed(app, event)
-            app.ImageshownSwitch.Value = 'Masked';
-            RefreshImage(app, 'segmenter');
-
-            % Draw freehand ROI
-            correction_Hemi = drawfreehand(app.UIAxes_Segmenter);
-            correction_hemiMask = correction_Hemi.createMask(app.FreeImage);
-            delete(correction_Hemi);
-            
-            % Update heimsphere masks and display overlaid image
-            if app.RightredButton.Value == true
-                app.RightHemi = correction_hemiMask|app.RightHemi;
-                app.LeftHemi(correction_hemiMask) = 0;
-            else
-                app.LeftHemi = correction_hemiMask|app.LeftHemi;
-                app.RightHemi(correction_hemiMask) = 0;
-            end
-            
-            hold(app.UIAxes_Segmenter, "on");
-            mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
-            mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-            hold(app.UIAxes_Segmenter, "off");
-            mask_overlay_Blue.AlphaData = app.LeftHemi-0.9;
-            mask_overlay_Red.AlphaData = app.RightHemi-0.9; 
-        end
-
-        % Button pushed function: SaveBrainButton
-        function SaveBrainButtonPushed(app, event)
+        % Button pushed function: SaveSliceButton
+        function SaveSliceButtonPushed(app, event)
            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
 
             % Save slice image based on number of dimensions in original matrix
             num_dims = size(app.ExpDimsSegmenter);
             if num_dims(2) == 4 % What if num_dims = 5?
                 for i=1:app.ExpDimsSegmenter(4)
-                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
                 end
             else
-                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             end
             
             % Save slice mask
-            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = app.Mask(:,:,app.SliceSpinner_Segmenter.Value);
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+            app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
 
-            app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
+
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
+            if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            else
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+            end
         end
 
-        % Button pushed function: ResetBrainButton
-        function ResetBrainButtonPushed(app, event)
+        % Button pushed function: ResetSliceButton
+        function ResetSliceButtonPushed(app, event)
             app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData); 
             
             % Reset zoom
@@ -1330,21 +1450,39 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             % Reset slice mask
-            app.SavedMaskSegmenter(:,:,app.SliceSpinner_Segmenter.Value) = zeros(app.ExpDimsSegmenter(1:2));
-            app.Mask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+            app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
             
-            app.ImageshownSwitch.Enable = 'off'; % Turn off image shown switch
             app.ImageshownSwitch.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % Turn off auto cluster button
 
-            RefreshImage(app, 'segmenter');
+            RefreshImageSegmenter(app);
+
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
+            if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
+            else
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+            end
+        end
+
+        % Button pushed function: ResetHemispheresButton
+        function ResetHemispheresButtonPushed(app, event)
+            if numel(app.ExpDimsSegmenter) ~= 2
+                app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1) = false(app.ExpDimsSegmenter(1:2));
+                app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2) = false(app.ExpDimsSegmenter(1:2));
+            else
+                app.HemisphereMask(:,:,1) = false(app.ExpDimsSegmenter(1:2));
+                app.HemisphereMask(:,:,2) = false(app.ExpDimsSegmenter(1:2));
+            end
+            RefreshImageSegmenter(app);
         end
 
         % Button pushed function: SavesequenceButton
         function SavesequenceButtonPushed(app, event)
             
             % Construct temporary table of saved data
-            temp_Table = table({app.WorkingSegmenterImageData}, {app.SavedMaskSegmenter}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
+            temp_Table = table({app.WorkingSegmenterImageData}, {app.SavedBrainMask}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
 
             try
                 % Move temporarily saved data to permanent app table
@@ -1370,7 +1508,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                                 % Overwrite data of currently saved experiment under same identifier
                                 app.SavedTableSegmenter.Image(app.SegmentDropDown.Value) = {app.WorkingSegmenterImageData};
-                                app.SavedTableSegmenter.Mask(app.SegmentDropDown.Value) = {app.SavedMaskSegmenter};
+                                app.SavedTableSegmenter.Mask(app.SegmentDropDown.Value) = {app.SavedBrainMask};
                                 
                                 % Display confirmation figure
                                 uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -1392,7 +1530,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             temp_dir = uigetdir;
             temp_dir = append(temp_dir, '\');
             niftiwrite(app.WorkingSegmenterImageData, append(temp_dir, 'Image'))
-            niftiwrite(app.SavedMaskSegmenter, append(temp_dir, 'Mask'))
+            niftiwrite(app.SavedBrainMask, append(temp_dir, 'Mask'))
             
             uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
@@ -1404,9 +1542,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.UIFigure)
             temp_Mask = niftiread(cat(2, temp_dir, temp_file));
-            app.Mask = temp_Mask;
+            app.BrainMask = temp_Mask;
             
-            RefreshImage(app, 'segmenter')
+            RefreshImageSegmenter(app);
             uiconfirm(app.UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
@@ -1446,7 +1584,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceSpinner_DSCMaps.Enable = 'on';
                 app.SliceSpinner_DSCMaps.Value = 1;
     
-                RefreshImage(app, 'DSC')
+                RefreshImageDSC(app);
                 app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
             else
                 uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
@@ -1468,7 +1606,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function DSCMapDropDownValueChanged(app, event)
             
             % Display chosen map image based on method selected
-            RefreshImage(app, 'DSC')
+            RefreshImageDSC(app);
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
 
             if app.DSCMapDropDown.Value == "CBV"
@@ -1492,7 +1630,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Display chosen map image based on method selected and spinner
             % Value
-            RefreshImage(app, 'DSC')
+            RefreshImageDSC(app);
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
             % Reset zoom and comparation data
@@ -1505,7 +1643,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function MethodButtonGroupSelectionChanged(app, event)
             
             % Display chosen map image based on method selected
-            RefreshImage(app, 'DSC')
+            RefreshImageDSC(app);
             app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
             
             % Reset zoom
@@ -2251,7 +2389,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'Save Mask'
                     exp_MaskData = {app.RegisteredMask};
                 case 'Save without Mask'
-                    exp_MaskData = zeros(size(exp_ImageData));
+                    exp_MaskData = false(size(exp_ImageData));
             end
             % Construct temporary sequence property table and combine with main
             variable_Names = ["Experiment ID", "Image data", "Mask data","TE", "TR", "Voxel dimensions"];
@@ -2727,47 +2865,47 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.CurrentSegmentationDropDown.Position = [1175 577 202 21];
             app.CurrentSegmentationDropDown.Value = 'Brain';
 
-            % Create ROIToolsPanel
-            app.ROIToolsPanel = uipanel(app.SegmenterTab);
-            app.ROIToolsPanel.AutoResizeChildren = 'off';
-            app.ROIToolsPanel.BorderType = 'none';
-            app.ROIToolsPanel.TitlePosition = 'centertop';
-            app.ROIToolsPanel.Title = 'ROI';
-            app.ROIToolsPanel.Position = [1199 116 149 140];
+            % Create ROIPanel
+            app.ROIPanel = uipanel(app.SegmenterTab);
+            app.ROIPanel.AutoResizeChildren = 'off';
+            app.ROIPanel.BorderType = 'none';
+            app.ROIPanel.TitlePosition = 'centertop';
+            app.ROIPanel.Title = 'ROI';
+            app.ROIPanel.Position = [1199 116 149 140];
 
             % Create FreeButton_Add
-            app.FreeButton_Add = uibutton(app.ROIToolsPanel, 'push');
+            app.FreeButton_Add = uibutton(app.ROIPanel, 'push');
             app.FreeButton_Add.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_AddPushed, true);
             app.FreeButton_Add.Position = [20 80 50 22];
             app.FreeButton_Add.Text = {'+ Free'; ''};
 
             % Create PolyButton_Add
-            app.PolyButton_Add = uibutton(app.ROIToolsPanel, 'push');
+            app.PolyButton_Add = uibutton(app.ROIPanel, 'push');
             app.PolyButton_Add.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_AddPushed, true);
             app.PolyButton_Add.Position = [20 48 50 22];
             app.PolyButton_Add.Text = '+ Poly';
 
             % Create PolyButton_Remove
-            app.PolyButton_Remove = uibutton(app.ROIToolsPanel, 'push');
+            app.PolyButton_Remove = uibutton(app.ROIPanel, 'push');
             app.PolyButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_RemovePushed, true);
             app.PolyButton_Remove.Position = [79 48 50 22];
             app.PolyButton_Remove.Text = {'- Poly'; ''};
 
             % Create FreeButton_Remove
-            app.FreeButton_Remove = uibutton(app.ROIToolsPanel, 'push');
+            app.FreeButton_Remove = uibutton(app.ROIPanel, 'push');
             app.FreeButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_RemovePushed, true);
             app.FreeButton_Remove.Position = [79 80 50 22];
             app.FreeButton_Remove.Text = {'- Free'; ''};
 
             % Create ConfirmButton
-            app.ConfirmButton = uibutton(app.ROIToolsPanel, 'push');
+            app.ConfirmButton = uibutton(app.ROIPanel, 'push');
             app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
             app.ConfirmButton.Icon = 'check icon.png';
             app.ConfirmButton.Position = [44 19 26 22];
             app.ConfirmButton.Text = '';
 
             % Create DeleteButton
-            app.DeleteButton = uibutton(app.ROIToolsPanel, 'push');
+            app.DeleteButton = uibutton(app.ROIPanel, 'push');
             app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
             app.DeleteButton.Icon = 'x icon.png';
             app.DeleteButton.Position = [79 19 27 22];
@@ -2779,8 +2917,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereSegmentationToolsPanel.BorderType = 'none';
             app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
             app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
-            app.HemisphereSegmentationToolsPanel.Visible = 'off';
-            app.HemisphereSegmentationToolsPanel.Position = [1133 404 253 155];
+            app.HemisphereSegmentationToolsPanel.Position = [1146 328 253 155];
 
             % Create HemisphereButtonGroup
             app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
@@ -2789,7 +2926,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereButtonGroup.TitlePosition = 'centertop';
             app.HemisphereButtonGroup.Title = 'Hemisphere ';
             app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.HemisphereButtonGroup.Position = [17 47 100 74];
+            app.HemisphereButtonGroup.Position = [78 47 100 74];
 
             % Create LeftblueButton
             app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
@@ -2802,27 +2939,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RightredButton.Text = 'Right - red';
             app.RightredButton.Position = [11 7 78 22];
 
-            % Create ResetHemiButton
-            app.ResetHemiButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.ResetHemiButton.Position = [19 12 100 22];
-            app.ResetHemiButton.Text = 'Reset Hemi';
-
-            % Create SaveHemiButton
-            app.SaveHemiButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.SaveHemiButton.Position = [129 12 100 22];
-            app.SaveHemiButton.Text = 'Save Hemi';
-
-            % Create CorrectionButton_Hemisphere
-            app.CorrectionButton_Hemisphere = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.CorrectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @CorrectionButton_HemispherePushed, true);
-            app.CorrectionButton_Hemisphere.Position = [136 91 96 22];
-            app.CorrectionButton_Hemisphere.Text = {'Correction ROI'; ''};
-
-            % Create MainselectionButton_Hemisphere
-            app.MainselectionButton_Hemisphere = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.MainselectionButton_Hemisphere.ButtonPushedFcn = createCallbackFcn(app, @MainselectionButton_HemispherePushed, true);
-            app.MainselectionButton_Hemisphere.Position = [136 58 96 22];
-            app.MainselectionButton_Hemisphere.Text = {'Main selection'; ''};
+            % Create ResetHemispheresButton
+            app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
+            app.ResetHemispheresButton.Position = [67 12 121 22];
+            app.ResetHemispheresButton.Text = 'Reset Hemispheres';
 
             % Create BrainSegmentationToolsPanel
             app.BrainSegmentationToolsPanel = uipanel(app.SegmenterTab);
@@ -2830,7 +2951,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrainSegmentationToolsPanel.BorderType = 'none';
             app.BrainSegmentationToolsPanel.TitlePosition = 'centertop';
             app.BrainSegmentationToolsPanel.Title = 'Brain Segmentation Tools';
-            app.BrainSegmentationToolsPanel.Position = [1143 259 255 309];
+            app.BrainSegmentationToolsPanel.Position = [1148 255 253 309];
 
             % Create DiskradiusSpinnerLabel
             app.DiskradiusSpinnerLabel = uilabel(app.BrainSegmentationToolsPanel);
@@ -2847,13 +2968,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create OpenMaskButton
             app.OpenMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.OpenMaskButton.ButtonPushedFcn = createCallbackFcn(app, @OpenMaskButtonPushed, true);
-            app.OpenMaskButton.Position = [48 86 75 22];
+            app.OpenMaskButton.Position = [44 87 75 22];
             app.OpenMaskButton.Text = {'Open Mask'; ''};
 
             % Create CloseMaskButton
             app.CloseMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.CloseMaskButton.ButtonPushedFcn = createCallbackFcn(app, @CloseMaskButtonPushed, true);
-            app.CloseMaskButton.Position = [48 54 76 22];
+            app.CloseMaskButton.Position = [43 54 76 22];
             app.CloseMaskButton.Text = {'Close Mask'; ''};
 
             % Create MorphologyLabel
@@ -2893,17 +3014,48 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ImageshownSwitch.Position = [105 217 45 20];
             app.ImageshownSwitch.Value = 'Overlay';
 
-            % Create ResetBrainButton
-            app.ResetBrainButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
-            app.ResetBrainButton.ButtonPushedFcn = createCallbackFcn(app, @ResetBrainButtonPushed, true);
-            app.ResetBrainButton.Position = [22 20 100 22];
-            app.ResetBrainButton.Text = 'Reset Brain';
+            % Create ResetSliceButton
+            app.ResetSliceButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.ResetSliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetSliceButtonPushed, true);
+            app.ResetSliceButton.Position = [22 20 100 22];
+            app.ResetSliceButton.Text = 'Reset Slice';
 
-            % Create SaveBrainButton
-            app.SaveBrainButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
-            app.SaveBrainButton.ButtonPushedFcn = createCallbackFcn(app, @SaveBrainButtonPushed, true);
-            app.SaveBrainButton.Position = [132 20 100 22];
-            app.SaveBrainButton.Text = 'Save Brain';
+            % Create SaveSliceButton
+            app.SaveSliceButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.SaveSliceButton.ButtonPushedFcn = createCallbackFcn(app, @SaveSliceButtonPushed, true);
+            app.SaveSliceButton.Position = [132 20 100 22];
+            app.SaveSliceButton.Text = 'Save Slice';
+
+            % Create ROIListPanel
+            app.ROIListPanel = uipanel(app.SegmenterTab);
+            app.ROIListPanel.AutoResizeChildren = 'off';
+            app.ROIListPanel.BorderType = 'none';
+            app.ROIListPanel.TitlePosition = 'centertop';
+            app.ROIListPanel.Title = 'ROI Segmentation';
+            app.ROIListPanel.Visible = 'off';
+            app.ROIListPanel.Position = [498 208 253 210];
+
+            % Create ROIListListBoxLabel
+            app.ROIListListBoxLabel = uilabel(app.ROIListPanel);
+            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
+            app.ROIListListBoxLabel.Position = [103 161 49 22];
+            app.ROIListListBoxLabel.Text = 'ROI List';
+
+            % Create ROIListListBox
+            app.ROIListListBox = uilistbox(app.ROIListPanel);
+            app.ROIListListBox.Items = {};
+            app.ROIListListBox.Position = [34 46 188 113];
+            app.ROIListListBox.Value = {};
+
+            % Create AddROIButton
+            app.AddROIButton = uibutton(app.ROIListPanel, 'push');
+            app.AddROIButton.Position = [23 12 100 22];
+            app.AddROIButton.Text = 'Add ROI';
+
+            % Create DeleteROIButton
+            app.DeleteROIButton = uibutton(app.ROIListPanel, 'push');
+            app.DeleteROIButton.Position = [133 12 100 22];
+            app.DeleteROIButton.Text = 'Delete ROI';
 
             % Create DSCASLTab
             app.DSCASLTab = uitab(app.TabGroup);
