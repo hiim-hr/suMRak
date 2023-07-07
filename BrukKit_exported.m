@@ -5,8 +5,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
-        ExportsequenceButton_Preview    matlab.ui.control.Button
-        SavesequenceButton_Preview      matlab.ui.control.Button
+        ExportDataButton_Preview        matlab.ui.control.Button
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
         TurboButton_Preview             matlab.ui.control.RadioButton
         GreyscaleButton_Preview         matlab.ui.control.RadioButton
@@ -33,7 +32,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         StudyIDEditFieldLabel           matlab.ui.control.Label
         SubjectIDEditField              matlab.ui.control.EditField
         SubjectIDEditFieldLabel         matlab.ui.control.Label
-        ResetEnvironment                matlab.ui.control.Button
+        ResetEnvironmentButton          matlab.ui.control.Button
         UITable                         matlab.ui.control.Table
         ArchiveFileEditField            matlab.ui.control.EditField
         LoadPvDatasetsFileButton        matlab.ui.control.Button
@@ -100,8 +99,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Dim5Spinner_SegmenterLabel      matlab.ui.control.Label
         Dim4Spinner_Segmenter           matlab.ui.control.Spinner
         Dim4Spinner_SegmenterLabel      matlab.ui.control.Label
-        ExportsequenceButton_Segmenter  matlab.ui.control.Button
-        SavesequenceButton_Segmenter    matlab.ui.control.Button
+        ExportDataButton_Segmenter      matlab.ui.control.Button
+        SaveDataButton_Segmenter        matlab.ui.control.Button
         SliceSpinner_Segmenter          matlab.ui.control.Spinner
         SegmentDropDown                 matlab.ui.control.DropDown
         SelectexperimenttosegmentDropDownLabel  matlab.ui.control.Label
@@ -208,18 +207,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         StudyPath % Filepath of selected study directory
         ExperimentPropertyTable % Table of loaded sequence properties
         WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
-        DropDownItemsSegmenter = {'None'}; % Stored items featured in segmenter experiment drop down menu
         PreviewImageData % Preview experiment image data matrix
         PreviewImage % Property for storing imshow of PreviewImageData
         ExpDimsPreview % Dimensions of preview experiment 
         
+        SavedTable % Table for storing all saved segmenterd/registered data.
         % Segmenter tab
+        DropDownItemsSegmenter = {'None'}; % Stored items featured in segmenter experiment drop down menu
         % Brain segmentation
         CurrentSlice % Points to current slice matrix
         OriginalSegmenterImageData % Original experiment image data matrix
         WorkingSegmenterImageData % Working experiment image data matrix
         ExpDimsSegmenter % Dimensions of selected experiment for segmentation
-        FreeImage % Property for storing imshow of segmenter image without a mask overlay or MaskedImage
+        SegmenterImage % Property for storing imshow of segmenter image without a mask overlay or MaskedImage
         FreeROI % Property for storing current manual ROI object
         ROI_OperationID = ""; % Manually set ROI operation identifier
         MaskedImage % Masked image of current slice
@@ -238,7 +238,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Saved segmenter data
         SavedBrainMask % Saved brain mask data of current experiment
-        SavedTableSegmenter = table(); % Table with all saved segmented experiments
         DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
         
         % DSC/ASL tab
@@ -257,9 +256,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Registration tab
         RegisteredImageData % Property for storing registered image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
-        RegistrationCounter = 1; % Counter used for registration data nomenclature and storage
-        SavedTableRegistration % Table of saved registration experiment properties used for returning of data back to segmenter
-
+        RegistrationCounter = 1; % Counter used for registration data nomenclature and storage     
     end
     
     methods (Access = private)
@@ -312,9 +309,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Overlay"
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                             end
                                  
                             try
@@ -330,20 +327,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                     app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                     app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                             end
-                            app.FreeImage.ContextMenu = app.ContextMenu_Segmenter;
+                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
 
                 % Hemisphere segmentation image updating
                 case 'Hemisphere'
                     switch app.TurboButton_Segmenter.Value
                         case true
-                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                         otherwise
-                            app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                     end
                     try
                         hold(app.UIAxes_Segmenter, "on");
@@ -362,15 +359,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     end
                     mask_overlay_Red.ContextMenu = app.ContextMenu_Segmenter;
 
-                % Brain segmentation image updating
+                % ROI segmentation image updating
                 case 'ROI'
                     switch app.ImageshownSwitch_ROI.Value
                         case "Overlay"
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                    app.FreeImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                             end
                             hold(app.UIAxes_Segmenter, "on");
                             mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
@@ -399,11 +396,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             end
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                     app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                     app.FreeImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
                             end
-                            app.FreeImage.ContextMenu = app.ContextMenu_Segmenter;
+                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
                 otherwise
             end
@@ -433,51 +430,77 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
             end
         end
-
-        function Savesequence(app, tab)
+        
+        % Saving temporary experiment data to permanent tables
+        function SaveData(app, tab)
             switch tab
-                case 'preview'
-                    ImageData = app.PreviewImageData;
-                    SavedMask = false(size(app.PreviewImageData,1:3));
-                    DropDown = app.PreviewDropDown.Value;
-                case 'segmenter'
-                    ImageData = app.WorkingSegmenterImageData;
-                    SavedMask = app.SavedBrainMask;
-                    DropDown = app.SegmentDropDown.Value;
+                case 'Segmenter'
+                    exp_ID = app.SegmentDropDown.Value;
+                    image_Data = app.WorkingSegmenterImageData;
+                    saved_BrainMask = app.SavedBrainMask;
+                    hemi_Mask = app.HemisphereMask;
+                    if ~isequal(app.ROIMask, [])
+                        roi.Mask = app.ROIMask;
+                    else
+                        roi.Mask = false(1);
+                    end
+                    if ~isequal(app.ROIIdentifiers, {})
+                        roi.ID = app.ROIIdentifiers;
+                    else
+                        roi.ID = {'None'};
+                    end   
+                case 'Registration'
+                    exp_ID = append('Registered data ', num2str(app.RegistrationCounter), '.');
+                    % Update registration counter used for naming
+                    app.RegistrationCounter = app.RegistrationCounter+1;
+                    image_Data = app.RegisteredImageData;
+                    selection = uiconfirm(app.UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                        ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
+                    switch selection
+                        case 'Save Mask'
+                            saved_BrainMask = app.RegisteredMask;
+                        case 'Save without Mask'
+                            saved_BrainMask = false(size(image_Data));
+                    end
+                    hemi_Mask = false(1);
+                    roi.Mask = false(1);
+                    roi.ID = {'None'};
+                    
+                    % Update Segmenter drop down
+                    app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
+                    app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
             end
-            
-            % Construct temporary table of saved data
-            temp_Table = table({ImageData}, {SavedMask}, 'RowNames', {DropDown}, 'VariableNames', {'Image' 'Mask'});
 
+            % Construct temporary table of saved data
+            temp_Table = table({image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, 'RowNames', {exp_ID}, 'VariableNames', {'Image' 'BrainMask' 'HemiMask' 'ROI'});
             try
                 % Move temporarily saved data to permanent app table
                 app.SavedTable = [app.SavedTable; temp_Table];
 
                 % Update DSC and Registration tab drop down menus
-                app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, {DropDown});
+                app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, exp_ID);
                 app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
                 app.SelectASLDropDown.Items = app.DropDownItemsSaved;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
-                
+
                 % Display confirmation figure
                 uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-
             catch ME
                 switch ME.identifier
                     case 'MATLAB:table:DuplicateRowNames'
                         selection = uiconfirm(app.UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
                         switch selection
                             case 'OK'
-
                                 % Overwrite data of currently saved experiment under same identifier
-                                app.SavedTable.Image(app.SegmentDropDown.Value) = {ImageData};
-                                app.SavedTable.Mask(app.SegmentDropDown.Value) = {SavedMask};
+                                app.SavedTable.Image(exp_ID) = {image_Data};
+                                app.SavedTable.BrainMask(exp_ID) = {saved_BrainMask};
+                                app.SavedTable.HemiMask(exp_ID) = {hemi_Mask};
+                                app.SavedTable.ROI(exp_ID) = {roi};
                                 
                                 % Display confirmation figure
                                 uiconfirm(app.UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-
                             case 'Cancel'
                                 return
                         end
@@ -485,8 +508,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end 
         end
-    end
-    
+    end    
 
     % Callbacks that handle component events
     methods (Access = private)
@@ -677,8 +699,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
         end
 
-        % Button pushed function: ResetEnvironment
-        function ResetEnvironmentButtonPushed(app, event)
+        % Button pushed function: ResetEnvironmentButton
+        function ResetEnvironmentButtonButtonPushed(app, event)
             selection = uiconfirm(app.UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
                         'Icon','warning');
             switch selection 
@@ -686,8 +708,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % Reset tables
                     app.ExperimentPropertyTable = table();
                     app.UITable.Data=app.ExperimentPropertyTable;
-                    app.SavedTableSegmenter = table();
-                    app.SavedTableRegistration = table();
+                    app.SavedTable = table();
     
                     % Reset counters
                     app.ROICounter = 1;
@@ -714,6 +735,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     cla(app.UIAxes_Registration);
                     
                     % Reset sliders and spinners
+                    
+                    app.SliceSpinner_ASL.Value = 1;
+                    app.SliceSpinner_DSCMaps.Value = 1;
+                    app.SliceSpinner_Fixed.Value = 1;
+                    app.SliceSpinner_Moving.Value = 1;
+                    app.SliceSpinner_Parameter.Value = 1;
+
+                    % Disable and reset components
+                    % Preview
                     app.BrightnessSlider_Preview.Value = 0;
                     app.BrightnessSlider_Preview.Enable = 'off';
                     app.ContrastSlider_Preview.Value = 0;
@@ -724,13 +754,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSlider_Preview.Enable = 'off';
                     app.Dim4Slider_Preview.Value = 1;
                     app.Dim5Slider_Preview.Value = 1;
-                    app.SliceSpinner_ASL.Value = 1;
-                    app.SliceSpinner_DSCMaps.Value = 1;
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Parameter.Value = 1;
-
-                    % Disable and reset components
+                    app.TurboButton_Preview.Enable = 'off';
+                    app.GreyscaleButton_Preview.Enable = 'off';
+                    
                     % Segmenter
                     app.SliceSlider_Segmenter.Enable = 'off';
                     app.SliceSpinner_Segmenter.Enable = 'off';
@@ -752,9 +778,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     app.ROIPanel.Visible = 'off';
-                    app.SavesequenceButton_Segmenter.Enable = 'off';
-                    app.ExportsequenceButton_Segmenter.Enable = 'off';
-    
+                    app.SaveDataButton_Segmenter.Enable = 'off';
+                    app.ExportDataButton_Segmenter.Enable = 'off';
+                    
                     % Reset text fields
                     app.SubjectIDEditField.Value = "";
                     app.StudyIDEditField.Value = "";
@@ -784,6 +810,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.ContrastSlider_Preview.Enable = 'off';
                 app.Dim4Slider_Preview.Enable = 'off';
                 app.Dim5Slider_Preview.Enable = 'off';
+                app.TurboButton_Preview.Enable = 'off';
+                app.GreyscaleButton_Preview.Enable = 'off';
                 return
             end
             
@@ -827,6 +855,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.Enable = 'on';
             app.BrightnessSlider_Preview.Enable = 'on';
             app.ContrastSlider_Preview.Enable = 'on';
+            app.TurboButton_Preview.Enable = 'on';
+            app.GreyscaleButton_Preview.Enable = 'on';
             
             % Display sequence
             RefreshImagePreview(app);
@@ -925,15 +955,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImagePreview(app);
         end
 
-        % Button pushed function: SavesequenceButton_Preview
-        function SavesequenceButton_PreviewPushed(app, event)
-            Savesequence(app, 'preview');
-        end
-
         % Value changed function: SegmentDropDown
         function SegmentDropDownValueChanged(app, event)
             value = app.SegmentDropDown.Value;
-
+            
             % If 'None' is selected, clear UIaxes, disable controls and return
             if strcmp(value, 'None') == 1
                 cla(app.UIAxes_Segmenter);
@@ -953,18 +978,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.HemisphereSegmentationToolsPanel.Visible = 'off';
                 app.ROISegmentationToolsPanel.Visible = 'off';
                 app.ROIPanel.Visible = 'off';
-                app.SavesequenceButton_Segmenter.Enable = 'off';
-                app.ExportsequenceButton_Segmenter.Enable = 'off';
+                app.SaveDataButton_Segmenter.Enable = 'off';
+                app.ExportDataButton_Segmenter.Enable = 'off';
                 return
             end
-
+            
             % Get selected sequence image data from loaded experiments or saved registration experiments
             try
                 app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                reset_indicator = 1;
             catch
                 try
-                    app.OriginalSegmenterImageData = cell2mat(app.SavedTableRegistration.(2)(value));
-                    app.SavedBrainMask = cell2mat(app.SavedTableRegistration.(3)(value));
+                    app.OriginalSegmenterImageData = cell2mat(app.SavedTable.Image(value));
+                    app.SavedBrainMask = cell2mat(app.SavedTable.BrainMask(value));
+                    reset_indicator = 0;
                 catch
                 end
             end
@@ -1018,7 +1045,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    if reset_indicator == 1
+                        app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    end
                     app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                 case 4
@@ -1035,7 +1064,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    if reset_indicator == 1
+                        app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    end
                     app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                 case 3
@@ -1048,7 +1079,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter(1:3));
-                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    if reset_indicator == 1
+                        app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    end
                     app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter(1:3), 2));
 
                 case 2
@@ -1059,7 +1092,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter());
-                    app.SavedBrainMask = false(app.ExpDimsSegmenter);
+                    if reset_indicator == 1
+                        app.SavedBrainMask = false(app.ExpDimsSegmenter);
+                    end
                     app.HemisphereMask = false(cat(2, app.ExpDimsSegmenter, 2));
             end
 
@@ -1073,10 +1108,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROISegmentationToolsPanel.Visible = 'off';
             app.ROIPanel.Visible = 'on';
             app.ROIPanel.Position = [1200,110,149,140];
-            app.SavesequenceButton_Segmenter.Enable = 'on';
-            app.ExportsequenceButton_Segmenter.Enable = 'on';
+            app.SaveDataButton_Segmenter.Enable = 'on';
+            app.ExportDataButton_Segmenter.Enable = 'on';
 
-            % Check if there is a saved non-zero brain mask to enable hemisphere segmentationzeros
+            % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
             if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
             else
@@ -1673,14 +1708,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         switch app.ROI_OperationID
                             case 'add'
                                 try
-                                    added_Mask = app.FreeROI.createMask(app.FreeImage);
+                                    added_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                     app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)|added_Mask;
                                 catch
                                 end
                                 RefreshImageSegmenter(app);
                             case 'remove'
                                 try
-                                    removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                                    removed_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                     temp = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
                                     temp(removed_Mask) = 0;
                                     app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = temp;
@@ -1691,7 +1726,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     case 'Hemisphere'
                         switch app.ROI_OperationID
                             case 'add'
-                                added_Mask = app.FreeROI.createMask(app.FreeImage);
+                                added_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                 if app.RightredButton.Value == true
                                     % Check for 2D image data
                                     if numel(app.ExpDimsSegmenter) ~= 2
@@ -1726,7 +1761,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 end
                                 RefreshImageSegmenter(app);
                             case 'remove'
-                                removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                                removed_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                 if app.RightredButton.Value == true
                                     % Check for 2D image data
                                     if numel(app.ExpDimsSegmenter) ~= 2
@@ -1774,7 +1809,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
                         switch app.ROI_OperationID
                             case 'add'
-                                added_Mask = app.FreeROI.createMask(app.FreeImage);
+                                added_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                 if numel(app.ExpDimsSegmenter) ~= 2
                                     app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index) = added_Mask|app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
                                 else
@@ -1782,7 +1817,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 end
                                 RefreshImageSegmenter(app);
                             case 'remove'
-                                removed_Mask = app.FreeROI.createMask(app.FreeImage);
+                                removed_Mask = app.FreeROI.createMask(app.SegmenterImage);
                                 if numel(app.ExpDimsSegmenter) ~= 2
                                     temp_ROI = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
                                     temp_ROI(removed_Mask)=0;
@@ -1808,53 +1843,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: SavesequenceButton_Segmenter
-        function SavesequenceButton_SegmenterPushed(app, event)
-            
-            % Construct temporary table of saved data
-            temp_Table = table({app.WorkingSegmenterImageData}, {app.SavedBrainMask}, 'RowNames', {app.SegmentDropDown.Value}, 'VariableNames', {'Image' 'Mask'});
-
-            try
-                % Move temporarily saved data to permanent app table
-                app.SavedTableSegmenter = [app.SavedTableSegmenter; temp_Table];
-
-                % Update DSC and Registration tab drop down menus
-                app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, {app.SegmentDropDown.Value});
-                app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
-                app.SelectASLDropDown.Items = app.DropDownItemsSaved;
-                app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
-                app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
-                app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
-                
-                % Display confirmation figure
-                uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-
-            catch ME
-                switch ME.identifier
-                    case 'MATLAB:table:DuplicateRowNames'
-                        selection = uiconfirm(app.UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
-                        switch selection
-                            case 'OK'
-
-                                % Overwrite data of currently saved experiment under same identifier
-                                app.SavedTableSegmenter.Image(app.SegmentDropDown.Value) = {app.WorkingSegmenterImageData};
-                                app.SavedTableSegmenter.Mask(app.SegmentDropDown.Value) = {app.SavedBrainMask};
-                                
-                                % Display confirmation figure
-                                uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-
-                            case 'Cancel'
-                                return
-                        end
-                    otherwise
-                end
-            end
-            
-            
+        % Button pushed function: SaveDataButton_Segmenter
+        function SaveDataButton_SegmenterPushed(app, event)
+            SaveData(app, 'Segmenter')
         end
 
-        % Button pushed function: ExportsequenceButton_Segmenter
-        function ExportsequenceButton_SegmenterPushed(app, event)
+        % Button pushed function: ExportDataButton_Segmenter
+        function ExportDataButton_SegmenterPushed(app, event)
             
             % Get directory and export image and mask data in NIfTI format
             temp_dir = uigetdir;
@@ -1867,56 +1862,58 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: CalculateDSCmapsButton
         function CalculateDSCmapsButtonPushed(app, event)
-            
-            % Get custom options for DSC tolbox
-            custom_options = DSC_mri_getOptions();
-            custom_options.display = 1;
-            custom_options.deconv.method = {'SVD';'cSVD';'oSVD'};
-            
-            % Get volumetric data and sequence parameters for map
-            % calculation
-            drop_Value = app.SelectvolumetricdataDropDown.Value; 
-            TE = cell2mat(app.ExperimentPropertyTable.(3)(drop_Value));
-            TR = cell2mat(app.ExperimentPropertyTable.(4)(drop_Value));            
-            work_Data = cell2mat(app.SavedTableSegmenter.Image(drop_Value));
-            app.WorkMaskDSC = cell2mat(app.SavedTableSegmenter.Mask(drop_Value));
-            
-            % Calculate and display DSC maps
-            if numel(size(work_Data)) == 4   
-                [cbv,cbf,mtt,cbv_lc,ttp,mask,aif,conc,s0]=DSC_mri_core(work_Data, TE, TR, custom_options); %#ok<ASGLU> 
-                assignin('base',"mtt", mtt)
-                assignin('base',"cbf", cbf)
-                assignin('base',"cbv", cbv)
+            try
+                % Get custom options for DSC tolbox
+                custom_options = DSC_mri_getOptions();
+                custom_options.display = 1;
+                custom_options.deconv.method = {'SVD';'cSVD';'oSVD'};
                 
-                app.MTTData = mtt; 
-                app.MTTData.svd(isnan(app.MTTData.svd)) = 0;
-                app.MTTData.svd(isnan(app.MTTData.csvd)) = 0;
-                app.MTTData.svd(isnan(app.MTTData.osvd)) = 0;
-                app.CBFData = cbf;
-                app.CBVData = cbv;
-                app.CBVLCData = cbv_lc;
+                % Get volumetric data and sequence parameters for map
+                % calculation
+                drop_Value = app.SelectvolumetricdataDropDown.Value; 
+                TE = cell2mat(app.ExperimentPropertyTable.(3)(drop_Value));
+                TR = cell2mat(app.ExperimentPropertyTable.(4)(drop_Value));            
+                work_Data = cell2mat(app.SavedTable.Image(drop_Value));
+                app.WorkMaskDSC = cell2mat(app.SavedTable.BrainMask(drop_Value));
                 
-                data_dims = size(app.CBFData.svd.map);
-                app.SliceSpinner_DSCMaps.Limits = [1, data_dims(3)];              
-                app.SliceSpinner_DSCMaps.Enable = 'on';
-                app.SliceSpinner_DSCMaps.Value = 1;
+                % Calculate and display DSC maps
+                if numel(size(work_Data)) == 4   
+                    [cbv,cbf,mtt,cbv_lc,ttp,mask,aif,conc,s0]=DSC_mri_core(work_Data, TE, TR, custom_options); %#ok<ASGLU> 
+                    assignin('base',"mtt", mtt)
+                    assignin('base',"cbf", cbf)
+                    assignin('base',"cbv", cbv)
+                    
+                    app.MTTData = mtt; 
+                    app.MTTData.svd(isnan(app.MTTData.svd)) = 0;
+                    app.MTTData.svd(isnan(app.MTTData.csvd)) = 0;
+                    app.MTTData.svd(isnan(app.MTTData.osvd)) = 0;
+                    app.CBFData = cbf;
+                    app.CBVData = cbv;
+                    app.CBVLCData = cbv_lc;
+                    
+                    data_dims = size(app.CBFData.svd.map);
+                    app.SliceSpinner_DSCMaps.Limits = [1, data_dims(3)];              
+                    app.SliceSpinner_DSCMaps.Enable = 'on';
+                    app.SliceSpinner_DSCMaps.Value = 1;
+        
+                    RefreshImageDSC(app);
+                    app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
+                else
+                    uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
+                end
+                
+                % Set interactions on UIAxes
+                app.UIAxes_DSCMaps.Interactions = [regionZoomInteraction zoomInteraction];
+                
+                % Reset comparation data
+                app.ComparationregionsListBox.Items = {};
+                app.ComparationregionsListBox.Value = {};
+                app.ROICounter = 1;
+                app.SavedROI = table();
     
-                RefreshImageDSC(app);
-                app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
-            else
-                uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
+                app.DSCMapDropDown.Enable = 'on';
+            catch
             end
-            
-            % Set interactions on UIAxes
-            app.UIAxes_DSCMaps.Interactions = [regionZoomInteraction zoomInteraction];
-            
-            % Reset comparation data
-            app.ComparationregionsListBox.Items = {};
-            app.ComparationregionsListBox.Value = {};
-            app.ROICounter = 1;
-            app.SavedROI = table();
-
-            app.DSCMapDropDown.Enable = 'on';
         end
 
         % Value changed function: DSCMapDropDown
@@ -2055,14 +2052,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Display chosen ASL map image from saved segmented data,
             % update slice spinner
             drop_Value = app.SelectASLDropDown.Value; 
-            app.ImageDataASL = cell2mat(app.SavedTableSegmenter.Image(drop_Value));
-            app.WorkMaskASL = cell2mat(app.SavedTableSegmenter.Mask(drop_Value));
+            app.ImageDataASL = cell2mat(app.SavedTable.Image(drop_Value));
+            app.WorkMaskASL = cell2mat(app.SavedTable.BrainMask(drop_Value));
             app.ASLImage = imshow(app.ImageDataASL(:,:,1), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
             app.ASLImage.AlphaData = app.WorkMaskASL(:,:,1);
         
             data_dims = size(app.ImageDataASL);
-            app.SliceSpinner_ASL.Limits = [1, data_dims(3)];              
-            app.SliceSpinner_ASL.Enable = 'On';
+            try
+                app.SliceSpinner_ASL.Limits = [1, data_dims(3)];
+                app.SliceSpinner_ASL.Enable = 'On';
+            catch
+                app.SliceSpinner_ASL.Enable = 'off';
+            end
             app.SliceSpinner_ASL.Value = 1;
             
             % Set interactions on UIAxes
@@ -2443,7 +2444,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
-            fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
+            fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
             dims = size(fixed_Image);
             n_dims = size(dims);
             if n_dims(2)>=4
@@ -2477,7 +2478,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
-            moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
+            moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
             dims = size(moving_Image);
             n_dims = size(dims);
             dim3_size = dims(3);
@@ -2525,7 +2526,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
-            parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
+            parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
             dims = size(parameter_Image);
             n_dims = size(dims);
             if n_dims(2)>=4
@@ -2589,14 +2590,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             split_instr = split_instr(2:end);
 
             app.RegisteredImageData = [];
-            app.RegisteredMask = [];
+            app.RegisteredMask = false();
 
-            moving_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectmovingDropDown.Value));
-            fixed_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectfixedDropDown.Value));
-            fixed_Mask = cell2mat(app.SavedTableSegmenter.Mask(app.SelectfixedDropDown.Value)); 
+            moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
+            fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+            fixed_Mask = cell2mat(app.SavedTable.BrainMask(app.SelectfixedDropDown.Value)); 
 
             if app.UsedifferentparametermapCheckBox.Value == 1
-                parameter_Image = cell2mat(app.SavedTableSegmenter.Image(app.SelectparameterDropDown.Value));
+                parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
             end
             
             for i=1:length(split_instr)
@@ -2685,40 +2686,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: SaveRegisteredDataButton
         function SaveRegisteredDataButtonPushed(app, event)
-
-            TE_time = 0;
-            TR_time = 0;
-            exp_ID = {append('Registered data ', num2str(app.RegistrationCounter), '.')};
-            try
-                voxel_Dims = cell2mat(app.ExperimentPropertyTable.(5)(app.SelectfixedDropDown.Value));
-            catch 
-                voxel_Dims = [0 0];
-            end
-            exp_ImageData = {app.RegisteredImageData};
-            exp_MaskData = {app.RegisteredMask};
-
-            % Update registration counter used for naming
-            app.RegistrationCounter = app.RegistrationCounter+1;
-            
-            selection = uiconfirm(app.UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
-                ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
-            switch selection
-                case 'Save Mask'
-                    exp_MaskData = {app.RegisteredMask};
-                case 'Save without Mask'
-                    exp_MaskData = false(size(exp_ImageData));
-            end
-            % Construct temporary sequence property table and combine with main
-            variable_Names = ["Experiment ID", "Image data", "Mask data","TE", "TR", "Voxel dimensions"];
-            temp_Table = table(exp_ID, exp_ImageData, exp_MaskData, TE_time, TR_time, voxel_Dims, 'RowNames', exp_ID, 'VariableNames', variable_Names);
-            app.SavedTableRegistration = [app.SavedTableRegistration; temp_Table];
-            
-            % Update drop down items
-            app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
-            app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
-
-            % Display confirmation figure
-            uiconfirm(app.UIFigure, "Segmented sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            SaveData(app, 'Registration')
         end
     end
 
@@ -2759,7 +2727,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create PreviewLabel
             app.PreviewLabel = uilabel(app.PreviewTab);
             app.PreviewLabel.HorizontalAlignment = 'right';
-            app.PreviewLabel.Position = [791 483 48 22];
+            app.PreviewLabel.Position = [853 483 48 22];
             app.PreviewLabel.Text = 'Preview';
 
             % Create PreviewDropDown
@@ -2767,7 +2735,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = {};
             app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
             app.PreviewDropDown.Placeholder = 'None';
-            app.PreviewDropDown.Position = [854 483 229 22];
+            app.PreviewDropDown.Position = [916 483 229 22];
             app.PreviewDropDown.Value = {};
 
             % Create Dim5Slider_PreviewLabel
@@ -2814,6 +2782,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceLabel
             app.SliceLabel = uilabel(app.PreviewTab);
             app.SliceLabel.HorizontalAlignment = 'right';
+            app.SliceLabel.Enable = 'off';
             app.SliceLabel.Position = [791 15 31 22];
             app.SliceLabel.Text = 'Slice';
 
@@ -2824,6 +2793,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Preview.MajorTickLabels = {};
             app.SliceSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreviewValueChanging, true);
             app.SliceSlider_Preview.MinorTicks = [];
+            app.SliceSlider_Preview.Enable = 'off';
             app.SliceSlider_Preview.Position = [843 24 221 3];
             app.SliceSlider_Preview.Value = 1;
 
@@ -2876,11 +2846,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UITable.RowName = {};
             app.UITable.Position = [44 19 630 576];
 
-            % Create ResetEnvironment
-            app.ResetEnvironment = uibutton(app.PreviewTab, 'push');
-            app.ResetEnvironment.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonPushed, true);
-            app.ResetEnvironment.Position = [411 643 116 22];
-            app.ResetEnvironment.Text = 'Reset environment';
+            % Create ResetEnvironmentButton
+            app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
+            app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
+            app.ResetEnvironmentButton.Position = [410 643 118 22];
+            app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
             app.SubjectIDEditFieldLabel = uilabel(app.PreviewTab);
@@ -3037,25 +3007,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create GreyscaleButton_Preview
             app.GreyscaleButton_Preview = uiradiobutton(app.ColormapButtonGroup_Preview);
+            app.GreyscaleButton_Preview.Enable = 'off';
             app.GreyscaleButton_Preview.Text = 'Greyscale';
             app.GreyscaleButton_Preview.Position = [94 -3 76 22];
             app.GreyscaleButton_Preview.Value = true;
 
             % Create TurboButton_Preview
             app.TurboButton_Preview = uiradiobutton(app.ColormapButtonGroup_Preview);
+            app.TurboButton_Preview.Enable = 'off';
             app.TurboButton_Preview.Text = 'Turbo';
             app.TurboButton_Preview.Position = [2 -3 65 22];
 
-            % Create SavesequenceButton_Preview
-            app.SavesequenceButton_Preview = uibutton(app.PreviewTab, 'push');
-            app.SavesequenceButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @SavesequenceButton_PreviewPushed, true);
-            app.SavesequenceButton_Preview.Position = [1116 483 100 22];
-            app.SavesequenceButton_Preview.Text = 'Save sequence';
-
-            % Create ExportsequenceButton_Preview
-            app.ExportsequenceButton_Preview = uibutton(app.PreviewTab, 'push');
-            app.ExportsequenceButton_Preview.Position = [1226 483 101 22];
-            app.ExportsequenceButton_Preview.Text = 'Export sequence';
+            % Create ExportDataButton_Preview
+            app.ExportDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.ExportDataButton_Preview.Position = [1169 483 102 22];
+            app.ExportDataButton_Preview.Text = 'Export Data';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
@@ -3093,19 +3059,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Segmenter.Position = [460 16 47 22];
             app.SliceSpinner_Segmenter.Value = 1;
 
-            % Create SavesequenceButton_Segmenter
-            app.SavesequenceButton_Segmenter = uibutton(app.SegmenterTab, 'push');
-            app.SavesequenceButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @SavesequenceButton_SegmenterPushed, true);
-            app.SavesequenceButton_Segmenter.Enable = 'off';
-            app.SavesequenceButton_Segmenter.Position = [1166 38 100 22];
-            app.SavesequenceButton_Segmenter.Text = 'Save sequence';
+            % Create SaveDataButton_Segmenter
+            app.SaveDataButton_Segmenter = uibutton(app.SegmenterTab, 'push');
+            app.SaveDataButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_SegmenterPushed, true);
+            app.SaveDataButton_Segmenter.Enable = 'off';
+            app.SaveDataButton_Segmenter.Position = [1202 82 144 22];
+            app.SaveDataButton_Segmenter.Text = 'Save Segmented Data';
 
-            % Create ExportsequenceButton_Segmenter
-            app.ExportsequenceButton_Segmenter = uibutton(app.SegmenterTab, 'push');
-            app.ExportsequenceButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @ExportsequenceButton_SegmenterPushed, true);
-            app.ExportsequenceButton_Segmenter.Enable = 'off';
-            app.ExportsequenceButton_Segmenter.Position = [1276 38 101 22];
-            app.ExportsequenceButton_Segmenter.Text = 'Export sequence';
+            % Create ExportDataButton_Segmenter
+            app.ExportDataButton_Segmenter = uibutton(app.SegmenterTab, 'push');
+            app.ExportDataButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_SegmenterPushed, true);
+            app.ExportDataButton_Segmenter.Enable = 'off';
+            app.ExportDataButton_Segmenter.Position = [1202 48 144 22];
+            app.ExportDataButton_Segmenter.Text = 'Export Segmented Data';
 
             % Create Dim4Spinner_SegmenterLabel
             app.Dim4Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
@@ -3859,13 +3825,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
             app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
-            app.SaveRegisteredDataButton.Position = [1095 82 134 22];
+            app.SaveRegisteredDataButton.Position = [1161 75 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportRegisteredDataButton
             app.ExportRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
             app.ExportRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @ExportRegisteredDataButtonPushed, true);
-            app.ExportRegisteredDataButton.Position = [1241 82 140 22];
+            app.ExportRegisteredDataButton.Position = [1161 43 140 22];
             app.ExportRegisteredDataButton.Text = 'Export Registered Data';
 
             % Create FixDim4CheckBox_Moving
