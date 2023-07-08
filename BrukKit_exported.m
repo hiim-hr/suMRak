@@ -100,7 +100,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Dim4Spinner_Segmenter           matlab.ui.control.Spinner
         Dim4Spinner_SegmenterLabel      matlab.ui.control.Label
         ExportDataButton_Segmenter      matlab.ui.control.Button
-        SaveDataButton_Segmenter        matlab.ui.control.Button
+        SaveSegmentedDataButton         matlab.ui.control.Button
         SliceSpinner_Segmenter          matlab.ui.control.Spinner
         SegmentDropDown                 matlab.ui.control.DropDown
         SelectexperimenttosegmentDropDownLabel  matlab.ui.control.Label
@@ -160,7 +160,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Dim4Spinner_Moving              matlab.ui.control.Spinner
         Dim4Spinner_MovingLabel         matlab.ui.control.Label
         FixDim4CheckBox_Moving          matlab.ui.control.CheckBox
-        ExportRegisteredDataButton      matlab.ui.control.Button
+        ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
         SliceSpinner_Registration       matlab.ui.control.Spinner
         SliceSpinner_RegistrationLabel  matlab.ui.control.Label
@@ -778,7 +778,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     app.ROIPanel.Visible = 'off';
-                    app.SaveDataButton_Segmenter.Enable = 'off';
+                    app.SaveSegmentedDataButton.Enable = 'off';
                     app.ExportDataButton_Segmenter.Enable = 'off';
                     
                     % Reset text fields
@@ -978,7 +978,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.HemisphereSegmentationToolsPanel.Visible = 'off';
                 app.ROISegmentationToolsPanel.Visible = 'off';
                 app.ROIPanel.Visible = 'off';
-                app.SaveDataButton_Segmenter.Enable = 'off';
+                app.SaveSegmentedDataButton.Enable = 'off';
                 app.ExportDataButton_Segmenter.Enable = 'off';
                 return
             end
@@ -1108,7 +1108,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROISegmentationToolsPanel.Visible = 'off';
             app.ROIPanel.Visible = 'on';
             app.ROIPanel.Position = [1200,110,149,140];
-            app.SaveDataButton_Segmenter.Enable = 'on';
+            app.SaveSegmentedDataButton.Enable = 'on';
             app.ExportDataButton_Segmenter.Enable = 'on';
 
             % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
@@ -1285,8 +1285,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
-                    n_dims = size(app.ExpDimsSegmenter);
-                    switch n_dims(2)
+                    switch numel(app.ExpDimsSegmenter)
                         case 4
                             app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,4,3]);
                         case 5
@@ -1520,18 +1519,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: ApplyMaskButton
         function ApplyMaskButtonPushed(app, event)
-           app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
 
             % Save slice image based on number of dimensions in original matrix
-            num_dims = size(app.ExpDimsSegmenter);
-            if num_dims(2) == 4 % What if num_dims = 5?
-                for i=1:app.ExpDimsSegmenter(4)
-                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
-                end
-            else
-                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+            switch numel(app.ExpDimsSegmenter)
+                case 5
+                    for j=1:app.ExpDimsSegmenter(5)
+                        for i=1:app.ExpDimsSegmenter(4)
+                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
+                        end
+                    end         
+                case 4
+                    for i=1:app.ExpDimsSegmenter(4)
+                        app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                    end
+                otherwise
+                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             end
-            
+
             % Save slice mask
             app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
             app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
@@ -1551,21 +1555,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: ResetSliceButton
         function ResetSliceButtonPushed(app, event)
-            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData); 
-            
+ 
             % Reset zoom
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
             
             % Reset slice image based on number of dimensions in original
             % matrix
-            num_dims = size(app.ExpDimsSegmenter);
-            if num_dims(2) == 4 %What if num_dims(2) = 5?
-                for i=1:app.ExpDimsSegmenter(4)
-                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
-                end
-            else
-                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+            switch numel(app.ExpDimsSegmenter)
+                case 5
+                    for j=1:app.ExpDimsSegmenter(5)
+                        for i=1:app.ExpDimsSegmenter(4)
+                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
+                        end
+                    end         
+                case 4
+                    for i=1:app.ExpDimsSegmenter(4)
+                        app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                    end
+                otherwise
+                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
             end
 
             % Reset slice mask
@@ -1843,8 +1852,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: SaveDataButton_Segmenter
-        function SaveDataButton_SegmenterPushed(app, event)
+        % Button pushed function: SaveSegmentedDataButton
+        function SaveSegmentedDataButtonPushed(app, event)
             SaveData(app, 'Segmenter')
         end
 
@@ -2673,8 +2682,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             imshow(app.RegisteredImageData(:,:,value), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
         end
 
-        % Button pushed function: ExportRegisteredDataButton
-        function ExportRegisteredDataButtonPushed(app, event)
+        % Button pushed function: ExportDataButton_Registration
+        function ExportDataButton_RegistrationPushed(app, event)
             % Get directory and export image and mask data in NIfTI format
             temp_dir = uigetdir;
             temp_dir = append(temp_dir, '\');
@@ -3059,12 +3068,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Segmenter.Position = [460 16 47 22];
             app.SliceSpinner_Segmenter.Value = 1;
 
-            % Create SaveDataButton_Segmenter
-            app.SaveDataButton_Segmenter = uibutton(app.SegmenterTab, 'push');
-            app.SaveDataButton_Segmenter.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_SegmenterPushed, true);
-            app.SaveDataButton_Segmenter.Enable = 'off';
-            app.SaveDataButton_Segmenter.Position = [1202 82 144 22];
-            app.SaveDataButton_Segmenter.Text = 'Save Segmented Data';
+            % Create SaveSegmentedDataButton
+            app.SaveSegmentedDataButton = uibutton(app.SegmenterTab, 'push');
+            app.SaveSegmentedDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveSegmentedDataButtonPushed, true);
+            app.SaveSegmentedDataButton.Enable = 'off';
+            app.SaveSegmentedDataButton.Position = [1202 82 144 22];
+            app.SaveSegmentedDataButton.Text = 'Save Segmented Data';
 
             % Create ExportDataButton_Segmenter
             app.ExportDataButton_Segmenter = uibutton(app.SegmenterTab, 'push');
@@ -3828,11 +3837,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SaveRegisteredDataButton.Position = [1161 75 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
-            % Create ExportRegisteredDataButton
-            app.ExportRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
-            app.ExportRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @ExportRegisteredDataButtonPushed, true);
-            app.ExportRegisteredDataButton.Position = [1161 43 140 22];
-            app.ExportRegisteredDataButton.Text = 'Export Registered Data';
+            % Create ExportDataButton_Registration
+            app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
+            app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
+            app.ExportDataButton_Registration.Position = [1161 43 140 22];
+            app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
             % Create FixDim4CheckBox_Moving
             app.FixDim4CheckBox_Moving = uicheckbox(app.RegistrationTab);
