@@ -744,9 +744,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     
                     app.SliceSpinner_ASL.Value = 1;
                     app.SliceSpinner_DSCMaps.Value = 1;
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Parameter.Value = 1;
 
                     % Disable and reset components
                     % Preview
@@ -786,6 +783,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROIPanel.Visible = 'off';
                     app.SaveSegmentedDataButton.Enable = 'off';
                     app.ExportDataButton_Segmenter.Enable = 'off';
+
+                    % Registration
+                    app.Dim5Spinner_Fixed.Enable = 'off';
+                    app.Dim5Spinner_Fixed.Value = 1;
+                    app.Dim4Spinner_Fixed.Enable = 'off';
+                    app.Dim4Spinner_Fixed.Value = 1;
+                    app.SliceSpinner_Fixed.Enable = 'off';
+                    app.SliceSpinner_Fixed.Value = 1;
+                    app.Dim5Spinner_Moving.Enable = 'off';
+                    app.Dim5Spinner_Moving.Value = 1;
+                    app.Dim4Spinner_Moving.Enable = 'off';
+                    app.Dim4Spinner_Moving.Value = 1;
+                    app.SliceSpinner_Moving.Enable = 'off';
+                    app.SliceSpinner_Moving.Value = 1;
+                    app.Dim5Spinner_Parameter.Enable = 'off';
+                    app.Dim5Spinner_Parameter.Value = 1;
+                    app.Dim4Spinner_Parameter.Enable = 'off';
+                    app.Dim4Spinner_Parameter.Value = 1;
+                    app.SliceSpinner_Parameter.Enable = 'off';
+                    app.SliceSpinner_Parameter.Value = 1;
+                    app.UsedifferentparametermapCheckBox.Value = 0;
+                    app.RegistrationInstructionsTextArea.Value = '';
                     
                     % Reset text fields
                     app.SubjectIDEditField.Value = "";
@@ -2503,6 +2522,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Fixed.Enable = 'off';
                     app.SliceSpinner_Fixed.Value = 1;
             end
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: SelectmovingDropDown
@@ -2551,6 +2571,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Moving.Enable = 'off';
                     app.SliceSpinner_Moving.Value = 1;
             end
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: UsedifferentparametermapCheckBox
@@ -2562,8 +2583,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             else
                 app.SelectparameterDropDown.Enable = 'off';
                 app.Dim5Spinner_Parameter.Enable = 'off';
+                app.Dim5Spinner_Parameter.Value = 1;
                 app.Dim4Spinner_Parameter.Enable = 'off';
+                app.Dim4Spinner_Parameter.Value = 1;
                 app.SliceSpinner_Parameter.Enable = 'off';
+                app.SliceSpinner_Parameter.Value = 1;
             end
         end
 
@@ -2613,6 +2637,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Parameter.Enable = 'off';
                     app.SliceSpinner_Parameter.Value = 1;
             end
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Button pushed function: AddsliceButton
@@ -3363,12 +3388,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ConfirmButton
             app.ConfirmButton = uibutton(app.ROIPanel, 'push');
             app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
+            app.ConfirmButton.Icon = 'check icon.png';
             app.ConfirmButton.Position = [44 19 26 22];
             app.ConfirmButton.Text = '';
 
             % Create DeleteButton
             app.DeleteButton = uibutton(app.ROIPanel, 'push');
             app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
+            app.DeleteButton.Icon = 'x icon.png';
             app.DeleteButton.Position = [79 19 27 22];
             app.DeleteButton.Text = '';
 
@@ -3881,7 +3908,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectparameterLabel
             app.SelectparameterLabel = uilabel(app.RegistrationTab);
             app.SelectparameterLabel.HorizontalAlignment = 'center';
-            app.SelectparameterLabel.Enable = 'off';
             app.SelectparameterLabel.Position = [1068 383 164 22];
             app.SelectparameterLabel.Text = 'Select Parameter Image Data';
 
@@ -3897,7 +3923,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceSpinner_ParameterLabel
             app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_ParameterLabel.Enable = 'off';
             app.SliceSpinner_ParameterLabel.Position = [1264 383 31 22];
             app.SliceSpinner_ParameterLabel.Text = 'Slice';
 
@@ -3956,7 +3981,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_ParameterLabel
             app.Dim4Spinner_ParameterLabel = uilabel(app.RegistrationTab);
             app.Dim4Spinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_ParameterLabel.Enable = 'off';
             app.Dim4Spinner_ParameterLabel.Position = [1319 383 44 22];
             app.Dim4Spinner_ParameterLabel.Text = 'Dim - 4';
 
@@ -3969,7 +3993,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim5Spinner_ParameterLabel
             app.Dim5Spinner_ParameterLabel = uilabel(app.RegistrationTab);
             app.Dim5Spinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_ParameterLabel.Enable = 'off';
             app.Dim5Spinner_ParameterLabel.Position = [1378 383 44 22];
             app.Dim5Spinner_ParameterLabel.Text = 'Dim - 5';
 
