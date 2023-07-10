@@ -4,7 +4,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
-        PreviewTab                      matlab.ui.container.Tab
+        MainTab                         matlab.ui.container.Tab
         SaveDataButton_Preview          matlab.ui.control.Button
         ExportDataButton_Preview        matlab.ui.control.Button
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
@@ -106,51 +106,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SegmentDropDown                 matlab.ui.control.DropDown
         SelectExperimentToSegmentLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
-        DSCASLTab                       matlab.ui.container.Tab
-        ExportROImaskButton             matlab.ui.control.Button
-        ComparationPanel                matlab.ui.container.Panel
-        ASLMaxLabel                     matlab.ui.control.Label
-        ASLMinLabel                     matlab.ui.control.Label
-        ASLSDLabel                      matlab.ui.control.Label
-        ASLMeanLabel                    matlab.ui.control.Label
-        DSCMaxLabel                     matlab.ui.control.Label
-        DSCMinLabel                     matlab.ui.control.Label
-        DSCSDLabel                      matlab.ui.control.Label
-        DSCMeanLabel                    matlab.ui.control.Label
-        VoxelNValueLabel                matlab.ui.control.Label
-        ASLLabel                        matlab.ui.control.Label
-        DSCLabel                        matlab.ui.control.Label
-        ComparationregionsListBox       matlab.ui.control.ListBox
-        ComparationregionsListBoxLabel  matlab.ui.control.Label
-        MaxLabel                        matlab.ui.control.Label
-        MinLabel                        matlab.ui.control.Label
-        SDLabel                         matlab.ui.control.Label
-        MeanLabel                       matlab.ui.control.Label
-        VoxelNLabel                     matlab.ui.control.Label
-        ROIpixelexclusionButton         matlab.ui.control.Button
-        ASLcomparationROIButton         matlab.ui.control.Button
-        DSCcomparationROIButton         matlab.ui.control.Button
-        ExportDSCmapsButton             matlab.ui.control.Button
+        ParameterMapsTab                matlab.ui.container.Tab
+        Dim5Spinner_PreMap              matlab.ui.control.Spinner
+        Dim5Spinner_SegmenterLabel_2    matlab.ui.control.Label
+        Dim4Spinner_PreMap              matlab.ui.control.Spinner
+        Dim4Spinner_SegmenterLabel_2    matlab.ui.control.Label
+        SliceSlider_PostMap             matlab.ui.control.Slider
+        SliceLabel_Preview_3            matlab.ui.control.Label
+        SliceSlider_PreMap              matlab.ui.control.Slider
+        SliceLabel_Preview_2            matlab.ui.control.Label
         MethodButtonGroup               matlab.ui.container.ButtonGroup
         oSVDButton                      matlab.ui.control.RadioButton
         cSVDButton                      matlab.ui.control.RadioButton
         SVDButton                       matlab.ui.control.RadioButton
-        ExportASLmapButton              matlab.ui.control.Button
         DSCMapDropDown                  matlab.ui.control.DropDown
         DSCMapDropDownLabel             matlab.ui.control.Label
-        ComparemapsButton               matlab.ui.control.Button
         SelectASLDropDown               matlab.ui.control.DropDown
         SelectASLexperimenttocompareLabel  matlab.ui.control.Label
         SelectvolumetricdataDropDown    matlab.ui.control.DropDown
         SelectDSCvolumetricdataformapcalculationLabel  matlab.ui.control.Label
-        ASLMapLabel                     matlab.ui.control.Label
-        SliceSpinner_ASL                matlab.ui.control.Spinner
-        SliceSpinner_ASLLabel           matlab.ui.control.Label
-        SliceSpinner_DSCMaps            matlab.ui.control.Spinner
-        SliceSpinner_DSCMapsLabel       matlab.ui.control.Label
+        SliceSpinner_PostMap            matlab.ui.control.Spinner
+        SliceSpinner_PreMap             matlab.ui.control.Spinner
         CalculateDSCmapsButton          matlab.ui.control.Button
-        UIAxes_ASL                      matlab.ui.control.UIAxes
-        UIAxes_DSCMaps                  matlab.ui.control.UIAxes
+        UIAxes_PostMap                  matlab.ui.control.UIAxes
+        UIAxes_PreMap                   matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
         Dim5Spinner_Moving              matlab.ui.control.Spinner
         Dim5Spinner_MovingLabel         matlab.ui.control.Label
@@ -422,26 +401,46 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % DSC UIAxes image updating
-        function RefreshImageDSC(app)
+        % Parameter Maps UIAxes input image updating
+        function RefreshImagePreMap(app)
+            app.ExpDimsMaps = size(app.OriginalSegmenterImageData);
+            switch numel(app.ExpDimsMaps)
+                case 2
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
+                case 3
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_PreMap.Value);
+                case 4
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_PreMap.Value, app.Dim4Spinner_PreMap.Value);
+                case 5
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_PreMap.Value, app.Dim4Spinner_PreMap.Value, app.Dim5Spinner_PreMap.Value);
+                otherwise
+                    %error alert missing
+            end
+            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PreMap);
+        end
+
+        % Parameter Maps UIAxes output image updating
+        function RefreshImagePostMap(app)
             switch app.DSCMapDropDown.Value
                 case "CBF"
                     if app.SVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                        app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
                     elseif app.cSVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                        app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);    
                     elseif app.oSVDButton.Value == true
-                        app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                        app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
                     end
                 case"CBV"
-                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    app.DSCImage = imshow(app.CBVData(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
                 case "MTT"
                     if app.SVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                        app.DSCImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
                     elseif app.cSVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);       
+                        app.DSCImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);       
                     elseif app.oSVDButton.Value == true
-                        app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);   
+                        app.DSCImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);   
                     end
                 otherwise
             end
@@ -783,14 +782,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % Reset UIAxes
                     cla(app.UIAxes_Preview);
                     cla(app.UIAxes_Segmenter);
-                    cla(app.UIAxes_ASL);
-                    cla(app.UIAxes_DSCMaps);
+                    cla(app.UIAxes_PostMap);
+                    cla(app.UIAxes_PreMap);
                     cla(app.UIAxes_Registration);
                     
                     % Reset sliders and spinners
                     
-                    app.SliceSpinner_ASL.Value = 1;
-                    app.SliceSpinner_DSCMaps.Value = 1;
+                    app.SliceSpinner_PostMap.Value = 1;
+                    app.SliceSpinner_PreMap.Value = 1;
 
                     % Disable and reset components
                     % Preview
@@ -1698,7 +1697,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ROI_name = inputdlg('Enter ROI Name', 'Add New ROI', [1 40]);
 
             % Check for empty/duplicate name input
-            if ~isequal(ROI_name, {''}) & ~any(contains(app.ROIIdentifiers,ROI_name))
+            if ~isequal(ROI_name, {''}) && ~any(contains(app.ROIIdentifiers,ROI_name))
                 app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROI_name);
                 app.ROIListListBox.Items = app.ROIIdentifiers;
                 app.ROIListListBox.Value = ROI_name;
@@ -1978,18 +1977,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.CBVLCData = cbv_lc;
                     
                     data_dims = size(app.CBFData.svd.map);
-                    app.SliceSpinner_DSCMaps.Limits = [1, data_dims(3)];              
-                    app.SliceSpinner_DSCMaps.Enable = 'on';
-                    app.SliceSpinner_DSCMaps.Value = 1;
+                    app.SliceSpinner_PreMap.Limits = [1, data_dims(3)];              
+                    app.SliceSpinner_PreMap.Enable = 'on';
+                    app.SliceSpinner_PreMap.Value = 1;
         
-                    RefreshImageDSC(app);
+                    RefreshImageMaps(app);
                     app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,1);
                 else
                     uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
                 end
                 
                 % Set interactions on UIAxes
-                app.UIAxes_DSCMaps.Interactions = [regionZoomInteraction zoomInteraction];
+                app.UIAxes_PreMap.Interactions = [regionZoomInteraction zoomInteraction];
                 
                 % Reset comparation data
                 app.ComparationregionsListBox.Items = {};
@@ -2006,8 +2005,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function DSCMapDropDownValueChanged(app, event)
             
             % Display chosen map image based on method selected
-            RefreshImageDSC(app);
-            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            RefreshImageMaps(app);
+            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
 
             if app.DSCMapDropDown.Value == "CBV"
                 app.SVDButton.Enable = 'off';
@@ -2020,22 +2019,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
             % Reset zoom and comparation data
-            app.UIAxes_DSCMaps.XLim = [-inf inf];
-            app.UIAxes_DSCMaps.YLim = [-inf inf];
+            app.UIAxes_PreMap.XLim = [-inf inf];
+            app.UIAxes_PreMap.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
         end
 
-        % Value changed function: SliceSpinner_DSCMaps
-        function SliceSpinner_DSCMapsValueChanged(app, event)
+        % Value changed function: SliceSpinner_PreMap
+        function SliceSpinner_PreMapValueChanged(app, event)
             
             % Display chosen map image based on method selected and spinner
             % Value
-            RefreshImageDSC(app);
-            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            RefreshImageMaps(app);
+            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
             
             % Reset zoom and comparation data
-            app.UIAxes_DSCMaps.XLim = [-inf inf];
-            app.UIAxes_DSCMaps.YLim = [-inf inf];
+            app.UIAxes_PreMap.XLim = [-inf inf];
+            app.UIAxes_PreMap.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
         end
 
@@ -2043,19 +2042,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function MethodButtonGroupSelectionChanged(app, event)
             
             % Display chosen map image based on method selected
-            RefreshImageDSC(app);
-            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            RefreshImageMaps(app);
+            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
             
             % Reset zoom
-            app.UIAxes_DSCMaps.XLim = [-inf inf];
-            app.UIAxes_DSCMaps.YLim = [-inf inf];
+            app.UIAxes_PreMap.XLim = [-inf inf];
+            app.UIAxes_PreMap.YLim = [-inf inf];
         end
 
-        % Button pushed function: ROIpixelexclusionButton
+        % Callback function
         function ROIpixelexclusionButtonPushed(app, event)
             
             % Draw freehand ROI
-            dscROI = drawfreehand(app.UIAxes_DSCMaps);
+            dscROI = drawfreehand(app.UIAxes_PreMap);
             dscROI_mask = dscROI.createMask();
             delete(dscROI)      
             
@@ -2063,27 +2062,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
                 if app.DSCMapDropDown.Value == "CBF"
-                    modified_slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "CBV"
-                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "MTT"
-                    modified_slice_DSC = app.MTTData.svd(:,:,app.SliceSpinner_DSCMaps.Value); 
+                    modified_slice_DSC = app.MTTData.svd(:,:,app.SliceSpinner_PreMap.Value); 
                 end
             elseif selectedButton == "cSVD"
                 if app.DSCMapDropDown.Value == "CBF"
-                    modified_slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "CBV"
-                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "MTT"
-                    modified_slice_DSC = app.MTTData.csvd(:,:,app.SliceSpinner_DSCMaps.Value); 
+                    modified_slice_DSC = app.MTTData.csvd(:,:,app.SliceSpinner_PreMap.Value); 
                 end
             elseif selectedButton == "oSVD"
                 if app.DSCMapDropDown.Value == "CBF"
-                    modified_slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "CBV"
-                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.CBVData(:,:,app.SliceSpinner_PreMap.Value);
                 elseif app.DSCMapDropDown.Value == "MTT"
-                    modified_slice_DSC = app.MTTData.osvd(:,:,app.SliceSpinner_DSCMaps.Value);
+                    modified_slice_DSC = app.MTTData.osvd(:,:,app.SliceSpinner_PreMap.Value);
                 end
             end
             
@@ -2092,29 +2091,29 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Display newly adjusted image with data from ROI set to 0
             if app.DSCMapDropDown.Value == "CBF"
                 if app.SVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
                 elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);        
                 elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);    
                 end
             elseif app.DSCMapDropDown.Value == "CBV"
-                app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
+                app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
             elseif app.DSCMapDropDown.Value == "MTT"
                 if app.SVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);    
                 elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);        
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);        
                 elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);    
+                    app.DSCImage = imshow(modified_slice_DSC, [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);    
                 end
             end
-            temp_alphaMask = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            temp_alphaMask = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
             temp_alphaMask(dscROI_mask) = 0;
             app.DSCImage.AlphaData = temp_alphaMask;
         end
 
-        % Button pushed function: ExportDSCmapsButton
+        % Callback function
         function ExportDSCmapsButtonPushed(app, event)
             
             % Get directory and export calculated DSC maps
@@ -2140,24 +2139,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
             drop_Value = app.SelectASLDropDown.Value; 
             app.ImageDataASL = cell2mat(app.SavedTable.Image(drop_Value));
             app.WorkMaskASL = cell2mat(app.SavedTable.BrainMask(drop_Value));
-            app.ASLImage = imshow(app.ImageDataASL(:,:,1), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
+            app.ASLImage = imshow(app.ImageDataASL(:,:,1), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
             app.ASLImage.AlphaData = app.WorkMaskASL(:,:,1);
         
             data_dims = size(app.ImageDataASL);
             try
-                app.SliceSpinner_ASL.Limits = [1, data_dims(3)];
-                app.SliceSpinner_ASL.Enable = 'On';
+                app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];
+                app.SliceSpinner_PostMap.Enable = 'On';
             catch
-                app.SliceSpinner_ASL.Enable = 'off';
+                app.SliceSpinner_PostMap.Enable = 'off';
             end
-            app.SliceSpinner_ASL.Value = 1;
+            app.SliceSpinner_PostMap.Value = 1;
             
             % Set interactions on UIAxes
-            app.UIAxes_ASL.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_PostMap.Interactions = [regionZoomInteraction zoomInteraction];
             
             % Reset zoom
-            app.UIAxes_ASL.XLim = [-inf inf];
-            app.UIAxes_ASL.YLim = [-inf inf];
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
             
             % Reset comparation data
             app.ComparationregionsListBox.Items = {};
@@ -2166,20 +2165,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SavedROI = table();
         end
 
-        % Value changed function: SliceSpinner_ASL
-        function SliceSpinner_ASLValueChanged(app, event)
+        % Value changed function: SliceSpinner_PostMap
+        function SliceSpinner_PostMapValueChanged(app, event)
             
             % Display ASL slice based of spinner Value
-            app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
-            app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);
+            app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+            app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_PostMap.Value);
             
             % Reset zoom
-            app.UIAxes_ASL.XLim = [-inf inf];
-            app.UIAxes_ASL.YLim = [-inf inf];
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
             app.ComparationregionsListBox.Value = {};
         end
 
-        % Button pushed function: ExportASLmapButton
+        % Callback function
         function ExportASLmapButtonPushed(app, event)
             
             % Get directory and export segmented ASL map
@@ -2188,23 +2187,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             niftiwrite(app.ImageDataASL, append(temp_dir, 'ASL'))
         end
 
-        % Button pushed function: ComparemapsButton
+        % Callback function
         function ComparemapsButtonPushed(app, event)
             
             % Calculate 2D correlation coeff. for current DSC/ASL slices
             % for using only pixels with nonzero values
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
-                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "cSVD"
-                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "oSVD"
-                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value);
             end     
-            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value);
             dims = size(slice_ASL);
             
-            if (app.SliceSpinner_DSCMaps.Value == app.SliceSpinner_ASL.Value) && (size(slice_ASL) == size(slice_DSC))
+            if (app.SliceSpinner_PreMap.Value == app.SliceSpinner_PostMap.Value) && (size(slice_ASL) == size(slice_DSC))
                 up = 0;
                 d1 = 0;
                 d2 = 0;
@@ -2228,28 +2227,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: DSCcomparationROIButton
+        % Callback function
         function DSCcomparationROIButtonPushed(app, event)
             
             % Draw polygon ROI, save it to table, update statistical values
             % for DSC/ASL ROI data
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
-                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "cSVD"
-                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "oSVD"
-                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value);
             end     
-            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value);
             dims = size(slice_ASL);
 
-            if (app.SliceSpinner_DSCMaps.Value == app.SliceSpinner_ASL.Value) && (size(slice_ASL) == size(slice_DSC))
-                dscROI = drawpolygon(app.UIAxes_DSCMaps);
+            if (app.SliceSpinner_PreMap.Value == app.SliceSpinner_PostMap.Value) && (size(slice_ASL) == size(slice_DSC))
+                dscROI = drawpolygon(app.UIAxes_PreMap);
                 ROI_mask = dscROI.createMask(app.DSCImage);
                 delete(dscROI)
                 
-                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
+                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_PreMap.Value));
                 app.ComparationregionsListBox.Items = cat(2, app.ComparationregionsListBox.Items, ROIName);
                 app.ComparationregionsListBox.Value = ROIName;
                 app.ROICounter = app.ROICounter+1;
@@ -2296,61 +2295,61 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 temp_RedScreen = cat(3, ones(dims(1:2)), zeros(dims(1:2)), zeros(dims(1:2)));
                 
                 if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 end
                 
-                app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+                app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
                 
-                app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
-                hold(app.UIAxes_ASL, "on")
-                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_ASL);
-                hold(app.UIAxes_ASL, "off")
+                app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+                hold(app.UIAxes_PostMap, "on")
+                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PostMap);
+                hold(app.UIAxes_PostMap, "off")
                 mask_Overlay.AlphaData = ROI_mask-0.6;
-                app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);  
+                app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_PostMap.Value);  
                 
             else
                 uialert(app.UIFigure, 'Map comparation not possible for different slices or data dimensions.', 'Comparation Error')
             end
         end
 
-        % Button pushed function: ASLcomparationROIButton
+        % Callback function
         function ASLcomparationROIButtonPushed(app, event)
             
             % Draw polygon ROI, save it to table, update statistical values
             % for DSC/ASL ROI data
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
-                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "cSVD"
-                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "oSVD"
-                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value);
             end     
-            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value);
             dims = size(slice_ASL);
             
-            if (app.SliceSpinner_DSCMaps.Value == app.SliceSpinner_ASL.Value) && (size(slice_ASL) == size(slice_DSC))
-                aslROI = drawpolygon(app.UIAxes_ASL);
+            if (app.SliceSpinner_PreMap.Value == app.SliceSpinner_PostMap.Value) && (size(slice_ASL) == size(slice_DSC))
+                aslROI = drawpolygon(app.UIAxes_PostMap);
                 ROI_mask = aslROI.createMask(app.ASLImage);
                 delete(aslROI)
                 
-                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_DSCMaps.Value));
+                ROIName = append("Region ", num2str(app.ROICounter), " - Slice ", num2str(app.SliceSpinner_PreMap.Value));
                 app.ComparationregionsListBox.Items = cat(2, app.ComparationregionsListBox.Items, ROIName);
                 app.ComparationregionsListBox.Value = ROIName;
                 app.ROICounter = app.ROICounter+1;
@@ -2397,39 +2396,39 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 temp_RedScreen = cat(3, ones(dims(1:2)), zeros(dims(1:2)), zeros(dims(1:2)));
                 
                 if app.SVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 elseif app.cSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 elseif app.oSVDButton.Value == true
-                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                    hold(app.UIAxes_DSCMaps, "on")
-                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                    hold(app.UIAxes_DSCMaps, "off")
+                    app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                    hold(app.UIAxes_PreMap, "on")
+                    mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                    hold(app.UIAxes_PreMap, "off")
                     mask_Overlay.AlphaData = ROI_mask-0.6;
                 end
                 
-                app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+                app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
                 
-                app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
-                hold(app.UIAxes_ASL, "on")
-                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_ASL);
-                hold(app.UIAxes_ASL, "off")
+                app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+                hold(app.UIAxes_PostMap, "on")
+                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PostMap);
+                hold(app.UIAxes_PostMap, "off")
                 mask_Overlay.AlphaData = ROI_mask-0.6;
-                app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);  
+                app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_PostMap.Value);  
             else
                 uialert(app.UIFigure, 'Map comparation not possible for different slices or data dimensions.', 'Comparation Error')
             end
         end
 
-        % Value changed function: ComparationregionsListBox
+        % Callback function
         function ComparationregionsListBoxValueChanged(app, event)
             
             % Display chosen ROI on DSC/ASL map images, update statistical
@@ -2439,13 +2438,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             selectedButton = app.MethodButtonGroup.SelectedObject.Text;
             if selectedButton == "SVD"
-                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "cSVD"
-                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value);
             elseif selectedButton == "oSVD"
-                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value);
+                slice_DSC = app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value);
             end     
-            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value);
+            slice_ASL = app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value);
             dims = size(slice_ASL);
               
             ROI_mask = cell2mat(table2array(app.SavedROI({value}, "Mask")));
@@ -2489,36 +2488,36 @@ classdef BrukKit_exported < matlab.apps.AppBase
             temp_RedScreen = cat(3, ones(dims(1:2)), zeros(dims(1:2)), zeros(dims(1:2)));
             
             if app.SVDButton.Value == true
-                app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                hold(app.UIAxes_DSCMaps, "on")
-                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                hold(app.UIAxes_DSCMaps, "off")
+                app.DSCImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                hold(app.UIAxes_PreMap, "on")
+                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                hold(app.UIAxes_PreMap, "off")
                 mask_Overlay.AlphaData = ROI_mask-0.6;
             elseif app.cSVDButton.Value == true
-                app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                hold(app.UIAxes_DSCMaps, "on")
-                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                hold(app.UIAxes_DSCMaps, "off")
+                app.DSCImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                hold(app.UIAxes_PreMap, "on")
+                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                hold(app.UIAxes_PreMap, "off")
                 mask_Overlay.AlphaData = ROI_mask-0.6;
             elseif app.oSVDButton.Value == true
-                app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_DSCMaps.Value), [], 'Parent', app.UIAxes_DSCMaps, Colormap = turbo);
-                hold(app.UIAxes_DSCMaps, "on")
-                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_DSCMaps);
-                hold(app.UIAxes_DSCMaps, "off")
+                app.DSCImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
+                hold(app.UIAxes_PreMap, "on")
+                mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PreMap);
+                hold(app.UIAxes_PreMap, "off")
                 mask_Overlay.AlphaData = ROI_mask-0.6;
             end
             
-            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_DSCMaps.Value);
+            app.DSCImage.AlphaData = app.WorkMaskDSC(:,:,app.SliceSpinner_PreMap.Value);
             
-            app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_ASL.Value), [], 'Parent', app.UIAxes_ASL, Colormap = turbo);
-            hold(app.UIAxes_ASL, "on")
-            mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_ASL);
-            hold(app.UIAxes_ASL, "off")
+            app.ASLImage = imshow(app.ImageDataASL(:,:,app.SliceSpinner_PostMap.Value), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+            hold(app.UIAxes_PostMap, "on")
+            mask_Overlay = imshow(temp_RedScreen, "Parent",app.UIAxes_PostMap);
+            hold(app.UIAxes_PostMap, "off")
             mask_Overlay.AlphaData = ROI_mask-0.6;
-            app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_ASL.Value);  
+            app.ASLImage.AlphaData = app.WorkMaskASL(:,:,app.SliceSpinner_PostMap.Value);  
         end
 
-        % Button pushed function: ExportROImaskButton
+        % Callback function
         function ExportROImaskButtonPushed(app, event)
             % Get directory and export selected comparation region mask
             value = app.ComparationregionsListBox.Value;
@@ -2925,13 +2924,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TabGroup.AutoResizeChildren = 'off';
             app.TabGroup.Position = [1 1 1436 746];
 
-            % Create PreviewTab
-            app.PreviewTab = uitab(app.TabGroup);
-            app.PreviewTab.AutoResizeChildren = 'off';
-            app.PreviewTab.Title = 'Preview';
+            % Create MainTab
+            app.MainTab = uitab(app.TabGroup);
+            app.MainTab.AutoResizeChildren = 'off';
+            app.MainTab.Title = 'Main';
 
             % Create UIAxes_Preview
-            app.UIAxes_Preview = uiaxes(app.PreviewTab);
+            app.UIAxes_Preview = uiaxes(app.MainTab);
             app.UIAxes_Preview.Toolbar.Visible = 'off';
             app.UIAxes_Preview.XLimitMethod = 'tight';
             app.UIAxes_Preview.YLimitMethod = 'tight';
@@ -2942,13 +2941,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Preview.Position = [750 55 607 425];
 
             % Create PreviewLabel
-            app.PreviewLabel = uilabel(app.PreviewTab);
+            app.PreviewLabel = uilabel(app.MainTab);
             app.PreviewLabel.HorizontalAlignment = 'right';
             app.PreviewLabel.Position = [794 483 48 22];
             app.PreviewLabel.Text = 'Preview';
 
             % Create PreviewDropDown
-            app.PreviewDropDown = uidropdown(app.PreviewTab);
+            app.PreviewDropDown = uidropdown(app.MainTab);
             app.PreviewDropDown.Items = {};
             app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
             app.PreviewDropDown.Placeholder = 'None';
@@ -2956,13 +2955,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Value = {};
 
             % Create Dim5Slider_PreviewLabel
-            app.Dim5Slider_PreviewLabel = uilabel(app.PreviewTab);
+            app.Dim5Slider_PreviewLabel = uilabel(app.MainTab);
             app.Dim5Slider_PreviewLabel.HorizontalAlignment = 'right';
             app.Dim5Slider_PreviewLabel.Position = [700 270 44 22];
             app.Dim5Slider_PreviewLabel.Text = 'Dim - 5';
 
             % Create Dim5Slider_Preview
-            app.Dim5Slider_Preview = uislider(app.PreviewTab);
+            app.Dim5Slider_Preview = uislider(app.MainTab);
             app.Dim5Slider_Preview.MajorTicks = [];
             app.Dim5Slider_Preview.MajorTickLabels = {''};
             app.Dim5Slider_Preview.Orientation = 'vertical';
@@ -2972,13 +2971,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim5Slider_Preview.Position = [723 298 3 150];
 
             % Create Dim4Slider_PreviewLabel
-            app.Dim4Slider_PreviewLabel = uilabel(app.PreviewTab);
+            app.Dim4Slider_PreviewLabel = uilabel(app.MainTab);
             app.Dim4Slider_PreviewLabel.HorizontalAlignment = 'right';
             app.Dim4Slider_PreviewLabel.Position = [700 71 44 22];
             app.Dim4Slider_PreviewLabel.Text = 'Dim - 4';
 
             % Create Dim4Slider_Preview
-            app.Dim4Slider_Preview = uislider(app.PreviewTab);
+            app.Dim4Slider_Preview = uislider(app.MainTab);
             app.Dim4Slider_Preview.MajorTicks = [];
             app.Dim4Slider_Preview.MajorTickLabels = {''};
             app.Dim4Slider_Preview.Orientation = 'vertical';
@@ -2988,7 +2987,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Slider_Preview.Position = [723 99 3 150];
 
             % Create SliceSpinner_Preview
-            app.SliceSpinner_Preview = uispinner(app.PreviewTab);
+            app.SliceSpinner_Preview = uispinner(app.MainTab);
             app.SliceSpinner_Preview.Limits = [1 100];
             app.SliceSpinner_Preview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreviewValueChanged, true);
             app.SliceSpinner_Preview.HorizontalAlignment = 'center';
@@ -2997,14 +2996,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.Value = 1;
 
             % Create SliceLabel_Preview
-            app.SliceLabel_Preview = uilabel(app.PreviewTab);
+            app.SliceLabel_Preview = uilabel(app.MainTab);
             app.SliceLabel_Preview.HorizontalAlignment = 'right';
             app.SliceLabel_Preview.Enable = 'off';
             app.SliceLabel_Preview.Position = [791 15 31 22];
             app.SliceLabel_Preview.Text = 'Slice';
 
             % Create SliceSlider_Preview
-            app.SliceSlider_Preview = uislider(app.PreviewTab);
+            app.SliceSlider_Preview = uislider(app.MainTab);
             app.SliceSlider_Preview.Limits = [1 100];
             app.SliceSlider_Preview.MajorTicks = [];
             app.SliceSlider_Preview.MajorTickLabels = {};
@@ -3015,13 +3014,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Preview.Value = 1;
 
             % Create BrightnessSliderLabel_Preview
-            app.BrightnessSliderLabel_Preview = uilabel(app.PreviewTab);
+            app.BrightnessSliderLabel_Preview = uilabel(app.MainTab);
             app.BrightnessSliderLabel_Preview.HorizontalAlignment = 'center';
             app.BrightnessSliderLabel_Preview.Position = [1364 273 62 22];
             app.BrightnessSliderLabel_Preview.Text = 'Brightness';
 
             % Create BrightnessSlider_Preview
-            app.BrightnessSlider_Preview = uislider(app.PreviewTab);
+            app.BrightnessSlider_Preview = uislider(app.MainTab);
             app.BrightnessSlider_Preview.Limits = [-1 1];
             app.BrightnessSlider_Preview.MajorTicks = 0;
             app.BrightnessSlider_Preview.Orientation = 'vertical';
@@ -3031,13 +3030,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Preview.Position = [1393 303 3 150];
 
             % Create ContrastSliderLabel_Preview
-            app.ContrastSliderLabel_Preview = uilabel(app.PreviewTab);
+            app.ContrastSliderLabel_Preview = uilabel(app.MainTab);
             app.ContrastSliderLabel_Preview.HorizontalAlignment = 'center';
             app.ContrastSliderLabel_Preview.Position = [1368 75 51 22];
             app.ContrastSliderLabel_Preview.Text = 'Contrast';
 
             % Create ContrastSlider_Preview
-            app.ContrastSlider_Preview = uislider(app.PreviewTab);
+            app.ContrastSlider_Preview = uislider(app.MainTab);
             app.ContrastSlider_Preview.Limits = [-1 1];
             app.ContrastSlider_Preview.MajorTicks = 0;
             app.ContrastSlider_Preview.Orientation = 'vertical';
@@ -3047,37 +3046,37 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Position = [1392 105 3 150];
 
             % Create LoadPvDatasetsFileButton
-            app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
+            app.LoadPvDatasetsFileButton = uibutton(app.MainTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
             app.LoadPvDatasetsFileButton.Position = [531 643 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveFileEditField
-            app.ArchiveFileEditField = uieditfield(app.PreviewTab, 'text');
+            app.ArchiveFileEditField = uieditfield(app.MainTab, 'text');
             app.ArchiveFileEditField.Editable = 'off';
             app.ArchiveFileEditField.Position = [116 667 558 22];
 
             % Create UITable
-            app.UITable = uitable(app.PreviewTab);
+            app.UITable = uitable(app.MainTab);
             app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
             app.UITable.RowName = {};
             app.UITable.ColumnEditable = true;
             app.UITable.Position = [44 19 630 576];
 
             % Create ResetEnvironmentButton
-            app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
+            app.ResetEnvironmentButton = uibutton(app.MainTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
             app.ResetEnvironmentButton.Position = [410 643 118 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
-            app.SubjectIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectIDEditFieldLabel = uilabel(app.MainTab);
             app.SubjectIDEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectIDEditFieldLabel.Position = [717 667 61 22];
             app.SubjectIDEditFieldLabel.Text = 'Subject ID';
 
             % Create SubjectIDEditField
-            app.SubjectIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectIDEditField = uieditfield(app.MainTab, 'text');
             app.SubjectIDEditField.Editable = 'off';
             app.SubjectIDEditField.HorizontalAlignment = 'center';
             app.SubjectIDEditField.FontSize = 14;
@@ -3085,13 +3084,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SubjectIDEditField.Position = [793 667 263 22];
 
             % Create StudyIDEditFieldLabel
-            app.StudyIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyIDEditFieldLabel = uilabel(app.MainTab);
             app.StudyIDEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyIDEditFieldLabel.Position = [1065 667 52 22];
             app.StudyIDEditFieldLabel.Text = 'Study ID';
 
             % Create StudyIDEditField
-            app.StudyIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyIDEditField = uieditfield(app.MainTab, 'text');
             app.StudyIDEditField.Editable = 'off';
             app.StudyIDEditField.HorizontalAlignment = 'center';
             app.StudyIDEditField.FontSize = 14;
@@ -3099,37 +3098,37 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.StudyIDEditField.Position = [1132 667 276 22];
 
             % Create SubjectCommentEditFieldLabel
-            app.SubjectCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectCommentEditFieldLabel = uilabel(app.MainTab);
             app.SubjectCommentEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectCommentEditFieldLabel.Position = [717 635 101 22];
             app.SubjectCommentEditFieldLabel.Text = 'Subject Comment';
 
             % Create SubjectCommentEditField
-            app.SubjectCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectCommentEditField = uieditfield(app.MainTab, 'text');
             app.SubjectCommentEditField.Editable = 'off';
             app.SubjectCommentEditField.Position = [833 635 223 22];
 
             % Create StudyCommentEditFieldLabel
-            app.StudyCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyCommentEditFieldLabel = uilabel(app.MainTab);
             app.StudyCommentEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyCommentEditFieldLabel.Position = [1065 637 92 22];
             app.StudyCommentEditFieldLabel.Text = 'Study Comment';
 
             % Create StudyCommentEditField
-            app.StudyCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyCommentEditField = uieditfield(app.MainTab, 'text');
             app.StudyCommentEditField.Editable = 'off';
             app.StudyCommentEditField.FontSize = 14;
             app.StudyCommentEditField.FontWeight = 'bold';
             app.StudyCommentEditField.Position = [1164 634 243 22];
 
             % Create SubjectAgeEditFieldLabel
-            app.SubjectAgeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel = uilabel(app.MainTab);
             app.SubjectAgeEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectAgeEditFieldLabel.Position = [717 603 70 22];
             app.SubjectAgeEditFieldLabel.Text = 'Subject Age';
 
             % Create SubjectAgeEditField
-            app.SubjectAgeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectAgeEditField = uieditfield(app.MainTab, 'text');
             app.SubjectAgeEditField.Editable = 'off';
             app.SubjectAgeEditField.HorizontalAlignment = 'right';
             app.SubjectAgeEditField.FontSize = 14;
@@ -3137,18 +3136,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SubjectAgeEditField.Position = [833 603 181 22];
 
             % Create SubjectAgeEditFieldLabel_Days
-            app.SubjectAgeEditFieldLabel_Days = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel_Days = uilabel(app.MainTab);
             app.SubjectAgeEditFieldLabel_Days.Position = [1023 603 33 22];
             app.SubjectAgeEditFieldLabel_Days.Text = 'days';
 
             % Create StudyStartTimeEditFieldLabel
-            app.StudyStartTimeEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartTimeEditFieldLabel = uilabel(app.MainTab);
             app.StudyStartTimeEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyStartTimeEditFieldLabel.Position = [1065 604 94 22];
             app.StudyStartTimeEditFieldLabel.Text = 'Study Start Time';
 
             % Create StudyStartTimeEditField
-            app.StudyStartTimeEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartTimeEditField = uieditfield(app.MainTab, 'text');
             app.StudyStartTimeEditField.Editable = 'off';
             app.StudyStartTimeEditField.HorizontalAlignment = 'right';
             app.StudyStartTimeEditField.FontSize = 14;
@@ -3156,13 +3155,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.StudyStartTimeEditField.Position = [1169 602 239 22];
 
             % Create StudyStartDateEditFieldLabel
-            app.StudyStartDateEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartDateEditFieldLabel = uilabel(app.MainTab);
             app.StudyStartDateEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyStartDateEditFieldLabel.Position = [1065 570 94 22];
             app.StudyStartDateEditFieldLabel.Text = 'Study Start Date';
 
             % Create StudyStartDateEditField
-            app.StudyStartDateEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartDateEditField = uieditfield(app.MainTab, 'text');
             app.StudyStartDateEditField.Editable = 'off';
             app.StudyStartDateEditField.HorizontalAlignment = 'right';
             app.StudyStartDateEditField.FontSize = 14;
@@ -3170,52 +3169,52 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.StudyStartDateEditField.Position = [1169 570 238 22];
 
             % Create SubjectTypeEditFieldLabel
-            app.SubjectTypeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectTypeEditFieldLabel = uilabel(app.MainTab);
             app.SubjectTypeEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectTypeEditFieldLabel.Position = [717 571 75 22];
             app.SubjectTypeEditFieldLabel.Text = 'Subject Type';
 
             % Create SubjectTypeEditField
-            app.SubjectTypeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectTypeEditField = uieditfield(app.MainTab, 'text');
             app.SubjectTypeEditField.Editable = 'off';
             app.SubjectTypeEditField.Position = [834 571 223 22];
 
             % Create SexEditFieldLabel
-            app.SexEditFieldLabel = uilabel(app.PreviewTab);
+            app.SexEditFieldLabel = uilabel(app.MainTab);
             app.SexEditFieldLabel.HorizontalAlignment = 'right';
             app.SexEditFieldLabel.Position = [717 539 26 22];
             app.SexEditFieldLabel.Text = 'Sex';
 
             % Create SexEditField
-            app.SexEditField = uieditfield(app.PreviewTab, 'text');
+            app.SexEditField = uieditfield(app.MainTab, 'text');
             app.SexEditField.Editable = 'off';
             app.SexEditField.Position = [758 539 132 22];
 
             % Create WeightEditFieldLabel
-            app.WeightEditFieldLabel = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel = uilabel(app.MainTab);
             app.WeightEditFieldLabel.HorizontalAlignment = 'right';
             app.WeightEditFieldLabel.Position = [894 539 43 22];
             app.WeightEditFieldLabel.Text = 'Weight';
 
             % Create WeightEditField
-            app.WeightEditField = uieditfield(app.PreviewTab, 'text');
+            app.WeightEditField = uieditfield(app.MainTab, 'text');
             app.WeightEditField.Editable = 'off';
             app.WeightEditField.HorizontalAlignment = 'right';
             app.WeightEditField.Position = [947 539 88 22];
 
             % Create WeightEditFieldLabel_kg
-            app.WeightEditFieldLabel_kg = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel_kg = uilabel(app.MainTab);
             app.WeightEditFieldLabel_kg.Position = [1041 538 16 22];
             app.WeightEditFieldLabel_kg.Text = 'kg';
 
             % Create ArchiveFileLabel
-            app.ArchiveFileLabel = uilabel(app.PreviewTab);
+            app.ArchiveFileLabel = uilabel(app.MainTab);
             app.ArchiveFileLabel.HorizontalAlignment = 'right';
             app.ArchiveFileLabel.Position = [40 667 68 22];
             app.ArchiveFileLabel.Text = 'Archive File';
 
             % Create ColormapButtonGroup_Preview
-            app.ColormapButtonGroup_Preview = uibuttongroup(app.PreviewTab);
+            app.ColormapButtonGroup_Preview = uibuttongroup(app.MainTab);
             app.ColormapButtonGroup_Preview.AutoResizeChildren = 'off';
             app.ColormapButtonGroup_Preview.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_PreviewSelectionChanged, true);
             app.ColormapButtonGroup_Preview.BorderType = 'none';
@@ -3237,12 +3236,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TurboButton_Preview.Position = [2 -3 65 22];
 
             % Create ExportDataButton_Preview
-            app.ExportDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.ExportDataButton_Preview = uibutton(app.MainTab, 'push');
             app.ExportDataButton_Preview.Position = [1110 483 102 22];
             app.ExportDataButton_Preview.Text = 'Export Data';
 
             % Create SaveDataButton_Preview
-            app.SaveDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.SaveDataButton_Preview = uibutton(app.MainTab, 'push');
             app.SaveDataButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_PreviewPushed, true);
             app.SaveDataButton_Preview.Position = [1221 483 102 22];
             app.SaveDataButton_Preview.Text = 'Save Data';
@@ -3628,132 +3627,101 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ApplyMaskButton.Position = [132 20 100 22];
             app.ApplyMaskButton.Text = 'Apply Mask';
 
-            % Create DSCASLTab
-            app.DSCASLTab = uitab(app.TabGroup);
-            app.DSCASLTab.AutoResizeChildren = 'off';
-            app.DSCASLTab.Title = 'DSC/ASL';
+            % Create ParameterMapsTab
+            app.ParameterMapsTab = uitab(app.TabGroup);
+            app.ParameterMapsTab.AutoResizeChildren = 'off';
+            app.ParameterMapsTab.Title = 'Parameter Maps';
 
-            % Create UIAxes_DSCMaps
-            app.UIAxes_DSCMaps = uiaxes(app.DSCASLTab);
-            app.UIAxes_DSCMaps.Toolbar.Visible = 'off';
-            app.UIAxes_DSCMaps.XLimitMethod = 'tight';
-            app.UIAxes_DSCMaps.YLimitMethod = 'tight';
-            app.UIAxes_DSCMaps.XTick = [];
-            app.UIAxes_DSCMaps.XTickLabel = '';
-            app.UIAxes_DSCMaps.YTick = [];
-            app.UIAxes_DSCMaps.YTickLabel = '';
-            app.UIAxes_DSCMaps.Position = [320 50 534 468];
+            % Create UIAxes_PreMap
+            app.UIAxes_PreMap = uiaxes(app.ParameterMapsTab);
+            app.UIAxes_PreMap.Toolbar.Visible = 'off';
+            app.UIAxes_PreMap.XLimitMethod = 'tight';
+            app.UIAxes_PreMap.YLimitMethod = 'tight';
+            app.UIAxes_PreMap.XTick = [];
+            app.UIAxes_PreMap.XTickLabel = '';
+            app.UIAxes_PreMap.YTick = [];
+            app.UIAxes_PreMap.YTickLabel = '';
+            app.UIAxes_PreMap.Position = [21 118 534 468];
 
-            % Create UIAxes_ASL
-            app.UIAxes_ASL = uiaxes(app.DSCASLTab);
-            app.UIAxes_ASL.Toolbar.Visible = 'off';
-            app.UIAxes_ASL.XLimitMethod = 'tight';
-            app.UIAxes_ASL.YLimitMethod = 'tight';
-            app.UIAxes_ASL.XTick = [];
-            app.UIAxes_ASL.XTickLabel = '';
-            app.UIAxes_ASL.YTick = [];
-            app.UIAxes_ASL.YTickLabel = '';
-            app.UIAxes_ASL.Position = [880 50 523 468];
+            % Create UIAxes_PostMap
+            app.UIAxes_PostMap = uiaxes(app.ParameterMapsTab);
+            app.UIAxes_PostMap.Toolbar.Visible = 'off';
+            app.UIAxes_PostMap.XLimitMethod = 'tight';
+            app.UIAxes_PostMap.YLimitMethod = 'tight';
+            app.UIAxes_PostMap.XTick = [];
+            app.UIAxes_PostMap.XTickLabel = '';
+            app.UIAxes_PostMap.YTick = [];
+            app.UIAxes_PostMap.YTickLabel = '';
+            app.UIAxes_PostMap.Position = [882 118 523 468];
 
             % Create CalculateDSCmapsButton
-            app.CalculateDSCmapsButton = uibutton(app.DSCASLTab, 'push');
+            app.CalculateDSCmapsButton = uibutton(app.ParameterMapsTab, 'push');
             app.CalculateDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateDSCmapsButtonPushed, true);
-            app.CalculateDSCmapsButton.Position = [525 590 128 22];
+            app.CalculateDSCmapsButton.Position = [666 237 128 22];
             app.CalculateDSCmapsButton.Text = 'Calculate DSC maps';
 
-            % Create SliceSpinner_DSCMapsLabel
-            app.SliceSpinner_DSCMapsLabel = uilabel(app.DSCASLTab);
-            app.SliceSpinner_DSCMapsLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_DSCMapsLabel.Enable = 'off';
-            app.SliceSpinner_DSCMapsLabel.Position = [439 15 31 22];
-            app.SliceSpinner_DSCMapsLabel.Text = 'Slice';
+            % Create SliceSpinner_PreMap
+            app.SliceSpinner_PreMap = uispinner(app.ParameterMapsTab);
+            app.SliceSpinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreMapValueChanged, true);
+            app.SliceSpinner_PreMap.Enable = 'off';
+            app.SliceSpinner_PreMap.Position = [330 84 57 22];
 
-            % Create SliceSpinner_DSCMaps
-            app.SliceSpinner_DSCMaps = uispinner(app.DSCASLTab);
-            app.SliceSpinner_DSCMaps.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_DSCMapsValueChanged, true);
-            app.SliceSpinner_DSCMaps.Enable = 'off';
-            app.SliceSpinner_DSCMaps.Position = [485 15 100 22];
-
-            % Create SliceSpinner_ASLLabel
-            app.SliceSpinner_ASLLabel = uilabel(app.DSCASLTab);
-            app.SliceSpinner_ASLLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_ASLLabel.Enable = 'off';
-            app.SliceSpinner_ASLLabel.Position = [1025 15 31 22];
-            app.SliceSpinner_ASLLabel.Text = 'Slice';
-
-            % Create SliceSpinner_ASL
-            app.SliceSpinner_ASL = uispinner(app.DSCASLTab);
-            app.SliceSpinner_ASL.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_ASLValueChanged, true);
-            app.SliceSpinner_ASL.Enable = 'off';
-            app.SliceSpinner_ASL.Position = [1071 15 100 22];
-
-            % Create ASLMapLabel
-            app.ASLMapLabel = uilabel(app.DSCASLTab);
-            app.ASLMapLabel.Position = [1117 545 54 22];
-            app.ASLMapLabel.Text = {'ASL Map'; ''};
+            % Create SliceSpinner_PostMap
+            app.SliceSpinner_PostMap = uispinner(app.ParameterMapsTab);
+            app.SliceSpinner_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PostMapValueChanged, true);
+            app.SliceSpinner_PostMap.Enable = 'off';
+            app.SliceSpinner_PostMap.Position = [1191 82 57 22];
 
             % Create SelectDSCvolumetricdataformapcalculationLabel
-            app.SelectDSCvolumetricdataformapcalculationLabel = uilabel(app.DSCASLTab);
+            app.SelectDSCvolumetricdataformapcalculationLabel = uilabel(app.ParameterMapsTab);
             app.SelectDSCvolumetricdataformapcalculationLabel.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [460 661 259 22];
-            app.SelectDSCvolumetricdataformapcalculationLabel.Text = 'Select DSC volumetric data for map calculation';
+            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [184 643 207 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel.Text = 'Select image data for map calculation';
 
             % Create SelectvolumetricdataDropDown
-            app.SelectvolumetricdataDropDown = uidropdown(app.DSCASLTab);
+            app.SelectvolumetricdataDropDown = uidropdown(app.ParameterMapsTab);
             app.SelectvolumetricdataDropDown.Items = {};
             app.SelectvolumetricdataDropDown.Placeholder = 'None';
-            app.SelectvolumetricdataDropDown.Position = [408 631 360 21];
+            app.SelectvolumetricdataDropDown.Position = [108 615 360 21];
             app.SelectvolumetricdataDropDown.Value = {};
 
             % Create SelectASLexperimenttocompareLabel
-            app.SelectASLexperimenttocompareLabel = uilabel(app.DSCASLTab);
+            app.SelectASLexperimenttocompareLabel = uilabel(app.ParameterMapsTab);
             app.SelectASLexperimenttocompareLabel.HorizontalAlignment = 'right';
-            app.SelectASLexperimenttocompareLabel.Position = [1048 661 191 22];
-            app.SelectASLexperimenttocompareLabel.Text = 'Select ASL experiment to compare';
+            app.SelectASLexperimenttocompareLabel.Position = [1047 645 193 22];
+            app.SelectASLexperimenttocompareLabel.Text = 'Select a parameter map to preview';
 
             % Create SelectASLDropDown
-            app.SelectASLDropDown = uidropdown(app.DSCASLTab);
+            app.SelectASLDropDown = uidropdown(app.ParameterMapsTab);
             app.SelectASLDropDown.Items = {};
             app.SelectASLDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectASLDropDownValueChanged, true);
             app.SelectASLDropDown.Placeholder = 'None';
-            app.SelectASLDropDown.Position = [963 631 360 21];
+            app.SelectASLDropDown.Position = [964 615 360 21];
             app.SelectASLDropDown.Value = {};
 
-            % Create ComparemapsButton
-            app.ComparemapsButton = uibutton(app.DSCASLTab, 'push');
-            app.ComparemapsButton.ButtonPushedFcn = createCallbackFcn(app, @ComparemapsButtonPushed, true);
-            app.ComparemapsButton.Position = [1041 590 203 22];
-            app.ComparemapsButton.Text = 'Compare ASL and DSC CBF maps';
-
             % Create DSCMapDropDownLabel
-            app.DSCMapDropDownLabel = uilabel(app.DSCASLTab);
+            app.DSCMapDropDownLabel = uilabel(app.ParameterMapsTab);
             app.DSCMapDropDownLabel.HorizontalAlignment = 'center';
             app.DSCMapDropDownLabel.Enable = 'off';
-            app.DSCMapDropDownLabel.Position = [539 561 101 22];
+            app.DSCMapDropDownLabel.Position = [741 50 101 22];
             app.DSCMapDropDownLabel.Text = 'DSC Map';
 
             % Create DSCMapDropDown
-            app.DSCMapDropDown = uidropdown(app.DSCASLTab);
+            app.DSCMapDropDown = uidropdown(app.ParameterMapsTab);
             app.DSCMapDropDown.Items = {'CBF', 'CBV', 'MTT'};
             app.DSCMapDropDown.ValueChangedFcn = createCallbackFcn(app, @DSCMapDropDownValueChanged, true);
             app.DSCMapDropDown.Enable = 'off';
-            app.DSCMapDropDown.Position = [560 532 61 23];
+            app.DSCMapDropDown.Position = [762 21 61 23];
             app.DSCMapDropDown.Value = 'CBF';
 
-            % Create ExportASLmapButton
-            app.ExportASLmapButton = uibutton(app.DSCASLTab, 'push');
-            app.ExportASLmapButton.ButtonPushedFcn = createCallbackFcn(app, @ExportASLmapButtonPushed, true);
-            app.ExportASLmapButton.Position = [177 15 112 22];
-            app.ExportASLmapButton.Text = {'Export ASL map'; ''};
-
             % Create MethodButtonGroup
-            app.MethodButtonGroup = uibuttongroup(app.DSCASLTab);
+            app.MethodButtonGroup = uibuttongroup(app.ParameterMapsTab);
             app.MethodButtonGroup.AutoResizeChildren = 'off';
             app.MethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MethodButtonGroupSelectionChanged, true);
             app.MethodButtonGroup.BorderType = 'none';
             app.MethodButtonGroup.TitlePosition = 'centertop';
             app.MethodButtonGroup.Title = 'Method';
-            app.MethodButtonGroup.Position = [677 525 176 53];
+            app.MethodButtonGroup.Position = [637 174 176 53];
 
             % Create SVDButton
             app.SVDButton = uiradiobutton(app.MethodButtonGroup);
@@ -3771,145 +3739,63 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.oSVDButton.Text = 'oSVD';
             app.oSVDButton.Position = [112 8 65 22];
 
-            % Create ExportDSCmapsButton
-            app.ExportDSCmapsButton = uibutton(app.DSCASLTab, 'push');
-            app.ExportDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @ExportDSCmapsButtonPushed, true);
-            app.ExportDSCmapsButton.Position = [38 15 112 22];
-            app.ExportDSCmapsButton.Text = 'Export DSC maps';
+            % Create SliceLabel_Preview_2
+            app.SliceLabel_Preview_2 = uilabel(app.ParameterMapsTab);
+            app.SliceLabel_Preview_2.HorizontalAlignment = 'right';
+            app.SliceLabel_Preview_2.Enable = 'off';
+            app.SliceLabel_Preview_2.Position = [40 82 31 22];
+            app.SliceLabel_Preview_2.Text = 'Slice';
 
-            % Create DSCcomparationROIButton
-            app.DSCcomparationROIButton = uibutton(app.DSCASLTab, 'push');
-            app.DSCcomparationROIButton.ButtonPushedFcn = createCallbackFcn(app, @DSCcomparationROIButtonPushed, true);
-            app.DSCcomparationROIButton.Position = [593 15 135 22];
-            app.DSCcomparationROIButton.Text = 'DSC comparation ROI';
+            % Create SliceSlider_PreMap
+            app.SliceSlider_PreMap = uislider(app.ParameterMapsTab);
+            app.SliceSlider_PreMap.Limits = [1 100];
+            app.SliceSlider_PreMap.MajorTicks = [];
+            app.SliceSlider_PreMap.MajorTickLabels = {};
+            app.SliceSlider_PreMap.MinorTicks = [];
+            app.SliceSlider_PreMap.Enable = 'off';
+            app.SliceSlider_PreMap.Position = [92 91 221 3];
+            app.SliceSlider_PreMap.Value = 1;
 
-            % Create ASLcomparationROIButton
-            app.ASLcomparationROIButton = uibutton(app.DSCASLTab, 'push');
-            app.ASLcomparationROIButton.ButtonPushedFcn = createCallbackFcn(app, @ASLcomparationROIButtonPushed, true);
-            app.ASLcomparationROIButton.Position = [1178 15 132 22];
-            app.ASLcomparationROIButton.Text = 'ASL comparation ROI';
+            % Create SliceLabel_Preview_3
+            app.SliceLabel_Preview_3 = uilabel(app.ParameterMapsTab);
+            app.SliceLabel_Preview_3.HorizontalAlignment = 'right';
+            app.SliceLabel_Preview_3.Enable = 'off';
+            app.SliceLabel_Preview_3.Position = [903 81 31 22];
+            app.SliceLabel_Preview_3.Text = 'Slice';
 
-            % Create ROIpixelexclusionButton
-            app.ROIpixelexclusionButton = uibutton(app.DSCASLTab, 'push');
-            app.ROIpixelexclusionButton.ButtonPushedFcn = createCallbackFcn(app, @ROIpixelexclusionButtonPushed, true);
-            app.ROIpixelexclusionButton.Position = [741 15 112 22];
-            app.ROIpixelexclusionButton.Text = 'ROI pixel exclusion';
+            % Create SliceSlider_PostMap
+            app.SliceSlider_PostMap = uislider(app.ParameterMapsTab);
+            app.SliceSlider_PostMap.Limits = [1 100];
+            app.SliceSlider_PostMap.MajorTicks = [];
+            app.SliceSlider_PostMap.MajorTickLabels = {};
+            app.SliceSlider_PostMap.MinorTicks = [];
+            app.SliceSlider_PostMap.Enable = 'off';
+            app.SliceSlider_PostMap.Position = [955 90 221 3];
+            app.SliceSlider_PostMap.Value = 1;
 
-            % Create ComparationPanel
-            app.ComparationPanel = uipanel(app.DSCASLTab);
-            app.ComparationPanel.AutoResizeChildren = 'off';
-            app.ComparationPanel.Position = [22 126 280 374];
+            % Create Dim4Spinner_SegmenterLabel_2
+            app.Dim4Spinner_SegmenterLabel_2 = uilabel(app.ParameterMapsTab);
+            app.Dim4Spinner_SegmenterLabel_2.HorizontalAlignment = 'right';
+            app.Dim4Spinner_SegmenterLabel_2.Enable = 'off';
+            app.Dim4Spinner_SegmenterLabel_2.Position = [70 32 44 22];
+            app.Dim4Spinner_SegmenterLabel_2.Text = 'Dim - 4';
 
-            % Create VoxelNLabel
-            app.VoxelNLabel = uilabel(app.ComparationPanel);
-            app.VoxelNLabel.Position = [34 117 68 23];
-            app.VoxelNLabel.Text = 'Voxel N';
+            % Create Dim4Spinner_PreMap
+            app.Dim4Spinner_PreMap = uispinner(app.ParameterMapsTab);
+            app.Dim4Spinner_PreMap.Enable = 'off';
+            app.Dim4Spinner_PreMap.Position = [125 32 50 22];
 
-            % Create MeanLabel
-            app.MeanLabel = uilabel(app.ComparationPanel);
-            app.MeanLabel.Position = [34 93 68 23];
-            app.MeanLabel.Text = 'Mean';
+            % Create Dim5Spinner_SegmenterLabel_2
+            app.Dim5Spinner_SegmenterLabel_2 = uilabel(app.ParameterMapsTab);
+            app.Dim5Spinner_SegmenterLabel_2.HorizontalAlignment = 'right';
+            app.Dim5Spinner_SegmenterLabel_2.Enable = 'off';
+            app.Dim5Spinner_SegmenterLabel_2.Position = [261 32 44 22];
+            app.Dim5Spinner_SegmenterLabel_2.Text = 'Dim - 5';
 
-            % Create SDLabel
-            app.SDLabel = uilabel(app.ComparationPanel);
-            app.SDLabel.Position = [34 71 68 23];
-            app.SDLabel.Text = 'SD';
-
-            % Create MinLabel
-            app.MinLabel = uilabel(app.ComparationPanel);
-            app.MinLabel.Position = [34 49 68 23];
-            app.MinLabel.Text = 'Min';
-
-            % Create MaxLabel
-            app.MaxLabel = uilabel(app.ComparationPanel);
-            app.MaxLabel.Position = [34 27 68 23];
-            app.MaxLabel.Text = 'Max';
-
-            % Create ComparationregionsListBoxLabel
-            app.ComparationregionsListBoxLabel = uilabel(app.ComparationPanel);
-            app.ComparationregionsListBoxLabel.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.ComparationregionsListBoxLabel.HorizontalAlignment = 'center';
-            app.ComparationregionsListBoxLabel.Position = [83 332 117 22];
-            app.ComparationregionsListBoxLabel.Text = 'Comparation regions';
-
-            % Create ComparationregionsListBox
-            app.ComparationregionsListBox = uilistbox(app.ComparationPanel);
-            app.ComparationregionsListBox.Items = {};
-            app.ComparationregionsListBox.ValueChangedFcn = createCallbackFcn(app, @ComparationregionsListBoxValueChanged, true);
-            app.ComparationregionsListBox.Position = [16 185 251 137];
-            app.ComparationregionsListBox.Value = {};
-
-            % Create DSCLabel
-            app.DSCLabel = uilabel(app.ComparationPanel);
-            app.DSCLabel.HorizontalAlignment = 'center';
-            app.DSCLabel.Position = [101 139 68 23];
-            app.DSCLabel.Text = 'DSC';
-
-            % Create ASLLabel
-            app.ASLLabel = uilabel(app.ComparationPanel);
-            app.ASLLabel.HorizontalAlignment = 'center';
-            app.ASLLabel.Position = [186 139 68 23];
-            app.ASLLabel.Text = 'ASL';
-
-            % Create VoxelNValueLabel
-            app.VoxelNValueLabel = uilabel(app.ComparationPanel);
-            app.VoxelNValueLabel.HorizontalAlignment = 'center';
-            app.VoxelNValueLabel.Position = [101 117 153 23];
-            app.VoxelNValueLabel.Text = 'N/A';
-
-            % Create DSCMeanLabel
-            app.DSCMeanLabel = uilabel(app.ComparationPanel);
-            app.DSCMeanLabel.HorizontalAlignment = 'center';
-            app.DSCMeanLabel.Position = [101 93 68 23];
-            app.DSCMeanLabel.Text = 'N/A';
-
-            % Create DSCSDLabel
-            app.DSCSDLabel = uilabel(app.ComparationPanel);
-            app.DSCSDLabel.HorizontalAlignment = 'center';
-            app.DSCSDLabel.Position = [101 71 68 23];
-            app.DSCSDLabel.Text = 'N/A';
-
-            % Create DSCMinLabel
-            app.DSCMinLabel = uilabel(app.ComparationPanel);
-            app.DSCMinLabel.HorizontalAlignment = 'center';
-            app.DSCMinLabel.Position = [101 49 68 23];
-            app.DSCMinLabel.Text = 'N/A';
-
-            % Create DSCMaxLabel
-            app.DSCMaxLabel = uilabel(app.ComparationPanel);
-            app.DSCMaxLabel.HorizontalAlignment = 'center';
-            app.DSCMaxLabel.Position = [101 27 68 23];
-            app.DSCMaxLabel.Text = 'N/A';
-
-            % Create ASLMeanLabel
-            app.ASLMeanLabel = uilabel(app.ComparationPanel);
-            app.ASLMeanLabel.HorizontalAlignment = 'center';
-            app.ASLMeanLabel.Position = [186 93 68 23];
-            app.ASLMeanLabel.Text = 'N/A';
-
-            % Create ASLSDLabel
-            app.ASLSDLabel = uilabel(app.ComparationPanel);
-            app.ASLSDLabel.HorizontalAlignment = 'center';
-            app.ASLSDLabel.Position = [186 71 68 23];
-            app.ASLSDLabel.Text = 'N/A';
-
-            % Create ASLMinLabel
-            app.ASLMinLabel = uilabel(app.ComparationPanel);
-            app.ASLMinLabel.HorizontalAlignment = 'center';
-            app.ASLMinLabel.Position = [186 49 68 23];
-            app.ASLMinLabel.Text = 'N/A';
-
-            % Create ASLMaxLabel
-            app.ASLMaxLabel = uilabel(app.ComparationPanel);
-            app.ASLMaxLabel.HorizontalAlignment = 'center';
-            app.ASLMaxLabel.Position = [186 27 68 23];
-            app.ASLMaxLabel.Text = 'N/A';
-
-            % Create ExportROImaskButton
-            app.ExportROImaskButton = uibutton(app.DSCASLTab, 'push');
-            app.ExportROImaskButton.ButtonPushedFcn = createCallbackFcn(app, @ExportROImaskButtonPushed, true);
-            app.ExportROImaskButton.Position = [106 82 112 22];
-            app.ExportROImaskButton.Text = 'Export ROI mask';
+            % Create Dim5Spinner_PreMap
+            app.Dim5Spinner_PreMap = uispinner(app.ParameterMapsTab);
+            app.Dim5Spinner_PreMap.Enable = 'off';
+            app.Dim5Spinner_PreMap.Position = [317 32 51 22];
 
             % Create RegistrationTab
             app.RegistrationTab = uitab(app.TabGroup);
