@@ -5,6 +5,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        SaveDataButton_Preview          matlab.ui.control.Button
         ExportDataButton_Preview        matlab.ui.control.Button
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
         TurboButton_Preview             matlab.ui.control.RadioButton
@@ -440,6 +441,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Saving temporary experiment data to permanent tables
         function SaveData(app, tab)
             switch tab
+                case 'Preview'
+                    exp_ID = app.PreviewDropDown.Value;
+                    image_Data = app.PreviewImageData;
+                    saved_BrainMask = false(size(image_Data));
+                    hemi_Mask = false(1);
+                    roi.Mask = false(1);
+                    roi.ID = {'None'};
                 case 'Segmenter'
                     exp_ID = app.SegmentDropDown.Value;
                     image_Data = app.WorkingSegmenterImageData;
@@ -978,6 +986,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Selection changed function: ColormapButtonGroup_Preview
         function ColormapButtonGroup_PreviewSelectionChanged(app, event)
             RefreshImagePreview(app);
+        end
+
+        % Button pushed function: SaveDataButton_Preview
+        function SaveDataButton_PreviewPushed(app, event)
+            SaveData(app, 'Preview')
         end
 
         % Value changed function: SegmentDropDown
@@ -2892,7 +2905,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create PreviewLabel
             app.PreviewLabel = uilabel(app.PreviewTab);
             app.PreviewLabel.HorizontalAlignment = 'right';
-            app.PreviewLabel.Position = [853 483 48 22];
+            app.PreviewLabel.Position = [794 483 48 22];
             app.PreviewLabel.Text = 'Preview';
 
             % Create PreviewDropDown
@@ -2900,7 +2913,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = {};
             app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
             app.PreviewDropDown.Placeholder = 'None';
-            app.PreviewDropDown.Position = [916 483 229 22];
+            app.PreviewDropDown.Position = [857 483 229 22];
             app.PreviewDropDown.Value = {};
 
             % Create Dim5Slider_PreviewLabel
@@ -3185,8 +3198,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create ExportDataButton_Preview
             app.ExportDataButton_Preview = uibutton(app.PreviewTab, 'push');
-            app.ExportDataButton_Preview.Position = [1169 483 102 22];
+            app.ExportDataButton_Preview.Position = [1110 483 102 22];
             app.ExportDataButton_Preview.Text = 'Export Data';
+
+            % Create SaveDataButton_Preview
+            app.SaveDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.SaveDataButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_PreviewPushed, true);
+            app.SaveDataButton_Preview.Position = [1221 483 102 22];
+            app.SaveDataButton_Preview.Text = 'Save Data';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
