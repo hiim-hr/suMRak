@@ -4,7 +4,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
-        PreviewTab                      matlab.ui.container.Tab
+        MainTab                         matlab.ui.container.Tab
         SaveDataButton_Preview          matlab.ui.control.Button
         ExportDataButton_Preview        matlab.ui.control.Button
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
@@ -902,6 +902,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = exp_ID;
             app.DropDownItemsSegmenter = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+            app.SelectPreMapDropDown.Items = exp_ID;
             
             % close the dialog box
             progress.Value = 1;
@@ -2973,13 +2974,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TabGroup.AutoResizeChildren = 'off';
             app.TabGroup.Position = [1 1 1436 746];
 
-            % Create PreviewTab
-            app.PreviewTab = uitab(app.TabGroup);
-            app.PreviewTab.AutoResizeChildren = 'off';
-            app.PreviewTab.Title = 'Preview';
+            % Create MainTab
+            app.MainTab = uitab(app.TabGroup);
+            app.MainTab.AutoResizeChildren = 'off';
+            app.MainTab.Title = 'Main';
 
             % Create UIAxes_Preview
-            app.UIAxes_Preview = uiaxes(app.PreviewTab);
+            app.UIAxes_Preview = uiaxes(app.MainTab);
             app.UIAxes_Preview.Toolbar.Visible = 'off';
             app.UIAxes_Preview.XLimitMethod = 'tight';
             app.UIAxes_Preview.YLimitMethod = 'tight';
@@ -2990,13 +2991,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Preview.Position = [750 55 607 425];
 
             % Create PreviewLabel
-            app.PreviewLabel = uilabel(app.PreviewTab);
+            app.PreviewLabel = uilabel(app.MainTab);
             app.PreviewLabel.HorizontalAlignment = 'right';
             app.PreviewLabel.Position = [794 483 48 22];
             app.PreviewLabel.Text = 'Preview';
 
             % Create PreviewDropDown
-            app.PreviewDropDown = uidropdown(app.PreviewTab);
+            app.PreviewDropDown = uidropdown(app.MainTab);
             app.PreviewDropDown.Items = {};
             app.PreviewDropDown.ValueChangedFcn = createCallbackFcn(app, @PreviewDropDownValueChanged, true);
             app.PreviewDropDown.Placeholder = 'None';
@@ -3004,13 +3005,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Value = {};
 
             % Create Dim5Slider_PreviewLabel
-            app.Dim5Slider_PreviewLabel = uilabel(app.PreviewTab);
+            app.Dim5Slider_PreviewLabel = uilabel(app.MainTab);
             app.Dim5Slider_PreviewLabel.HorizontalAlignment = 'right';
             app.Dim5Slider_PreviewLabel.Position = [700 270 44 22];
             app.Dim5Slider_PreviewLabel.Text = 'Dim - 5';
 
             % Create Dim5Slider_Preview
-            app.Dim5Slider_Preview = uislider(app.PreviewTab);
+            app.Dim5Slider_Preview = uislider(app.MainTab);
             app.Dim5Slider_Preview.MajorTicks = [];
             app.Dim5Slider_Preview.MajorTickLabels = {''};
             app.Dim5Slider_Preview.Orientation = 'vertical';
@@ -3020,13 +3021,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim5Slider_Preview.Position = [723 298 3 150];
 
             % Create Dim4Slider_PreviewLabel
-            app.Dim4Slider_PreviewLabel = uilabel(app.PreviewTab);
+            app.Dim4Slider_PreviewLabel = uilabel(app.MainTab);
             app.Dim4Slider_PreviewLabel.HorizontalAlignment = 'right';
             app.Dim4Slider_PreviewLabel.Position = [700 71 44 22];
             app.Dim4Slider_PreviewLabel.Text = 'Dim - 4';
 
             % Create Dim4Slider_Preview
-            app.Dim4Slider_Preview = uislider(app.PreviewTab);
+            app.Dim4Slider_Preview = uislider(app.MainTab);
             app.Dim4Slider_Preview.MajorTicks = [];
             app.Dim4Slider_Preview.MajorTickLabels = {''};
             app.Dim4Slider_Preview.Orientation = 'vertical';
@@ -3036,7 +3037,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Slider_Preview.Position = [723 99 3 150];
 
             % Create SliceSpinner_Preview
-            app.SliceSpinner_Preview = uispinner(app.PreviewTab);
+            app.SliceSpinner_Preview = uispinner(app.MainTab);
             app.SliceSpinner_Preview.Limits = [1 100];
             app.SliceSpinner_Preview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreviewValueChanged, true);
             app.SliceSpinner_Preview.HorizontalAlignment = 'center';
@@ -3045,13 +3046,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.Value = 1;
 
             % Create SliceLabel_Preview
-            app.SliceLabel_Preview = uilabel(app.PreviewTab);
+            app.SliceLabel_Preview = uilabel(app.MainTab);
             app.SliceLabel_Preview.HorizontalAlignment = 'right';
             app.SliceLabel_Preview.Position = [791 15 31 22];
             app.SliceLabel_Preview.Text = 'Slice';
 
             % Create SliceSlider_Preview
-            app.SliceSlider_Preview = uislider(app.PreviewTab);
+            app.SliceSlider_Preview = uislider(app.MainTab);
             app.SliceSlider_Preview.Limits = [1 100];
             app.SliceSlider_Preview.MajorTicks = [];
             app.SliceSlider_Preview.MajorTickLabels = {};
@@ -3062,13 +3063,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Preview.Value = 1;
 
             % Create BrightnessSliderLabel_Preview
-            app.BrightnessSliderLabel_Preview = uilabel(app.PreviewTab);
+            app.BrightnessSliderLabel_Preview = uilabel(app.MainTab);
             app.BrightnessSliderLabel_Preview.HorizontalAlignment = 'center';
             app.BrightnessSliderLabel_Preview.Position = [1364 273 62 22];
             app.BrightnessSliderLabel_Preview.Text = 'Brightness';
 
             % Create BrightnessSlider_Preview
-            app.BrightnessSlider_Preview = uislider(app.PreviewTab);
+            app.BrightnessSlider_Preview = uislider(app.MainTab);
             app.BrightnessSlider_Preview.Limits = [-1 1];
             app.BrightnessSlider_Preview.MajorTicks = 0;
             app.BrightnessSlider_Preview.Orientation = 'vertical';
@@ -3078,13 +3079,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Preview.Position = [1393 303 3 150];
 
             % Create ContrastSliderLabel_Preview
-            app.ContrastSliderLabel_Preview = uilabel(app.PreviewTab);
+            app.ContrastSliderLabel_Preview = uilabel(app.MainTab);
             app.ContrastSliderLabel_Preview.HorizontalAlignment = 'center';
             app.ContrastSliderLabel_Preview.Position = [1368 75 51 22];
             app.ContrastSliderLabel_Preview.Text = 'Contrast';
 
             % Create ContrastSlider_Preview
-            app.ContrastSlider_Preview = uislider(app.PreviewTab);
+            app.ContrastSlider_Preview = uislider(app.MainTab);
             app.ContrastSlider_Preview.Limits = [-1 1];
             app.ContrastSlider_Preview.MajorTicks = 0;
             app.ContrastSlider_Preview.Orientation = 'vertical';
@@ -3094,175 +3095,163 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Position = [1392 105 3 150];
 
             % Create LoadPvDatasetsFileButton
-            app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
+            app.LoadPvDatasetsFileButton = uibutton(app.MainTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
             app.LoadPvDatasetsFileButton.Position = [531 643 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveFileEditField
-            app.ArchiveFileEditField = uieditfield(app.PreviewTab, 'text');
+            app.ArchiveFileEditField = uieditfield(app.MainTab, 'text');
             app.ArchiveFileEditField.Editable = 'off';
             app.ArchiveFileEditField.Position = [116 667 558 22];
 
             % Create UITable
-            app.UITable = uitable(app.PreviewTab);
+            app.UITable = uitable(app.MainTab);
             app.UITable.ColumnName = {'Slice Number'; 'Slice Area'};
             app.UITable.RowName = {};
             app.UITable.ColumnEditable = true;
             app.UITable.Position = [44 19 630 576];
 
             % Create ResetEnvironmentButton
-            app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
+            app.ResetEnvironmentButton = uibutton(app.MainTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
             app.ResetEnvironmentButton.Position = [410 643 118 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
-            app.SubjectIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectIDEditFieldLabel = uilabel(app.MainTab);
             app.SubjectIDEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectIDEditFieldLabel.Position = [717 667 61 22];
             app.SubjectIDEditFieldLabel.Text = 'Subject ID';
 
             % Create SubjectIDEditField
-            app.SubjectIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectIDEditField = uieditfield(app.MainTab, 'text');
             app.SubjectIDEditField.Editable = 'off';
             app.SubjectIDEditField.HorizontalAlignment = 'center';
-            app.SubjectIDEditField.FontSize = 14;
-            app.SubjectIDEditField.FontWeight = 'bold';
             app.SubjectIDEditField.Position = [793 667 263 22];
 
             % Create StudyIDEditFieldLabel
-            app.StudyIDEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyIDEditFieldLabel = uilabel(app.MainTab);
             app.StudyIDEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyIDEditFieldLabel.Position = [1065 667 52 22];
             app.StudyIDEditFieldLabel.Text = 'Study ID';
 
             % Create StudyIDEditField
-            app.StudyIDEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyIDEditField = uieditfield(app.MainTab, 'text');
             app.StudyIDEditField.Editable = 'off';
             app.StudyIDEditField.HorizontalAlignment = 'center';
-            app.StudyIDEditField.FontSize = 14;
-            app.StudyIDEditField.FontWeight = 'bold';
             app.StudyIDEditField.Position = [1132 667 276 22];
 
             % Create SubjectCommentEditFieldLabel
-            app.SubjectCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectCommentEditFieldLabel = uilabel(app.MainTab);
             app.SubjectCommentEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectCommentEditFieldLabel.Position = [717 635 101 22];
             app.SubjectCommentEditFieldLabel.Text = 'Subject Comment';
 
             % Create SubjectCommentEditField
-            app.SubjectCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectCommentEditField = uieditfield(app.MainTab, 'text');
             app.SubjectCommentEditField.Editable = 'off';
             app.SubjectCommentEditField.Position = [833 635 223 22];
 
             % Create StudyCommentEditFieldLabel
-            app.StudyCommentEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyCommentEditFieldLabel = uilabel(app.MainTab);
             app.StudyCommentEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyCommentEditFieldLabel.Position = [1065 637 92 22];
             app.StudyCommentEditFieldLabel.Text = 'Study Comment';
 
             % Create StudyCommentEditField
-            app.StudyCommentEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyCommentEditField = uieditfield(app.MainTab, 'text');
             app.StudyCommentEditField.Editable = 'off';
-            app.StudyCommentEditField.FontSize = 14;
-            app.StudyCommentEditField.FontWeight = 'bold';
             app.StudyCommentEditField.Position = [1164 634 243 22];
 
             % Create SubjectAgeEditFieldLabel
-            app.SubjectAgeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel = uilabel(app.MainTab);
             app.SubjectAgeEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectAgeEditFieldLabel.Position = [717 603 70 22];
             app.SubjectAgeEditFieldLabel.Text = 'Subject Age';
 
             % Create SubjectAgeEditField
-            app.SubjectAgeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectAgeEditField = uieditfield(app.MainTab, 'text');
             app.SubjectAgeEditField.Editable = 'off';
             app.SubjectAgeEditField.HorizontalAlignment = 'right';
-            app.SubjectAgeEditField.FontSize = 14;
-            app.SubjectAgeEditField.FontWeight = 'bold';
             app.SubjectAgeEditField.Position = [833 603 181 22];
 
             % Create SubjectAgeEditFieldLabel_Days
-            app.SubjectAgeEditFieldLabel_Days = uilabel(app.PreviewTab);
+            app.SubjectAgeEditFieldLabel_Days = uilabel(app.MainTab);
             app.SubjectAgeEditFieldLabel_Days.Position = [1023 603 33 22];
             app.SubjectAgeEditFieldLabel_Days.Text = 'days';
 
             % Create StudyStartTimeEditFieldLabel
-            app.StudyStartTimeEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartTimeEditFieldLabel = uilabel(app.MainTab);
             app.StudyStartTimeEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyStartTimeEditFieldLabel.Position = [1065 604 94 22];
             app.StudyStartTimeEditFieldLabel.Text = 'Study Start Time';
 
             % Create StudyStartTimeEditField
-            app.StudyStartTimeEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartTimeEditField = uieditfield(app.MainTab, 'text');
             app.StudyStartTimeEditField.Editable = 'off';
             app.StudyStartTimeEditField.HorizontalAlignment = 'right';
-            app.StudyStartTimeEditField.FontSize = 14;
-            app.StudyStartTimeEditField.FontWeight = 'bold';
             app.StudyStartTimeEditField.Position = [1169 602 239 22];
 
             % Create StudyStartDateEditFieldLabel
-            app.StudyStartDateEditFieldLabel = uilabel(app.PreviewTab);
+            app.StudyStartDateEditFieldLabel = uilabel(app.MainTab);
             app.StudyStartDateEditFieldLabel.HorizontalAlignment = 'right';
             app.StudyStartDateEditFieldLabel.Position = [1065 570 94 22];
             app.StudyStartDateEditFieldLabel.Text = 'Study Start Date';
 
             % Create StudyStartDateEditField
-            app.StudyStartDateEditField = uieditfield(app.PreviewTab, 'text');
+            app.StudyStartDateEditField = uieditfield(app.MainTab, 'text');
             app.StudyStartDateEditField.Editable = 'off';
             app.StudyStartDateEditField.HorizontalAlignment = 'right';
-            app.StudyStartDateEditField.FontSize = 14;
-            app.StudyStartDateEditField.FontWeight = 'bold';
             app.StudyStartDateEditField.Position = [1169 570 238 22];
 
             % Create SubjectTypeEditFieldLabel
-            app.SubjectTypeEditFieldLabel = uilabel(app.PreviewTab);
+            app.SubjectTypeEditFieldLabel = uilabel(app.MainTab);
             app.SubjectTypeEditFieldLabel.HorizontalAlignment = 'right';
             app.SubjectTypeEditFieldLabel.Position = [717 571 75 22];
             app.SubjectTypeEditFieldLabel.Text = 'Subject Type';
 
             % Create SubjectTypeEditField
-            app.SubjectTypeEditField = uieditfield(app.PreviewTab, 'text');
+            app.SubjectTypeEditField = uieditfield(app.MainTab, 'text');
             app.SubjectTypeEditField.Editable = 'off';
             app.SubjectTypeEditField.Position = [834 571 223 22];
 
             % Create SexEditFieldLabel
-            app.SexEditFieldLabel = uilabel(app.PreviewTab);
+            app.SexEditFieldLabel = uilabel(app.MainTab);
             app.SexEditFieldLabel.HorizontalAlignment = 'right';
             app.SexEditFieldLabel.Position = [717 539 26 22];
             app.SexEditFieldLabel.Text = 'Sex';
 
             % Create SexEditField
-            app.SexEditField = uieditfield(app.PreviewTab, 'text');
+            app.SexEditField = uieditfield(app.MainTab, 'text');
             app.SexEditField.Editable = 'off';
             app.SexEditField.Position = [758 539 132 22];
 
             % Create WeightEditFieldLabel
-            app.WeightEditFieldLabel = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel = uilabel(app.MainTab);
             app.WeightEditFieldLabel.HorizontalAlignment = 'right';
             app.WeightEditFieldLabel.Position = [894 539 43 22];
             app.WeightEditFieldLabel.Text = 'Weight';
 
             % Create WeightEditField
-            app.WeightEditField = uieditfield(app.PreviewTab, 'text');
+            app.WeightEditField = uieditfield(app.MainTab, 'text');
             app.WeightEditField.Editable = 'off';
             app.WeightEditField.HorizontalAlignment = 'right';
             app.WeightEditField.Position = [947 539 88 22];
 
             % Create WeightEditFieldLabel_kg
-            app.WeightEditFieldLabel_kg = uilabel(app.PreviewTab);
+            app.WeightEditFieldLabel_kg = uilabel(app.MainTab);
             app.WeightEditFieldLabel_kg.Position = [1041 538 16 22];
             app.WeightEditFieldLabel_kg.Text = 'kg';
 
             % Create ArchiveFileLabel
-            app.ArchiveFileLabel = uilabel(app.PreviewTab);
+            app.ArchiveFileLabel = uilabel(app.MainTab);
             app.ArchiveFileLabel.HorizontalAlignment = 'right';
             app.ArchiveFileLabel.Position = [40 667 68 22];
             app.ArchiveFileLabel.Text = 'Archive File';
 
             % Create ColormapButtonGroup_Preview
-            app.ColormapButtonGroup_Preview = uibuttongroup(app.PreviewTab);
+            app.ColormapButtonGroup_Preview = uibuttongroup(app.MainTab);
             app.ColormapButtonGroup_Preview.AutoResizeChildren = 'off';
             app.ColormapButtonGroup_Preview.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_PreviewSelectionChanged, true);
             app.ColormapButtonGroup_Preview.BorderType = 'none';
@@ -3284,12 +3273,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TurboButton_Preview.Position = [2 -3 65 22];
 
             % Create ExportDataButton_Preview
-            app.ExportDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.ExportDataButton_Preview = uibutton(app.MainTab, 'push');
             app.ExportDataButton_Preview.Position = [1110 483 102 22];
             app.ExportDataButton_Preview.Text = 'Export Data';
 
             % Create SaveDataButton_Preview
-            app.SaveDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.SaveDataButton_Preview = uibutton(app.MainTab, 'push');
             app.SaveDataButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_PreviewPushed, true);
             app.SaveDataButton_Preview.Position = [1221 483 102 22];
             app.SaveDataButton_Preview.Text = 'Save Data';
