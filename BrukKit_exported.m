@@ -185,10 +185,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         FlipVerticallyMenu_Segmenter    matlab.ui.container.Menu
         FlipHorizontallyMenu_Segmenter  matlab.ui.container.Menu
         ResetViewMenu_Segmenter         matlab.ui.container.Menu
-        PermuteDimensionsMenu           matlab.ui.container.Menu
-        PermuteMenu_3_4                 matlab.ui.container.Menu
-        PermuteMenu_3_5                 matlab.ui.container.Menu
-        PermuteMenu_4_5                 matlab.ui.container.Menu
+        PermuteDimensionsMenu_Segmenter  matlab.ui.container.Menu
+        PermuteMenu_3_4_Segmenter       matlab.ui.container.Menu
+        PermuteMenu_3_5_Segmenter       matlab.ui.container.Menu
+        PermuteMenu_4_5_Segmenter       matlab.ui.container.Menu
+        ContextMenu_PreMap              matlab.ui.container.ContextMenu
+        RotateMenu_PreMap               matlab.ui.container.Menu
+        FlipVerticallyMenu_PreMap       matlab.ui.container.Menu
+        FlipHorizontallyMenu_PreMap     matlab.ui.container.Menu
+        ResetViewMenu_PreMap            matlab.ui.container.Menu
+        PermuteDimensionsMenu_PreMap    matlab.ui.container.Menu
+        PermuteMenu_3_4_PreMap          matlab.ui.container.Menu
+        PermuteMenu_3_5_PreMap          matlab.ui.container.Menu
+        PermuteMenu_4_5_PreMap          matlab.ui.container.Menu
     end
 
     
@@ -417,6 +426,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
             app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
             app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PreMap);
+            app.PreMapImage.ContextMenu = app.ContextMenu_PreMap;
         end
 
         % Parameter Maps UIAxes output image updating
@@ -930,7 +940,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Display sequence
             RefreshImagePreview(app);
-            disableDefaultInteractivity(app.UIAxes_Preview);
             
             % Set interactions of preview uiaxes
             app.UIAxes_Preview.Interactions = [regionZoomInteraction zoomInteraction];
@@ -1113,10 +1122,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     dim5_size = app.ExpDimsSegmenter(5);
                     app.Dim5Spinner_Segmenter.Enable = 'on';
                     app.Dim5Spinner_Segmenter.Limits = [1, dim5_size];
-                    app.PermuteDimensionsMenu.Enable = 'on';
-                    app.PermuteMenu_3_4.Enable ='on';
-                    app.PermuteMenu_3_5.Enable ='on';
-                    app.PermuteMenu_4_5.Enable ='on';
+                    app.PermuteDimensionsMenu_Segmenter.Enable = 'on';
+                    app.PermuteMenu_3_4_Segmenter.Enable ='on';
+                    app.PermuteMenu_3_5_Segmenter.Enable ='on';
+                    app.PermuteMenu_4_5_Segmenter.Enable ='on';
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter(1:3));
@@ -1132,10 +1141,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim4Spinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Limits = [1, dim4_size];
                     app.Dim5Spinner_Segmenter.Enable = 'off';
-                    app.PermuteDimensionsMenu.Enable = 'on';
-                    app.PermuteMenu_3_4.Enable ='on';
-                    app.PermuteMenu_3_5.Enable ='off';
-                    app.PermuteMenu_4_5.Enable ='off';
+                    app.PermuteDimensionsMenu_Segmenter.Enable = 'on';
+                    app.PermuteMenu_3_4_Segmenter.Enable ='on';
+                    app.PermuteMenu_3_5_Segmenter.Enable ='off';
+                    app.PermuteMenu_4_5_Segmenter.Enable ='off';
 
                     % Define Mask matrices
                     app.BrainMask = false(app.ExpDimsSegmenter(1:3));
@@ -1149,7 +1158,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Segmenter.Enable = 'on';
                     app.Dim4Spinner_Segmenter.Enable = 'off';
                     app.Dim5Spinner_Segmenter.Enable = 'off';
-                    app.PermuteDimensionsMenu.Enable = 'off';
+                    app.PermuteDimensionsMenu_Segmenter.Enable = 'off';
                     
 
                     % Define Mask matrices
@@ -1354,8 +1363,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageSegmenter(app);
         end
 
-        % Menu selected function: PermuteMenu_3_4
-        function PermuteMenu_3_4Selected(app, event)
+        % Menu selected function: PermuteMenu_3_4_Segmenter
+        function PermuteMenu_3_4_SegmenterSelected(app, event)
                 
             selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
@@ -1402,8 +1411,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Menu selected function: PermuteMenu_3_5
-        function PermuteMenu_3_5Selected(app, event)
+        % Menu selected function: PermuteMenu_3_5_Segmenter
+        function PermuteMenu_3_5_SegmenterSelected(app, event)
             
             selection = uiconfirm(app.UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
@@ -1445,8 +1454,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Menu selected function: PermuteMenu_4_5
-        function PermuteMenu_4_5Selected(app, event)
+        % Menu selected function: PermuteMenu_4_5_Segmenter
+        function PermuteMenu_4_5_SegmenterSelected(app, event)
             selection = uiconfirm(app.UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
@@ -1938,10 +1947,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Get directory and export image and mask data in NIfTI format
             temp_dir = uigetdir;
             temp_dir = append(temp_dir, '\');
-            niftiwrite(app.WorkingSegmenterImageData, append(temp_dir, 'Image'))
-            niftiwrite(double(app.SavedBrainMask), append(temp_dir, 'Mask')) % DOUBLE IS TEMP FIX
+            niftiwrite(app.WorkingSegmenterImageData, append(temp_dir, 'Image'));
+            niftiwrite(double(app.SavedBrainMask), append(temp_dir, 'Mask')); % DOUBLE IS TEMP FIX
             
-            uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: CalculateDSCmapsButton
@@ -1957,7 +1966,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 drop_Value = app.SelectPreMapDropDown.Value; 
                 TE = cell2mat(app.ExperimentPropertyTable.(3)(drop_Value));
                 TR = cell2mat(app.ExperimentPropertyTable.(4)(drop_Value));            
-                work_Data = cell2mat(app.SavedTable.Image(drop_Value));
+                work_Data = cell2mat(app.PreMapImageData);
                 
                 % Calculate and display DSC maps
                 if numel(size(work_Data)) == 4   
@@ -1987,6 +1996,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.UIAxes_PreMap.Interactions = [regionZoomInteraction zoomInteraction];
                 
                 app.DSCMapDropDown.Enable = 'on';
+                RefreshImagePostMap(app);
             catch
             end
         end
@@ -2486,6 +2496,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim4Spinner_PreMap.Enable = 'on';
                     app.Dim5Spinner_PreMap.Enable = 'off';
                     app.Dim4Spinner_PreMap.Limits = [1, dim4_size];
+                    app.PermuteDimensionsMenu_PreMap.Enable = 'on';
+                    app.PermuteMenu_3_4_PreMap.Enable ='on';
+                    app.PermuteMenu_3_5_PreMap.Enable ='off';
+                    app.PermuteMenu_4_5_PreMap.Enable ='off';
                 case 5
                     dim4_size = app.ExpDimsPreMap(4);
                     app.Dim4Spinner_PreMap.Enable = 'on';
@@ -2493,9 +2507,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     dim5_size = app.ExpDimsPreMap(5);
                     app.Dim5Spinner_PreMap.Enable = 'on';
                     app.Dim5Spinner_PreMap.Limits = [1, dim5_size];
+                    app.PermuteDimensionsMenu_PreMap.Enable = 'on';
+                    app.PermuteMenu_3_4_PreMap.Enable ='on';
+                    app.PermuteMenu_3_5_PreMap.Enable ='on';
+                    app.PermuteMenu_4_5_PreMap.Enable ='on';
                 case 3
                     app.Dim4Spinner_PreMap.Enable = 'off';
                     app.Dim5Spinner_PreMap.Enable = 'off';
+                    app.PermuteDimensionsMenu_PreMap.Enable = 'off';
+                    app.PermuteMenu_3_4_PreMap.Enable ='off';
+                    app.PermuteMenu_3_5_PreMap.Enable ='off';
+                    app.PermuteMenu_4_5_PreMap.Enable ='off';
             end
 
             % Enable slice controls
@@ -2504,7 +2526,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Display sequence
             RefreshImagePreMap(app);
-            disableDefaultInteractivity(app.UIAxes_PreMap);
             
             % Set interactions of preview uiaxes
             app.UIAxes_PreMap.Interactions = [regionZoomInteraction zoomInteraction];
@@ -2551,6 +2572,103 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset zoom
             app.UIAxes_PreMap.XLim = [-inf inf];
             app.UIAxes_PreMap.YLim = [-inf inf];
+        end
+
+        % Menu selected function: RotateMenu_PreMap
+        function RotateMenu_PreMapSelected(app, event)
+            
+            % Rotate image data, show image
+            app.PreMapImageData = rot90(app.PreMapImageData, -1);
+            
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: FlipVerticallyMenu_PreMap
+        function FlipVerticallyMenu_PreMapSelected(app, event)
+            
+            % Flip image data, show image
+            app.PreMapImageData = flipud(app.PreMapImageData);
+            
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: FlipHorizontallyMenu_PreMap
+        function FlipHorizontallyMenu_PreMapSelected(app, event)
+            
+            % Flip image data, show image
+            app.PreMapImageData = fliplr(app.PreMapImageData);
+            
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: ResetViewMenu_PreMap
+        function ResetViewMenu_PreMapSelected(app, event)
+            % Reset zoom
+            app.UIAxes_PreMap.XLim = [-inf inf];
+            app.UIAxes_PreMap.YLim = [-inf inf];
+
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: PermuteMenu_3_4_PreMap
+        function PermuteMenu_3_4_PreMapSelected(app, event)
+            
+            switch numel(app.ExpDimsPreMap)
+                case 4
+                    app.PreMapImageData = permute(app.PreMapImageData, [1,2,4,3]);
+                case 5
+                    app.PreMapImageData = permute(app.PreMapImageData, [1,2,4,3,5]);
+            end
+            app.ExpDimsPreMap = size(app.PreMapImageData);
+
+            temp_limits = app.SliceSpinner_PreMap.Limits;
+            temp_value = app.SliceSpinner_PreMap.Value;
+
+            app.SliceSpinner_PreMap.Limits = app.Dim4Spinner_PreMap.Limits;
+            app.SliceSpinner_PreMap.Value = app.Dim4Spinner_PreMap.Value;
+            app.SliceSlider_PreMap.Limits = app.Dim4Spinner_PreMap.Limits;
+            app.SliceSlider_PreMap.Value = app.Dim4Spinner_PreMap.Value;
+            app.Dim4Spinner_PreMap.Limits = temp_limits;
+            app.Dim4Spinner_PreMap.Value = temp_value;
+
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: PermuteMenu_3_5_PreMap
+        function PermuteMenu_3_5_PreMapSelected(app, event)
+            
+            app.PreMapImageData = permute(app.PreMapImageData, [1,2,5,4,3]);
+            app.ExpDimsPreMap = size(app.PreMapImageData);
+
+            temp_value_slice = app.SliceSpinner_PreMap.Value;
+            temp_limits_slice = app.SliceSpinner_PreMap.Limits;
+
+            app.SliceSpinner_PreMap.Limits = app.Dim5Spinner_PreMap.Limits;
+            app.SliceSpinner_PreMap.Value = app.Dim5Spinner_PreMap.Value;
+            app.SliceSlider_PreMap.Limits = app.Dim5Spinner_PreMap.Limits;
+            app.SliceSlider_PreMap.Value = app.Dim5Spinner_PreMap.Value;
+            app.Dim5Spinner_PreMap.Limits = temp_limits_slice;
+            app.Dim5Spinner_PreMap.Value = temp_value_slice;
+
+            RefreshImagePreMap(app);
+        end
+
+        % Menu selected function: PermuteMenu_4_5_PreMap
+        function PermuteMenu_4_5_PreMapSelected(app, event)
+            
+            app.PreMapImageData = permute(app.PreMapImageData, [1,2,3,5,4]);
+            app.PreMapImageData = app.PreMapImageData;
+            app.ExpDimsPreMap = size(app.PreMapImageData);
+
+            temp_limits = app.Dim5Spinner_PreMap.Limits;
+            temp_value = app.Dim5Spinner_PreMap.Value;
+
+            app.Dim5Spinner_PreMap.Limits = app.Dim4Spinner_PreMap.Limits;
+            app.Dim5Spinner_PreMap.Value = app.Dim4Spinner_PreMap.Value;
+            app.Dim4Spinner_PreMap.Limits = temp_limits;
+            app.Dim4Spinner_PreMap.Value = temp_value;
+
+            RefreshImagePreMap(app);
         end
     end
 
@@ -2646,7 +2764,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceLabel_Preview
             app.SliceLabel_Preview = uilabel(app.MainTab);
             app.SliceLabel_Preview.HorizontalAlignment = 'right';
-            app.SliceLabel_Preview.Enable = 'off';
             app.SliceLabel_Preview.Position = [791 15 31 22];
             app.SliceLabel_Preview.Text = 'Slice';
 
@@ -3343,7 +3460,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create DSCMapDropDownLabel
             app.DSCMapDropDownLabel = uilabel(app.ParameterMapsTab);
             app.DSCMapDropDownLabel.HorizontalAlignment = 'center';
-            app.DSCMapDropDownLabel.Enable = 'off';
             app.DSCMapDropDownLabel.Position = [741 50 101 22];
             app.DSCMapDropDownLabel.Text = 'DSC Map';
 
@@ -3400,7 +3516,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceLabel_Preview_3
             app.SliceLabel_Preview_3 = uilabel(app.ParameterMapsTab);
             app.SliceLabel_Preview_3.HorizontalAlignment = 'right';
-            app.SliceLabel_Preview_3.Enable = 'off';
             app.SliceLabel_Preview_3.Position = [903 81 31 22];
             app.SliceLabel_Preview_3.Text = 'Slice';
 
@@ -3418,7 +3533,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_SegmenterLabel_2
             app.Dim4Spinner_SegmenterLabel_2 = uilabel(app.ParameterMapsTab);
             app.Dim4Spinner_SegmenterLabel_2.HorizontalAlignment = 'right';
-            app.Dim4Spinner_SegmenterLabel_2.Enable = 'off';
             app.Dim4Spinner_SegmenterLabel_2.Position = [70 32 44 22];
             app.Dim4Spinner_SegmenterLabel_2.Text = 'Dim - 4';
 
@@ -3431,7 +3545,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim5Spinner_SegmenterLabel_2
             app.Dim5Spinner_SegmenterLabel_2 = uilabel(app.ParameterMapsTab);
             app.Dim5Spinner_SegmenterLabel_2.HorizontalAlignment = 'right';
-            app.Dim5Spinner_SegmenterLabel_2.Enable = 'off';
             app.Dim5Spinner_SegmenterLabel_2.Position = [280 34 44 22];
             app.Dim5Spinner_SegmenterLabel_2.Text = 'Dim - 5';
 
@@ -3771,24 +3884,69 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_SegmenterSelected, true);
             app.ResetViewMenu_Segmenter.Text = 'Reset View';
 
-            % Create PermuteDimensionsMenu
-            app.PermuteDimensionsMenu = uimenu(app.ContextMenu_Segmenter);
-            app.PermuteDimensionsMenu.Text = 'Permute Dimensions';
+            % Create PermuteDimensionsMenu_Segmenter
+            app.PermuteDimensionsMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
+            app.PermuteDimensionsMenu_Segmenter.Text = 'Permute Dimensions';
 
-            % Create PermuteMenu_3_4
-            app.PermuteMenu_3_4 = uimenu(app.PermuteDimensionsMenu);
-            app.PermuteMenu_3_4.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_4Selected, true);
-            app.PermuteMenu_3_4.Text = '3-4';
+            % Create PermuteMenu_3_4_Segmenter
+            app.PermuteMenu_3_4_Segmenter = uimenu(app.PermuteDimensionsMenu_Segmenter);
+            app.PermuteMenu_3_4_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_4_SegmenterSelected, true);
+            app.PermuteMenu_3_4_Segmenter.Text = '3-4';
 
-            % Create PermuteMenu_3_5
-            app.PermuteMenu_3_5 = uimenu(app.PermuteDimensionsMenu);
-            app.PermuteMenu_3_5.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_5Selected, true);
-            app.PermuteMenu_3_5.Text = '3-5';
+            % Create PermuteMenu_3_5_Segmenter
+            app.PermuteMenu_3_5_Segmenter = uimenu(app.PermuteDimensionsMenu_Segmenter);
+            app.PermuteMenu_3_5_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_5_SegmenterSelected, true);
+            app.PermuteMenu_3_5_Segmenter.Text = '3-5';
 
-            % Create PermuteMenu_4_5
-            app.PermuteMenu_4_5 = uimenu(app.PermuteDimensionsMenu);
-            app.PermuteMenu_4_5.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_4_5Selected, true);
-            app.PermuteMenu_4_5.Text = '4-5';
+            % Create PermuteMenu_4_5_Segmenter
+            app.PermuteMenu_4_5_Segmenter = uimenu(app.PermuteDimensionsMenu_Segmenter);
+            app.PermuteMenu_4_5_Segmenter.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_4_5_SegmenterSelected, true);
+            app.PermuteMenu_4_5_Segmenter.Text = '4-5';
+
+            % Create ContextMenu_PreMap
+            app.ContextMenu_PreMap = uicontextmenu(app.UIFigure);
+
+            % Create RotateMenu_PreMap
+            app.RotateMenu_PreMap = uimenu(app.ContextMenu_PreMap);
+            app.RotateMenu_PreMap.MenuSelectedFcn = createCallbackFcn(app, @RotateMenu_PreMapSelected, true);
+            app.RotateMenu_PreMap.Text = 'Rotate';
+
+            % Create FlipVerticallyMenu_PreMap
+            app.FlipVerticallyMenu_PreMap = uimenu(app.ContextMenu_PreMap);
+            app.FlipVerticallyMenu_PreMap.MenuSelectedFcn = createCallbackFcn(app, @FlipVerticallyMenu_PreMapSelected, true);
+            app.FlipVerticallyMenu_PreMap.Text = 'Flip Vertically';
+
+            % Create FlipHorizontallyMenu_PreMap
+            app.FlipHorizontallyMenu_PreMap = uimenu(app.ContextMenu_PreMap);
+            app.FlipHorizontallyMenu_PreMap.MenuSelectedFcn = createCallbackFcn(app, @FlipHorizontallyMenu_PreMapSelected, true);
+            app.FlipHorizontallyMenu_PreMap.Text = 'Flip Horizontally';
+
+            % Create ResetViewMenu_PreMap
+            app.ResetViewMenu_PreMap = uimenu(app.ContextMenu_PreMap);
+            app.ResetViewMenu_PreMap.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_PreMapSelected, true);
+            app.ResetViewMenu_PreMap.Text = 'Reset View';
+
+            % Create PermuteDimensionsMenu_PreMap
+            app.PermuteDimensionsMenu_PreMap = uimenu(app.ContextMenu_PreMap);
+            app.PermuteDimensionsMenu_PreMap.Text = 'Permute Dimensions';
+
+            % Create PermuteMenu_3_4_PreMap
+            app.PermuteMenu_3_4_PreMap = uimenu(app.PermuteDimensionsMenu_PreMap);
+            app.PermuteMenu_3_4_PreMap.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_4_PreMapSelected, true);
+            app.PermuteMenu_3_4_PreMap.Text = '3-4';
+
+            % Create PermuteMenu_3_5_PreMap
+            app.PermuteMenu_3_5_PreMap = uimenu(app.PermuteDimensionsMenu_PreMap);
+            app.PermuteMenu_3_5_PreMap.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_3_5_PreMapSelected, true);
+            app.PermuteMenu_3_5_PreMap.Text = '3-5';
+
+            % Create PermuteMenu_4_5_PreMap
+            app.PermuteMenu_4_5_PreMap = uimenu(app.PermuteDimensionsMenu_PreMap);
+            app.PermuteMenu_4_5_PreMap.MenuSelectedFcn = createCallbackFcn(app, @PermuteMenu_4_5_PreMapSelected, true);
+            app.PermuteMenu_4_5_PreMap.Text = '4-5';
+            
+            % Assign app.ContextMenu_PreMap
+            app.UIAxes_PreMap.ContextMenu = app.ContextMenu_PreMap;
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
