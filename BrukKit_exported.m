@@ -596,8 +596,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                 % Update DSC and Registration tab drop down menus
                 app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, exp_ID);
-                app.SelectPreMapDropDown.Items = app.DropDownItemsSaved;
-                app.SelectPostMapDropDown.Items = app.DropDownItemsSaved;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
