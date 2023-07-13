@@ -598,8 +598,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                 % Update DSC and Registration tab drop down menus
                 app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, exp_ID);
-                app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
-                app.SelectASLDropDown.Items = app.DropDownItemsSaved;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsSaved;
+                app.SelectPostMapDropDown.Items = app.DropDownItemsSaved;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
@@ -930,8 +930,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SegmentDropDown.Items = {'None'};
                     app.DropDownItemsSaved = {'None'};
                     app.DropDownItemsSegmenter = {'None'};
-                    app.SelectvolumetricdataDropDown.Items = app.DropDownItemsSaved;
-                    app.SelectASLDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectPreMapDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectPostMapDropDown.Items = app.DropDownItemsSaved;
                     app.DSCMapDropDown.Value = 'CBF';
                     app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
                     app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
@@ -2483,146 +2483,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             SaveData(app, 'Registration')
         end
 
-        % Value changed function: SelectVolumetryDropDown
-        function SelectVolumetryDropDownValueChanged(app, event)
-            if app.SelectVolumetryDropDown.Value == "None"
-                return
-            else
-                % Draw a progress box 
-                progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
-                     'Message', "Retrieving saved data.");
-                drawnow
-                
-                % Get data from saved table
-                progress.Value = 0.1;
-                pause(0.3)
-                
-                app.VolumetryImageData = cell2mat(app.SavedTable.Image(app.SelectVolumetryDropDown.Value));
-                app.VolumetryBrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectVolumetryDropDown.Value));
-                app.VolumetryHemiMask = cell2mat(app.SavedTable.HemiMask(app.SelectVolumetryDropDown.Value));
-                app.VolumetryROI = cell2mat(app.SavedTable.ROI(app.SelectVolumetryDropDown.Value));
-                app.VolumetryDimX = app.SavedTable.VoxDimX(app.SelectVolumetryDropDown.Value);
-                app.VolumetryDimY = app.SavedTable.VoxDimY(app.SelectVolumetryDropDown.Value);
-                voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
-                app.VolumetryThickness = app.SavedTable.SliceThickness(app.SelectVolumetryDropDown.Value);
-                app.VolumetryGap = app.SavedTable.SliceGap(app.SelectVolumetryDropDown.Value);
-    
-                
-                % Get volume for segmented brain and area for separate slices
-                progress.Value = 0.4;
-                progress.Message = "Calculating brain volume and descriptive statistics.";
-                pause(0.5)
-                [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryBrainMask, voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                app.UITable_VolumetryBrain.Data = sliceTable;
-                app.VolumeEditField_Brain.Value = Volume;
-    
-                % Populate brain descriptive edit fields
-                try
-                    app.MeanEditField_Brain.Value = mean_val;
-                    app.SDEditField_Brain.Value = std_val;
-                    app.MedianEditField_Brain.Value = median_val;
-                    app.IQRLowerEditField_Brain.Value = IQRlow;
-                    app.IQRUpperEditField_Brain.Value = IQRup;
-                    app.MinEditField_Brain.Value = min_val;
-                    app.MaxEditField_Brain.Value = max_val;
-                catch
-                    app.MeanEditField_Brain.Value = 0;
-                    app.SDEditField_Brain.Value = 0;
-                    app.MedianEditField_Brain.Value = 0;
-                    app.IQRLowerEditField_Brain.Value = 0;
-                    app.IQRUpperEditField_Brain.Value = 0;
-                    app.MinEditField_Brain.Value = 0;
-                    app.MaxEditField_Brain.Value = 0;
-                end
-                
-                % Check for hemisphere segmentation
-                if ~isequal(app.VolumetryHemiMask, false(1))
-                    app.SelectHemisphereDropDown.Enable = 'on';
-                    app.SelectHemisphereDropDown.Value = 'Left';
-                    % Get volume for segmented hemispheres and area for separate slices
-                    progress.Value = 0.6;
-                    progress.Message = "Calculating hemisphere volume and descriptive statistics.";
-                    pause(0.5)
-                    switch numel(size(app.VolumetryHemiMask))
-                        case 4
-                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                        case 3
-                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                    end
-                    app.UITable_VolumetryHemisphere.Data = sliceTable;
-                    app.VolumeEditField_Hemisphere.Value = Volume;
-
-                    % Populate hemisphere descriptive edit fields
-                    app.MeanEditField_Hemisphere.Value = mean_val;
-                    app.SDEditField_Hemisphere.Value = std_val;
-                    app.MedianEditField_Hemisphere.Value = median_val;
-                    app.IQRLowerEditField_Hemisphere.Value = IQRlow;
-                    app.IQRUpperEditField_Hemisphere.Value = IQRup;
-                    app.MinEditField_Hemisphere.Value = min_val;
-                    app.MaxEditField_Hemisphere.Value = max_val;
-                else
-                    app.SelectHemisphereDropDown.Enable = 'off';
-                    app.UITable_VolumetryHemisphere.Data = table();
-                    app.VolumeEditField_Hemisphere.Value = 0;
-                    app.MeanEditField_Hemisphere.Value = 0;
-                    app.SDEditField_Hemisphere.Value = 0;
-                    app.MedianEditField_Hemisphere.Value = 0;
-                    app.IQRLowerEditField_Hemisphere.Value = 0;
-                    app.IQRUpperEditField_Hemisphere.Value = 0;
-                    app.MinEditField_Hemisphere.Value = 0;
-                    app.MaxEditField_Hemisphere.Value = 0;
-                end
-                
-                % close the dialog box
-                progress.Value = 1;
-                progress.Message = "Done!";
-                pause(0.5);
-                close(progress);
-            end
-        end
-
-        % Value changed function: SelectHemisphereDropDown
-        function SelectHemisphereDropDownValueChanged(app, event)
-            voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
-            if app.SelectHemisphereDropDown.Value == "Left"
-                switch numel(size(app.VolumetryHemiMask))
-                    case 4
-                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                    case 3
-                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                end
-                app.UITable_VolumetryHemisphere.Data = sliceTable;
-                app.VolumeEditField_Hemisphere.Value = Volume;
-
-                % Populate hemisphere descriptive edit fields
-                app.MeanEditField_Hemisphere.Value = mean_val;
-                app.SDEditField_Hemisphere.Value = std_val;
-                app.MedianEditField_Hemisphere.Value = median_val;
-                app.IQRLowerEditField_Hemisphere.Value = IQRlow;
-                app.IQRUpperEditField_Hemisphere.Value = IQRup;
-                app.MinEditField_Hemisphere.Value = min_val;
-                app.MaxEditField_Hemisphere.Value = max_val;
-            else
-                switch numel(size(app.VolumetryHemiMask))
-                    case 4
-                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,2), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                    case 3
-                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,2), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                end
-                app.UITable_VolumetryHemisphere.Data = sliceTable;
-                app.VolumeEditField_Hemisphere.Value = Volume;
-
-                % Populate hemisphere descriptive edit fields
-                app.MeanEditField_Hemisphere.Value = mean_val;
-                app.SDEditField_Hemisphere.Value = std_val;
-                app.MedianEditField_Hemisphere.Value = median_val;
-                app.IQRLowerEditField_Hemisphere.Value = IQRlow;
-                app.IQRUpperEditField_Hemisphere.Value = IQRup;
-                app.MinEditField_Hemisphere.Value = min_val;
-                app.MaxEditField_Hemisphere.Value = max_val;
-            end          
-        end
-
         % Value changed function: SelectPreMapDropDown
         function SelectPreMapDropDownValueChanged(app, event)
             value = app.SelectPreMapDropDown.Value;
@@ -2952,6 +2812,146 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset zoom
             app.UIAxes_PreMap.XLim = [-inf inf];
             app.UIAxes_PreMap.YLim = [-inf inf];
+        end
+
+        % Value changed function: SelectVolumetryDropDown
+        function SelectVolumetryDropDownValueChanged(app, event)
+            if app.SelectVolumetryDropDown.Value == "None"
+                return
+            else
+                % Draw a progress box 
+                progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
+                     'Message', "Retrieving saved data.");
+                drawnow
+                
+                % Get data from saved table
+                progress.Value = 0.1;
+                pause(0.3)
+                
+                app.VolumetryImageData = cell2mat(app.SavedTable.Image(app.SelectVolumetryDropDown.Value));
+                app.VolumetryBrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectVolumetryDropDown.Value));
+                app.VolumetryHemiMask = cell2mat(app.SavedTable.HemiMask(app.SelectVolumetryDropDown.Value));
+                app.VolumetryROI = cell2mat(app.SavedTable.ROI(app.SelectVolumetryDropDown.Value));
+                app.VolumetryDimX = app.SavedTable.VoxDimX(app.SelectVolumetryDropDown.Value);
+                app.VolumetryDimY = app.SavedTable.VoxDimY(app.SelectVolumetryDropDown.Value);
+                voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
+                app.VolumetryThickness = app.SavedTable.SliceThickness(app.SelectVolumetryDropDown.Value);
+                app.VolumetryGap = app.SavedTable.SliceGap(app.SelectVolumetryDropDown.Value);
+    
+                
+                % Get volume for segmented brain and area for separate slices
+                progress.Value = 0.4;
+                progress.Message = "Calculating brain volume and descriptive statistics.";
+                pause(0.5)
+                [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryBrainMask, voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                app.UITable_VolumetryBrain.Data = sliceTable;
+                app.VolumeEditField_Brain.Value = Volume;
+    
+                % Populate brain descriptive edit fields
+                try
+                    app.MeanEditField_Brain.Value = mean_val;
+                    app.SDEditField_Brain.Value = std_val;
+                    app.MedianEditField_Brain.Value = median_val;
+                    app.IQRLowerEditField_Brain.Value = IQRlow;
+                    app.IQRUpperEditField_Brain.Value = IQRup;
+                    app.MinEditField_Brain.Value = min_val;
+                    app.MaxEditField_Brain.Value = max_val;
+                catch
+                    app.MeanEditField_Brain.Value = 0;
+                    app.SDEditField_Brain.Value = 0;
+                    app.MedianEditField_Brain.Value = 0;
+                    app.IQRLowerEditField_Brain.Value = 0;
+                    app.IQRUpperEditField_Brain.Value = 0;
+                    app.MinEditField_Brain.Value = 0;
+                    app.MaxEditField_Brain.Value = 0;
+                end
+                
+                % Check for hemisphere segmentation
+                if ~isequal(app.VolumetryHemiMask, false(1))
+                    app.SelectHemisphereDropDown.Enable = 'on';
+                    app.SelectHemisphereDropDown.Value = 'Left';
+                    % Get volume for segmented hemispheres and area for separate slices
+                    progress.Value = 0.6;
+                    progress.Message = "Calculating hemisphere volume and descriptive statistics.";
+                    pause(0.5)
+                    switch numel(size(app.VolumetryHemiMask))
+                        case 4
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                        case 3
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                    end
+                    app.UITable_VolumetryHemisphere.Data = sliceTable;
+                    app.VolumeEditField_Hemisphere.Value = Volume;
+
+                    % Populate hemisphere descriptive edit fields
+                    app.MeanEditField_Hemisphere.Value = mean_val;
+                    app.SDEditField_Hemisphere.Value = std_val;
+                    app.MedianEditField_Hemisphere.Value = median_val;
+                    app.IQRLowerEditField_Hemisphere.Value = IQRlow;
+                    app.IQRUpperEditField_Hemisphere.Value = IQRup;
+                    app.MinEditField_Hemisphere.Value = min_val;
+                    app.MaxEditField_Hemisphere.Value = max_val;
+                else
+                    app.SelectHemisphereDropDown.Enable = 'off';
+                    app.UITable_VolumetryHemisphere.Data = table();
+                    app.VolumeEditField_Hemisphere.Value = 0;
+                    app.MeanEditField_Hemisphere.Value = 0;
+                    app.SDEditField_Hemisphere.Value = 0;
+                    app.MedianEditField_Hemisphere.Value = 0;
+                    app.IQRLowerEditField_Hemisphere.Value = 0;
+                    app.IQRUpperEditField_Hemisphere.Value = 0;
+                    app.MinEditField_Hemisphere.Value = 0;
+                    app.MaxEditField_Hemisphere.Value = 0;
+                end
+                
+                % close the dialog box
+                progress.Value = 1;
+                progress.Message = "Done!";
+                pause(0.5);
+                close(progress);
+            end
+        end
+
+        % Value changed function: SelectHemisphereDropDown
+        function SelectHemisphereDropDownValueChanged(app, event)
+            voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
+            if app.SelectHemisphereDropDown.Value == "Left"
+                switch numel(size(app.VolumetryHemiMask))
+                    case 4
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                    case 3
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                end
+                app.UITable_VolumetryHemisphere.Data = sliceTable;
+                app.VolumeEditField_Hemisphere.Value = Volume;
+
+                % Populate hemisphere descriptive edit fields
+                app.MeanEditField_Hemisphere.Value = mean_val;
+                app.SDEditField_Hemisphere.Value = std_val;
+                app.MedianEditField_Hemisphere.Value = median_val;
+                app.IQRLowerEditField_Hemisphere.Value = IQRlow;
+                app.IQRUpperEditField_Hemisphere.Value = IQRup;
+                app.MinEditField_Hemisphere.Value = min_val;
+                app.MaxEditField_Hemisphere.Value = max_val;
+            else
+                switch numel(size(app.VolumetryHemiMask))
+                    case 4
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,2), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                    case 3
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,2), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                end
+                app.UITable_VolumetryHemisphere.Data = sliceTable;
+                app.VolumeEditField_Hemisphere.Value = Volume;
+
+                % Populate hemisphere descriptive edit fields
+                app.MeanEditField_Hemisphere.Value = mean_val;
+                app.SDEditField_Hemisphere.Value = std_val;
+                app.MedianEditField_Hemisphere.Value = median_val;
+                app.IQRLowerEditField_Hemisphere.Value = IQRlow;
+                app.IQRUpperEditField_Hemisphere.Value = IQRup;
+                app.MinEditField_Hemisphere.Value = min_val;
+                app.MaxEditField_Hemisphere.Value = max_val;
+            end          
         end
     end
 
