@@ -151,8 +151,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SliceLabel_Preview_3            matlab.ui.control.Label
         SliceSlider_PreMap              matlab.ui.control.Slider
         SliceLabel_Preview_2            matlab.ui.control.Label
-        SelectPostMapDropDown           matlab.ui.control.DropDown
-        SelectASLexperimenttocompareLabel  matlab.ui.control.Label
         DSCMapDropDown                  matlab.ui.control.DropDown
         DSCMapDropDownLabel             matlab.ui.control.Label
         SelectPreMapDropDown            matlab.ui.control.DropDown
@@ -2565,9 +2563,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Get volumetric data and sequence parameters for map
                 % calculation
                 drop_Value = app.SelectPreMapDropDown.Value; 
-                TE = cell2mat(app.ExperimentPropertyTable.(3)(drop_Value));
-                TR = cell2mat(app.ExperimentPropertyTable.(4)(drop_Value));            
-                work_Data = cell2mat(app.PreMapImageData);
+                TE = app.ExperimentPropertyTable.(3)(drop_Value);
+                TR = app.ExperimentPropertyTable.(4)(drop_Value);            
+                work_Data = app.PreMapImageData;
                 
                 % Calculate and display DSC maps
                 if numel(size(work_Data)) == 4   
@@ -2607,10 +2605,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             event.Source.Value = round(event.Value);
             app.SliceSlider_PreMap.Value = event.Source.Value;
 
+            RefreshImagePreMap(app);
+
             % Reset zoom
             app.UIAxes_PreMap.XLim = [-inf inf];
             app.UIAxes_PostMap.YLim = [-inf inf];
-            
         end
 
         % Value changed function: SliceSlider_PreMap
@@ -2732,34 +2731,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Spinner_PreMap.Value = temp_value;
 
             RefreshImagePreMap(app);
-        end
-
-        % Value changed function: SelectPostMapDropDown
-        function SelectPostMapDropDownValueChanged(app, event)
-
-            % Display chosen ASL map image from saved segmented data,
-            % update slice spinner
-            drop_Value = app.SelectPostMapDropDown.Value; 
-            app.PostMapImageData = cell2mat(app.SavedTable.Image(drop_Value));
-            app.PostMapWorkMask = cell2mat(app.SavedTable.BrainMask(drop_Value));
-            app.PostMapImage = imshow(app.PostMapImageData(:,:,1), [], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
-            app.PostMapImage.AlphaData = app.PostMapWorkMask(:,:,1);
-        
-            data_dims = size(app.PostMapImageData);
-            try
-                app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];
-                app.SliceSpinner_PostMap.Enable = 'On';
-            catch
-                app.SliceSpinner_PostMap.Enable = 'off';
-            end
-            app.SliceSpinner_PostMap.Value = 1;
-            
-            % Set interactions on UIAxes
-            app.UIAxes_PostMap.Interactions = [regionZoomInteraction zoomInteraction];
-            
-            % Reset zoom
-            app.UIAxes_PostMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
         end
 
         % Value changed function: SliceSlider_PostMap
@@ -3988,20 +3959,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DSCMapDropDown.Enable = 'off';
             app.DSCMapDropDown.Position = [760 31 61 23];
             app.DSCMapDropDown.Value = 'CBF';
-
-            % Create SelectASLexperimenttocompareLabel
-            app.SelectASLexperimenttocompareLabel = uilabel(app.ParameterMapsTab);
-            app.SelectASLexperimenttocompareLabel.HorizontalAlignment = 'right';
-            app.SelectASLexperimenttocompareLabel.Position = [1045 655 193 22];
-            app.SelectASLexperimenttocompareLabel.Text = 'Select a parameter map to preview';
-
-            % Create SelectPostMapDropDown
-            app.SelectPostMapDropDown = uidropdown(app.ParameterMapsTab);
-            app.SelectPostMapDropDown.Items = {};
-            app.SelectPostMapDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectPostMapDropDownValueChanged, true);
-            app.SelectPostMapDropDown.Placeholder = 'None';
-            app.SelectPostMapDropDown.Position = [962 625 360 21];
-            app.SelectPostMapDropDown.Value = {};
 
             % Create SliceLabel_Preview_2
             app.SliceLabel_Preview_2 = uilabel(app.ParameterMapsTab);
