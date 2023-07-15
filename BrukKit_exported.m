@@ -313,14 +313,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPreMap % Dimensions of currently displayed sequence for mapping
 
         % Volumetry tab
-        VolumetryImageData
-        VolumetryBrainMask
-        VolumetryHemiMask
-        VolumetryROI
-        VolumetryDimX
-        VolumetryDimY
-        VolumetryThickness
-        VolumetryGap 
+        VolumetryImageData % Property for storing image data of currently selected experiment in volumetry tab
+        VolumetryBrainMask % Property for storing brain mask of currently selected experiment in volumetry tab
+        VolumetryHemiMask % Property for storing hemisphere mask of currently selected experiment in volumetry tab
+        VolumetryROI % Property for storing roi data of currently selected experiment in volumetry tab
+        VolumetryDimX % Property for storing voxel dimension x of currently selected experiment in volumetry tab
+        VolumetryDimY % Property for storing voxel dimension y of currently selected experiment in volumetry tab
+        VolumetryThickness % Property for storing slice thickness of currently selected experiment in volumetry tab
+        VolumetryGap  % Property for storing slice gap of currently selected experiment in volumetry tab
     end
     
     methods (Access = private)
@@ -628,7 +628,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end 
         end
-        
+
         % Function returns total volume of input matrix, corrected for
         % slice gaps and volume descriptives
         function [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, image_data, mask_data, voxel_area, slice_thickness, slice_gap, correction_hemi)  %#ok<INUSL> 
@@ -667,7 +667,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % If mask is 3D go through mask and check for possible
                     % volume corrections
                     if numel(dims)>2
-                        for i=1:(dims(3)-1)
+                        for i=1:(dims(3))
                             % Go through individual slices, if slice contains nonzero elements add the slice to nonzero slice table 
                             if ~isequal(mask_data(:,:,i), false(dims(1:2))) 
                                 temp_table = table(i, nnz(mask_data(:,:,i))*voxel_area, 'VariableNames', {'Slice Number' 'Slice Area'});
@@ -675,7 +675,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 % If the next slice also contains nonzero
                                 % elements calculate gap volume and add the
                                 % correction to total volume
-                                if ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
+                                if i ~= dims(3) & ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
                                     gap_voxelN = (nnz(mask_data(:,:,i))+nnz(mask_data(:,:,i+1)))/2;
                                     correction = (voxel_area*slice_gap)*gap_voxelN;
                                     Volume = Volume + correction;
@@ -919,7 +919,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SavedTable = table();
     
                     % Reset counters
-                    app.ROICounter = 1;
                     app.RegistrationCounter = 1;
     
                     % Reset drop downs and text fields
@@ -928,25 +927,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.DropDownItemsSaved = {'None'};
                     app.DropDownItemsSegmenter = {'None'};
                     app.SelectPreMapDropDown.Items = app.DropDownItemsSaved;
-                    app.SelectPostMapDropDown.Items = app.DropDownItemsSaved;
                     app.DSCMapDropDown.Value = 'CBF';
                     app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
                     app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
                     app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
+                    app.SelectVolumetryDropDown.Items = app.DropDownItemsSaved;
                     app.SelectVolumetryDropDown.Items = app.DropDownItemsSaved;
                     app.ArchiveFileEditField.Value = "";
     
                     % Reset UIAxes
                     cla(app.UIAxes_Preview);
                     cla(app.UIAxes_Segmenter);
-                    cla(app.UIAxes_ASL);
-                    cla(app.UIAxes_DSCMaps);
                     cla(app.UIAxes_Registration);
-                    
-                    % Reset sliders and spinners
-                    
-                    app.SliceSpinner_ASL.Value = 1;
-                    app.SliceSpinner_DSCMaps.Value = 1;
+
+                    % Reset text fields Main
+                    app.SubjectIDEditField.Value = "";
+                    app.StudyIDEditField.Value = "";
+                    app.SubjectCommentEditField.Value = "";
+                    app.StudyCommentEditField.Value = "";
+                    app.SubjectTypeEditField.Value = "";
+                    app.SexEditField.Value = "";
+                    app.WeightEditField.Value = "";
+                    app.StudyStartDateEditField.Value = "";
+                    app.StudyStartTimeEditField.Value = "";
+                    app.SubjectAgeEditField.Value = "";
 
                     % Disable and reset components
                     % Preview
@@ -1008,18 +1012,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SliceSpinner_Parameter.Value = 1;
                     app.UsedifferentparametermapCheckBox.Value = 0;
                     app.RegistrationInstructionsTextArea.Value = '';
-                    
-                    % Reset text fields
-                    app.SubjectIDEditField.Value = "";
-                    app.StudyIDEditField.Value = "";
-                    app.SubjectCommentEditField.Value = "";
-                    app.StudyCommentEditField.Value = "";
-                    app.SubjectTypeEditField.Value = "";
-                    app.SexEditField.Value = "";
-                    app.WeightEditField.Value = "";
-                    app.StudyStartDateEditField.Value = "";
-                    app.StudyStartTimeEditField.Value = "";
-                    app.SubjectAgeEditField.Value = "";
+
+                    % Volumetry 
+                    % Reset brain fields and table
+                    app.UITable_VolumetryBrain.Data = table();
+                    app.VolumeEditField_Brain.Value = 0;
+                    app.MeanEditField_Brain.Value = 0;
+                    app.SDEditField_Brain.Value = 0;
+                    app.MedianEditField_Brain.Value = 0;
+                    app.IQRLowerEditField_Brain.Value = 0;
+                    app.IQRUpperEditField_Brain.Value = 0;
+                    app.MinEditField_Brain.Value = 0;
+                    app.MaxEditField_Brain.Value = 0;
+                    % Reset hemisphere fields and table
+                    app.SelectHemisphereDropDown.Enable = 'off';
+                    app.UITable_VolumetryHemisphere.Data = table();
+                    app.VolumeEditField_Hemisphere.Value = 0;
+                    app.MeanEditField_Hemisphere.Value = 0;
+                    app.SDEditField_Hemisphere.Value = 0;
+                    app.MedianEditField_Hemisphere.Value = 0;
+                    app.IQRLowerEditField_Hemisphere.Value = 0;
+                    app.IQRUpperEditField_Hemisphere.Value = 0;
+                    app.MinEditField_Hemisphere.Value = 0;
+                    app.MaxEditField_Hemisphere.Value = 0;
+                    % Reset ROI fields and table
+                    app.SelectROIDropDown.Enable = 'off';
+                    app.SelectROIDropDown.Items = "None";
+                    app.UITable_VolumetryROI.Data = table();
+                    app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                    app.VolumeEditField_ROI.Value = 0;
+                    app.MeanEditField_ROI.Value = 0;
+                    app.SDEditField_ROI.Value = 0;
+                    app.MedianEditField_ROI.Value = 0;
+                    app.IQRLowerEditField_ROI.Value = 0;
+                    app.IQRUpperEditField_ROI.Value = 0;
+                    app.MinEditField_ROI.Value = 0;
+                    app.MaxEditField_ROI.Value = 0;
                 case 'Cancel'
                     return
             end
@@ -1866,8 +1894,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROIMask = cat(3, app.ROIMask, false(app.ExpDimsSegmenter));
                 end
             else
-                %error('Please enter a valid original ROI name')
-                % ADD ERROR OUTPUT
+                uialert(app.UIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error')
             end
             RefreshImageSegmenter(app);
         end
@@ -2299,6 +2326,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: AddsliceButton
         function AddsliceButtonPushed(app, event)
             
+            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1)
+                uialert(app.UIFigure, 'Cannot add slice instructions: valid registration data not selected.', 'Instruction Error.')
+                return
+            end
+
             % Create slice registration instructions based on char formula
             % moving(dim3,dim4,dim5)fixed(dim3,dim4,dim5)parameter(dim3,dim4,dim5)
             use_parameter_value = app.UsedifferentparametermapCheckBox.Value;
@@ -2368,8 +2400,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
-            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1)|app.RegistrationInstructionsTextArea.Value == ""
-                disp(1)
+            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1)
+                uialert(app.UIFigure, 'Registration not possible; valid data not selected.', 'Registration Error.')
+                return
+            elseif app.RegistrationInstructionsTextArea.Value == ""
+                uialert(app.UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
                 return
             end
             
@@ -2484,6 +2519,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 dim3_size = dims_reg(3);
                 app.SliceSpinner_Registration.Limits = [1, dim3_size];
                 app.SliceSpinner_Registration.Value = 1;
+                app.SliceSpinner_Registration.Enable = 'on';
             catch
                 app.SliceSpinner_Registration.Enable = 'off';
                 app.SliceSpinner_Registration.Value = 1;
@@ -2822,6 +2858,40 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Value changed function: SelectVolumetryDropDown
         function SelectVolumetryDropDownValueChanged(app, event)
             if app.SelectVolumetryDropDown.Value == "None"
+                % Reset brain fields and table
+                app.UITable_VolumetryBrain.Data = table();
+                app.VolumeEditField_Brain.Value = 0;
+                app.MeanEditField_Brain.Value = 0;
+                app.SDEditField_Brain.Value = 0;
+                app.MedianEditField_Brain.Value = 0;
+                app.IQRLowerEditField_Brain.Value = 0;
+                app.IQRUpperEditField_Brain.Value = 0;
+                app.MinEditField_Brain.Value = 0;
+                app.MaxEditField_Brain.Value = 0;
+                % Reset hemisphere fields and table
+                app.SelectHemisphereDropDown.Enable = 'off';
+                app.UITable_VolumetryHemisphere.Data = table();
+                app.VolumeEditField_Hemisphere.Value = 0;
+                app.MeanEditField_Hemisphere.Value = 0;
+                app.SDEditField_Hemisphere.Value = 0;
+                app.MedianEditField_Hemisphere.Value = 0;
+                app.IQRLowerEditField_Hemisphere.Value = 0;
+                app.IQRUpperEditField_Hemisphere.Value = 0;
+                app.MinEditField_Hemisphere.Value = 0;
+                app.MaxEditField_Hemisphere.Value = 0;
+                % Reset ROI fields and table
+                app.SelectROIDropDown.Enable = 'off';
+                app.SelectROIDropDown.Items = "None";
+                app.UITable_VolumetryROI.Data = table();
+                app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                app.VolumeEditField_ROI.Value = 0;
+                app.MeanEditField_ROI.Value = 0;
+                app.SDEditField_ROI.Value = 0;
+                app.MedianEditField_ROI.Value = 0;
+                app.IQRLowerEditField_ROI.Value = 0;
+                app.IQRUpperEditField_ROI.Value = 0;
+                app.MinEditField_ROI.Value = 0;
+                app.MaxEditField_ROI.Value = 0;
                 return
             end
             
@@ -2832,8 +2902,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get data from saved table
             progress.Value = 0.1;
-            pause(0.3)
-            
+            pause(0.3) 
             app.VolumetryImageData = cell2mat(app.SavedTable.Image(app.SelectVolumetryDropDown.Value));
             app.VolumetryBrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectVolumetryDropDown.Value));
             app.VolumetryHemiMask = cell2mat(app.SavedTable.HemiMask(app.SelectVolumetryDropDown.Value));
@@ -2846,7 +2915,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             
             % Get volume for segmented brain and area for separate slices
-            progress.Value = 0.4;
+            progress.Value = 0.3;
             progress.Message = "Calculating brain volume and descriptive statistics.";
             pause(0.5)
             [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryBrainMask, voxel_Area, app.VolumetryThickness, app.VolumetryGap);
@@ -2874,12 +2943,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Check for hemisphere segmentation
             if ~isequal(app.VolumetryHemiMask, false(1))
-                app.SelectHemisphereDropDown.Enable = 'on';
-                app.SelectHemisphereDropDown.Value = 'Left';
                 % Get volume for segmented hemispheres and area for separate slices
-                progress.Value = 0.6;
+                progress.Value = 0.5;
                 progress.Message = "Calculating hemisphere volume and descriptive statistics.";
                 pause(0.5)
+                app.SelectHemisphereDropDown.Enable = 'on';
+                app.SelectHemisphereDropDown.Value = 'Left';
                 switch numel(size(app.VolumetryHemiMask))
                     case 4
                         [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryHemiMask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
@@ -2908,6 +2977,53 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.IQRUpperEditField_Hemisphere.Value = 0;
                 app.MinEditField_Hemisphere.Value = 0;
                 app.MaxEditField_Hemisphere.Value = 0;
+            end
+
+            % Check for ROI segmentation
+            if ~isequal(app.VolumetryROI.Mask, false(1))
+                % Get volume for first segmented ROI and area for separate slices
+                progress.Value = 0.7;
+                progress.Message = "Calculating ROI volumes and descriptive statistics.";
+                pause(0.5)
+                app.SelectROIDropDown.Enable = 'on';
+                app.SelectROIDropDown.Items = app.VolumetryROI.ID;
+                app.SelectROIDropDown.Value = app.VolumetryROI.ID(1);
+                if ~isequal(app.VolumetryHemiMask, false(1))
+                    app.ApplyEdemaCorrectionCheckBox.Enable = 'on';
+                else
+                    app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                end
+                app.ApplyEdemaCorrectionCheckBox.Value = 0;
+                switch numel(size(app.VolumetryImageData))
+                    case 2
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                    otherwise
+                        [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,:,1), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                end
+                app.UITable_VolumetryROI.Data = sliceTable;
+                app.VolumeEditField_ROI.Value = Volume;
+
+                % Populate ROI descriptive edit fields
+                app.MeanEditField_ROI.Value = mean_val;
+                app.SDEditField_ROI.Value = std_val;
+                app.MedianEditField_ROI.Value = median_val;
+                app.IQRLowerEditField_ROI.Value = IQRlow;
+                app.IQRUpperEditField_ROI.Value = IQRup;
+                app.MinEditField_ROI.Value = min_val;
+                app.MaxEditField_ROI.Value = max_val;
+            else
+                app.SelectROIDropDown.Enable = 'off';
+                app.SelectROIDropDown.Value = "None";
+                app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                app.UITable_VolumetryROI.Data = table();
+                app.VolumeEditField_ROI.Value = 0;
+                app.MeanEditField_ROI.Value = 0;
+                app.SDEditField_ROI.Value = 0;
+                app.MedianEditField_ROI.Value = 0;
+                app.IQRLowerEditField_ROI.Value = 0;
+                app.IQRUpperEditField_ROI.Value = 0;
+                app.MinEditField_ROI.Value = 0;
+                app.MaxEditField_ROI.Value = 0;
             end
             
             % close the dialog box
@@ -2957,6 +3073,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.MinEditField_Hemisphere.Value = min_val;
                 app.MaxEditField_Hemisphere.Value = max_val;
             end          
+        end
+
+        % Value changed function: SelectROIDropDown
+        function SelectROIDropDownValueChanged(app, event)
+            voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
+            % Find index of selected ROI
+            index = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
+            switch numel(size(app.VolumetryImageData))
+                case 2
+                    [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                otherwise
+                    [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+            end
+            app.UITable_VolumetryROI.Data = sliceTable;
+            app.VolumeEditField_ROI.Value = Volume;
+
+            % Populate ROI descriptive edit fields
+            app.MeanEditField_ROI.Value = mean_val;
+            app.SDEditField_ROI.Value = std_val;
+            app.MedianEditField_ROI.Value = median_val;
+            app.IQRLowerEditField_ROI.Value = IQRlow;
+            app.IQRUpperEditField_ROI.Value = IQRup;
+            app.MinEditField_ROI.Value = min_val;
+            app.MaxEditField_ROI.Value = max_val;
         end
     end
 
@@ -3340,7 +3480,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_SegmenterLabel
             app.Dim4Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim4Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_SegmenterLabel.Enable = 'off';
             app.Dim4Spinner_SegmenterLabel.Position = [522 16 44 22];
             app.Dim4Spinner_SegmenterLabel.Text = 'Dim - 4';
 
@@ -3353,7 +3492,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim5Spinner_SegmenterLabel
             app.Dim5Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim5Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_SegmenterLabel.Enable = 'off';
             app.Dim5Spinner_SegmenterLabel.Position = [642 16 44 22];
             app.Dim5Spinner_SegmenterLabel.Text = 'Dim - 5';
 
@@ -3366,7 +3504,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceSliderLabel
             app.SliceSliderLabel = uilabel(app.SegmenterTab);
             app.SliceSliderLabel.HorizontalAlignment = 'right';
-            app.SliceSliderLabel.Enable = 'off';
             app.SliceSliderLabel.Position = [86 16 32 22];
             app.SliceSliderLabel.Text = 'Slice';
 
@@ -3780,6 +3917,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceSpinner_Registration
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
             app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
+            app.SliceSpinner_Registration.Enable = 'off';
             app.SliceSpinner_Registration.Position = [509 15 97 22];
 
             % Create SaveRegisteredDataButton
@@ -3821,7 +3959,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceSpinner_FixedLabel
             app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_FixedLabel.Enable = 'off';
             app.SliceSpinner_FixedLabel.Position = [1264 528 31 22];
             app.SliceSpinner_FixedLabel.Text = 'Slice';
 
@@ -3834,7 +3971,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_FixedLabel
             app.Dim4Spinner_FixedLabel = uilabel(app.RegistrationTab);
             app.Dim4Spinner_FixedLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_FixedLabel.Enable = 'off';
             app.Dim4Spinner_FixedLabel.Position = [1319 528 44 22];
             app.Dim4Spinner_FixedLabel.Text = 'Dim - 4';
 
@@ -3847,7 +3983,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim5Spinner_FixedLabel
             app.Dim5Spinner_FixedLabel = uilabel(app.RegistrationTab);
             app.Dim5Spinner_FixedLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_FixedLabel.Enable = 'off';
             app.Dim5Spinner_FixedLabel.Position = [1378 528 44 22];
             app.Dim5Spinner_FixedLabel.Text = 'Dim - 5';
 
@@ -3860,7 +3995,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceSpinner_MovingLabel
             app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
             app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel.Enable = 'off';
             app.SliceSpinner_MovingLabel.Position = [1264 625 31 22];
             app.SliceSpinner_MovingLabel.Text = 'Slice';
 
@@ -3873,7 +4007,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_MovingLabel
             app.Dim4Spinner_MovingLabel = uilabel(app.RegistrationTab);
             app.Dim4Spinner_MovingLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_MovingLabel.Enable = 'off';
             app.Dim4Spinner_MovingLabel.Position = [1319 625 44 22];
             app.Dim4Spinner_MovingLabel.Text = 'Dim - 4';
 
@@ -3886,7 +4019,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim5Spinner_MovingLabel
             app.Dim5Spinner_MovingLabel = uilabel(app.RegistrationTab);
             app.Dim5Spinner_MovingLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_MovingLabel.Enable = 'off';
             app.Dim5Spinner_MovingLabel.Position = [1378 625 44 22];
             app.Dim5Spinner_MovingLabel.Text = 'Dim - 5';
 
@@ -4351,6 +4483,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectROIDropDown
             app.SelectROIDropDown = uidropdown(app.ROIPanel_Volumetry);
             app.SelectROIDropDown.Items = {};
+            app.SelectROIDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectROIDropDownValueChanged, true);
             app.SelectROIDropDown.Enable = 'off';
             app.SelectROIDropDown.Placeholder = 'None';
             app.SelectROIDropDown.Position = [132 489 182 21];
@@ -4358,6 +4491,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create ApplyEdemaCorrectionCheckBox
             app.ApplyEdemaCorrectionCheckBox = uicheckbox(app.ROIPanel_Volumetry);
+            app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
             app.ApplyEdemaCorrectionCheckBox.Text = 'Apply Edema Correction';
             app.ApplyEdemaCorrectionCheckBox.Position = [146 237 152 22];
 
