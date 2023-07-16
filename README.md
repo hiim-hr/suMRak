@@ -25,7 +25,7 @@ BrukKit contains many different components, all integrated to work and communica
  ### Segmenter
 
 The segmenter tab allows you to easily segment the brain, hemispheres and regions of interest. Use traditional polygonal marking or speed things up using integrated K-means 
-clustering - the choice is yours.
+clustering - it's your choice.
 
 ### Volumetry
 
