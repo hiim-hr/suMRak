@@ -8,7 +8,7 @@
 
 ------------------------------------------------------------------------
 
-BrukKit is a MATLAB application created with the sole purpose of simplifying pre-clinical MRI data processing in addition to reducing the associated workload.
+BrukKit is a MATLAB application created with the sole purpose of simplifying pre-clinical MRI data processing.
 
 ------------------------------------------------------------------------
 
@@ -16,5 +16,22 @@ BrukKit is a MATLAB application created with the sole purpose of simplifying pre
 
 ------------------------------------------------------------------------
 
- 
+ ## BrukKit Components
 
+BrukKit contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRI data to only one.
+
+ ------------------------------------------------------------------------
+
+ ### Segmenter
+
+The segmenter tab allows you to easily segment the brain, hemispheres and regions of interest. Use traditional polygonal marking or speed things up using integrated K-means 
+clustering - it's your choice!
+
+### Volumetry
+
+Obtain the volumes and slice areas of segmented data in just one click! Simply select one of the saved experiments and all information will be automatically calculated and
+displayed accordingly. Segmented regions of interest can also be corrected for edema using one of multiple available correction methods.
+
+### Registration
+ 
+MATLAB's integrated python engine allows BrukKit to register saved experiments using the [SimpleElastix](https://simpleelastix.github.io/) python library.
