@@ -249,6 +249,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PermuteMenu_3_4_PreMap          matlab.ui.container.Menu
         PermuteMenu_3_5_PreMap          matlab.ui.container.Menu
         PermuteMenu_4_5_PreMap          matlab.ui.container.Menu
+        ContextMenuEdema                matlab.ui.container.ContextMenu
+        HemisphereScalingFactorMenu     matlab.ui.container.Menu
+        BelayevScalingFactorMenu        matlab.ui.container.Menu
+        GerrietsCompressionFactorMenu   matlab.ui.container.Menu
     end
 
     
@@ -628,6 +632,55 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end 
         end
+        
+        % Function returns edema adjusted slice area
+        function adj_Area = AdjustSliceForEdema(app, slice_mask, hemi_mask)
+            switch numel(size(hemi_mask))
+                case 3
+                    left_hemi = hemi_mask(:,:,1);
+                    right_hemi = hemi_mask(:,:,2);
+                case 4
+                    left_hemi = hemi_mask(:,:,:,1);
+                    right_hemi = hemi_mask(:,:,:,2);
+            end
+            dice_left = dice(logical(slice_mask), logical(left_hemi));
+            dice_right = dice(logical(slice_mask), logical(right_hemi));
+            left_area = nnz(left_hemi);
+            right_area = nnz(right_hemi);
+            if dice_left > dice_right
+                area_to_adjust = nnz(slice_mask & left_hemi);
+                % Use simple hemisphere scaling where area is adjusted for
+                % a factor of (contralateral area/ipsilateral area)
+                if app.HemisphereScalingFactorMenu.Checked == "on"
+                    adj_Area = area_to_adjust*(right_area/left_area);
+
+                % Use hemisphere scaling factor described in Belayev et al.
+                % 2003, 1-(ipsilateral-contralateral/contralateral area)
+                elseif app.BelayevScalingFactorMenu.Checked == "on"
+                    adj_Area = area_to_adjust*(1-((left_area-right_area)/right_area));
+
+                % Use compression factor described in Gerriets et al. 2004.
+                elseif app.GerrietsCompressionFactorMenu.Checked == "on"
+                    adj_Area = right_area+left_area-((right_area+left_area-area_to_adjust)*((right_area+left_area)/(2*right_area)));
+                end
+            else
+                area_to_adjust = nnz(slice_mask & right_hemi);
+                % Use simple hemisphere scaling where area is adjusted for
+                % a factor of (contralateral area/ipsilateral area)
+                if app.HemisphereScalingFactorMenu.Checked == "on"
+                    adj_Area = area_to_adjust*(left_area/right_area);
+
+                % Use hemisphere scaling factor described in Belayev et al.
+                % 2003, 1-(ipsilateral-contralateral/contralateral area)
+                elseif app.BelayevScalingFactorMenu.Checked == "on"
+                    adj_Area = area_to_adjust*(1-((right_area-left_area)/left_area));
+
+                % Use compression factor described in Gerriets et al. 2004.
+                elseif app.GerrietsCompressionFactorMenu.Checked == "on"
+                    adj_Area = left_area+right_area-((left_area+right_area-area_to_adjust)*((left_area+right_area)/(2*left_area)));
+                end
+            end
+        end
 
         % Function returns total volume of input matrix, corrected for
         % slice gaps and volume descriptives
@@ -690,7 +743,51 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         end
                     end
                 case 7
-                    disp(correction_hemi)
+                    % If mask is 3D go through mask and add corrected
+                    % volumes and gap corrections
+                    Volume = 0;
+                    if numel(dims)>2
+                        for i=1:(dims(3))
+                            % Go through individual slices, if slice contains nonzero elements add slice to
+                            % nonzero slice table, and add edema corrected slice volume to total if hemispheres are segmented
+                            if ~isequal(mask_data(:,:,i), false(dims(1:2)))
+                                if ~isequal(correction_hemi(:,:,i,1), false(dims(1:2)))
+                                    adj_Slice = AdjustSliceForEdema(app, mask_data(:,:,i), correction_hemi(:,:,i,:));
+                                    temp_table = table(i, adj_Slice*voxel_area, 'VariableNames', {'Slice Number' 'Slice Area'});
+                                    sliceTable = cat(1, sliceTable, temp_table);
+                                    Volume = Volume + (adj_Slice*voxel_area*slice_thickness);
+                                else
+                                    adj_Slice = nnz(mask_data(:,:,i));
+                                    temp_table = table(i, nnz(mask_data(:,:,i))*voxel_area, 'VariableNames', {'Slice Number' 'Slice Area'});
+                                    sliceTable = cat(1, sliceTable, temp_table);
+                                    Volume = Volume + (adj_Slice*voxel_area*slice_thickness);
+                                end
+                                % If the next slice also contains nonzero
+                                % elements calculate gap volume and add the
+                                % correction to total volume
+                                if i ~= dims(3) & ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
+                                    if ~isequal(correction_hemi(:,:,i+1,1), false(dims(1:2)))
+                                        adj_SliceNext = AdjustSliceForEdema(app, mask_data(:,:,i+1), correction_hemi(:,:,i+1,:));
+                                        gap_voxelN = (adj_Slice+adj_SliceNext)/2;
+                                        correction = (voxel_area*slice_gap)*gap_voxelN;
+                                        Volume = Volume + correction;
+                                    else
+                                        adj_SliceNext = nnz(mask_data(:,:,i+1));
+                                        gap_voxelN = (adj_Slice+adj_SliceNext)/2;
+                                        correction = (voxel_area*slice_gap)*gap_voxelN;
+                                        Volume = Volume + correction;
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        if ~isequal(mask_data, false(dims(1:2))) 
+                            adj_Slice = AdjustSliceForEdema(app, mask_data, correction_hemi);
+                            temp_table = table(1, adj_Slice*voxel_area, 'VariableNames', {'Slice Number' 'Slice Area'});
+                            sliceTable = cat(1, sliceTable, temp_table);
+                            Volume = adj_Slice*voxel_area*slice_thickness;
+                        end
+                    end
             end
             
             mean_val = mean(nonzeros(image_data), "all");
@@ -700,6 +797,40 @@ classdef BrukKit_exported < matlab.apps.AppBase
             IQRup = quantile(nonzeros(image_data), 0.75, "all");
             min_val = min(nonzeros(image_data), [], "all");
             max_val = max(nonzeros(image_data), [], "all");
+        end
+
+        % Function updates volumetry ROI section
+        function UpdateVolumetryROI(app)
+            voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
+            % Find index of selected ROI
+            index = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
+            switch app.ApplyEdemaCorrectionCheckBox.Value
+                case 1
+                    switch numel(size(app.VolumetryImageData))
+                        case 2
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap, app.VolumetryHemiMask);
+                        otherwise
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap, app.VolumetryHemiMask);
+                    end
+                case 0
+                    switch numel(size(app.VolumetryImageData))
+                        case 2
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                        otherwise
+                            [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
+                    end
+            end
+            app.UITable_VolumetryROI.Data = sliceTable;
+            app.VolumeEditField_ROI.Value = Volume;
+
+            % Populate ROI descriptive edit fields
+            app.MeanEditField_ROI.Value = mean_val;
+            app.SDEditField_ROI.Value = std_val;
+            app.MedianEditField_ROI.Value = median_val;
+            app.IQRLowerEditField_ROI.Value = IQRlow;
+            app.IQRUpperEditField_ROI.Value = IQRup;
+            app.MinEditField_ROI.Value = min_val;
+            app.MaxEditField_ROI.Value = max_val;
         end
     end   
 
@@ -718,7 +849,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             switch app.TabGroup.SelectedTab.Title
-                case 'Preview'
+                case 'Main'
                     try
                         app.SliceSpinner_Preview.Value = app.SliceSpinner_Preview.Value+key;
                         app.SliceSlider_Preview.Value = app.SliceSpinner_Preview.Value;
@@ -1040,6 +1171,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.SelectROIDropDown.Items = "None";
                     app.UITable_VolumetryROI.Data = table();
                     app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                    app.ApplyEdemaCorrectionCheckBox.Value = 0;
                     app.VolumeEditField_ROI.Value = 0;
                     app.MeanEditField_ROI.Value = 0;
                     app.SDEditField_ROI.Value = 0;
@@ -1412,6 +1544,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
             else
+                if app.CurrentSegmentationDropDown.Value == "Hemisphere"
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
+                    app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.ROISegmentationToolsPanel.Visible = 'off';
+                    app.ROIPanel.Position = [1200,110,149,140];
+                end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
             end
         end
@@ -1434,7 +1572,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
             else
-                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
+                if app.CurrentSegmentationDropDown.Value == "Hemisphere"
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
+                    app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.ROISegmentationToolsPanel.Visible = 'off';
+                    app.ROIPanel.Position = [1200,110,149,140];
+                end
+                app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'}; 
             end
         end
 
@@ -2884,6 +3028,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectROIDropDown.Items = "None";
                 app.UITable_VolumetryROI.Data = table();
                 app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                app.ApplyEdemaCorrectionCheckBox.Value = 0;
                 app.VolumeEditField_ROI.Value = 0;
                 app.MeanEditField_ROI.Value = 0;
                 app.SDEditField_ROI.Value = 0;
@@ -3015,6 +3160,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectROIDropDown.Enable = 'off';
                 app.SelectROIDropDown.Value = "None";
                 app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+                app.ApplyEdemaCorrectionCheckBox.Value = 0;
                 app.UITable_VolumetryROI.Data = table();
                 app.VolumeEditField_ROI.Value = 0;
                 app.MeanEditField_ROI.Value = 0;
@@ -3077,26 +3223,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectROIDropDown
         function SelectROIDropDownValueChanged(app, event)
-            voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
-            % Find index of selected ROI
-            index = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
-            switch numel(size(app.VolumetryImageData))
-                case 2
-                    [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-                otherwise
-                    [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryROI.Mask(:,:,:,index), voxel_Area, app.VolumetryThickness, app.VolumetryGap);
-            end
-            app.UITable_VolumetryROI.Data = sliceTable;
-            app.VolumeEditField_ROI.Value = Volume;
+            UpdateVolumetryROI(app);
+        end
 
-            % Populate ROI descriptive edit fields
-            app.MeanEditField_ROI.Value = mean_val;
-            app.SDEditField_ROI.Value = std_val;
-            app.MedianEditField_ROI.Value = median_val;
-            app.IQRLowerEditField_ROI.Value = IQRlow;
-            app.IQRUpperEditField_ROI.Value = IQRup;
-            app.MinEditField_ROI.Value = min_val;
-            app.MaxEditField_ROI.Value = max_val;
+        % Value changed function: ApplyEdemaCorrectionCheckBox
+        function ApplyEdemaCorrectionCheckBoxValueChanged(app, event)
+            UpdateVolumetryROI(app);
+        end
+
+        % Menu selected function: HemisphereScalingFactorMenu
+        function HemisphereScalingFactorMenuSelected(app, event)
+            app.HemisphereScalingFactorMenu.Checked = 'on';
+            app.BelayevScalingFactorMenu.Checked = 'off';
+            app.GerrietsCompressionFactorMenu.Checked = 'off';
+            if app.SelectVolumetryDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+                UpdateVolumetryROI(app);
+            end
+        end
+
+        % Menu selected function: BelayevScalingFactorMenu
+        function BelayevScalingFactorMenuSelected(app, event)
+            app.HemisphereScalingFactorMenu.Checked = 'off';
+            app.BelayevScalingFactorMenu.Checked = 'on';
+            app.GerrietsCompressionFactorMenu.Checked = 'off';
+            if app.SelectVolumetryDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+                UpdateVolumetryROI(app);
+            end
+        end
+
+        % Menu selected function: GerrietsCompressionFactorMenu
+        function GerrietsCompressionFactorMenuSelected(app, event)
+            app.HemisphereScalingFactorMenu.Checked = 'off';
+            app.BelayevScalingFactorMenu.Checked = 'off';
+            app.GerrietsCompressionFactorMenu.Checked = 'on';
+            if app.SelectVolumetryDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+                UpdateVolumetryROI(app);
+            end
         end
     end
 
@@ -4491,6 +4653,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create ApplyEdemaCorrectionCheckBox
             app.ApplyEdemaCorrectionCheckBox = uicheckbox(app.ROIPanel_Volumetry);
+            app.ApplyEdemaCorrectionCheckBox.ValueChangedFcn = createCallbackFcn(app, @ApplyEdemaCorrectionCheckBoxValueChanged, true);
             app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
             app.ApplyEdemaCorrectionCheckBox.Text = 'Apply Edema Correction';
             app.ApplyEdemaCorrectionCheckBox.Position = [146 237 152 22];
@@ -4628,6 +4791,29 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Assign app.ContextMenu_PreMap
             app.UIAxes_PreMap.ContextMenu = app.ContextMenu_PreMap;
+
+            % Create ContextMenuEdema
+            app.ContextMenuEdema = uicontextmenu(app.UIFigure);
+
+            % Create HemisphereScalingFactorMenu
+            app.HemisphereScalingFactorMenu = uimenu(app.ContextMenuEdema);
+            app.HemisphereScalingFactorMenu.MenuSelectedFcn = createCallbackFcn(app, @HemisphereScalingFactorMenuSelected, true);
+            app.HemisphereScalingFactorMenu.Tooltip = {'ROI = ROI*(Contralateral/Ipsilateral)'};
+            app.HemisphereScalingFactorMenu.Checked = 'on';
+            app.HemisphereScalingFactorMenu.Text = 'Hemisphere Scaling Factor';
+
+            % Create BelayevScalingFactorMenu
+            app.BelayevScalingFactorMenu = uimenu(app.ContextMenuEdema);
+            app.BelayevScalingFactorMenu.MenuSelectedFcn = createCallbackFcn(app, @BelayevScalingFactorMenuSelected, true);
+            app.BelayevScalingFactorMenu.Text = 'Belayev Scaling Factor';
+
+            % Create GerrietsCompressionFactorMenu
+            app.GerrietsCompressionFactorMenu = uimenu(app.ContextMenuEdema);
+            app.GerrietsCompressionFactorMenu.MenuSelectedFcn = createCallbackFcn(app, @GerrietsCompressionFactorMenuSelected, true);
+            app.GerrietsCompressionFactorMenu.Text = 'Gerriets Compression Factor';
+            
+            % Assign app.ContextMenuEdema
+            app.ApplyEdemaCorrectionCheckBox.ContextMenu = app.ContextMenuEdema;
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
