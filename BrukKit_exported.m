@@ -143,6 +143,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectfixedLabel                matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
+        CalculateT2mapButton            matlab.ui.control.Button
+        TEvaluesEditField               matlab.ui.control.NumericEditField
+        TEvaluesEditFieldLabel          matlab.ui.control.Label
         ProportionalityConstantsLabel   matlab.ui.control.Label
         kvoiEditField                   matlab.ui.control.NumericEditField
         kvoiEditFieldLabel              matlab.ui.control.Label
@@ -742,7 +745,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Function returns total volume of input matrix, corrected for
         % slice gaps and volume descriptives
-        function [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, image_data, mask_data, voxel_area, slice_thickness, slice_gap, correction_hemi)  %#ok<INUSL> 
+        function [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, image_data, mask_data, voxel_area, slice_thickness, slice_gap, correction_hemi)   
             sliceTable=table();
             dims = size(image_data);
             % Mask image using mask data
@@ -786,7 +789,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 % If the next slice also contains nonzero
                                 % elements calculate gap volume and add the
                                 % correction to total volume
-                                if i ~= dims(3) & ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
+                                if i ~= dims(3) && ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
                                     gap_voxelN = (nnz(mask_data(:,:,i))+nnz(mask_data(:,:,i+1)))/2;
                                     correction = (voxel_area*slice_gap)*gap_voxelN;
                                     Volume = Volume + correction;
@@ -823,7 +826,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 % If the next slice also contains nonzero
                                 % elements calculate gap volume and add the
                                 % correction to total volume
-                                if i ~= dims(3) & ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
+                                if i ~= dims(3) && ~isequal(mask_data(:,:,i+1), false(dims(1:2)))
                                     if ~isequal(correction_hemi(:,:,i+1,1), false(dims(1:2)))
                                         adj_SliceNext = AdjustSliceForEdema(app, mask_data(:,:,i+1), correction_hemi(:,:,i+1,:));
                                         gap_voxelN = (adj_Slice+adj_SliceNext)/2;
@@ -982,8 +985,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.8;
             progress.Message = "Importing individual experiments";
             visu_AcqProt = {'None'};
-            TE_time = 0;
-            TR_time = 0;  
+            TE_time = zeros(1000, 1000);
+            TR_time = zeros(1000, 1000);
             exp_ImageData = {[]};
             voxel_Dims_X = 0;
             voxel_Dims_Y = 0;
@@ -1025,11 +1028,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 voxel_Dims_Y = cat(1, voxel_Dims_Y, 0);
                             end
                             try
-                                TE_time = cat(1, TE_time, imageObj.Visu.VisuAcqEchoTime*10^-3);
-                                TR_time = cat(1, TR_time, imageObj.Visu.VisuAcqRepetitionTime*10^-3);
+                                TE_time(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqEchoTime, 2)) = imageObj.Visu.VisuAcqEchoTime*10^-3;
+                                TR_time(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqRepetitionTime, 2)) = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
                             catch
-                                TE_time = cat(1, TE_time, 0);
-                                TR_time = cat(1, TR_time, 0);
                             end
                             try
                                 slice_Thickness = cat(1, slice_Thickness, imageObj.Visu.VisuCoreFrameThickness);
@@ -1052,8 +1053,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.9;
             progress.Message = "Constructing property table";
             exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE", "TR", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap"];
-            app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, TE_time, TR_time, voxel_Dims_X, voxel_Dims_Y, slice_Thickness, slice_Gap, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap"];
+            app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
+                TE_time(1:size(visu_AcqProt, 1),1), TR_time(1:size(visu_AcqProt, 1),1), ...
+                voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
+                slice_Gap, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
             app.UITable.Data=app.ExperimentPropertyTable;
             app.UITable.ColumnName = variable_Names;
 
@@ -2528,7 +2532,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: AddsliceButton
         function AddsliceButtonPushed(app, event)
             
-            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1)
+            if app.SelectmovingDropDown.Value == "None"||app.SelectfixedDropDown.Value == "None"||(app.SelectparameterDropDown.Value == "None" && app.UsedifferentparametermapCheckBox.Value ==1)
                 uialert(app.UIFigure, 'Cannot add slice instructions: valid registration data not selected.', 'Instruction Error.')
                 return
             end
@@ -2602,7 +2606,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
-            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1)
+            if app.SelectmovingDropDown.Value == "None"||app.SelectfixedDropDown.Value == "None"||(app.SelectparameterDropDown.Value == "None" && app.UsedifferentparametermapCheckBox.Value ==1)
                 uialert(app.UIFigure, 'Registration not possible; valid data not selected.', 'Registration Error.')
                 return
             elseif app.RegistrationInstructionsTextArea.Value == ""
@@ -3317,6 +3321,73 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if app.SelectVolumetryDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
                 UpdateVolumetryROI(app);
             end
+        end
+
+        % Button pushed function: CalculateT2mapButton
+        function CalculateT2mapButtonPushed(app, event)
+            % https://www.mathworks.com/matlabcentral/fileexchange/64579-parametric-mapping-scripts-for-mri-data 
+            % To save the headache of working in 4D (M x N x nEcho x nSlice) Matrix 
+            % I have chosen to selectivly process  each image slice independently. 
+            % k = nSlice.  
+             
+            for k = 1:size(app.PreMapImageData(:,:,:,:),4)
+                % This is the image slice which is remapped into a 1D array so it can 
+                % be processed more efficicently. 
+                Img = app.PreMapImageData(:,:,:,k); 
+                [x,y,nEcho] = size(Img); % dimension of the Image 
+                % to get a 1D array representing our Img matrix the Img matrix is 
+                % re-written to a 1D vector Ydata - this represents our (x*y)
+                % seperate problems with 5 data points (nEchos) in each problem.  
+                ymat = reshape(Img,[],nEcho);
+                Ydata = reshape(ymat',[],1);
+                % xdata is a vector which contains the echo time for each pixel element
+                % in Y
+                xmat = kron(tvalues,ones(x*y,1));
+                Xdata = reshape(xmat',[],1); 
+                
+                % It is necessary to index our problem. i.e. in our 1D array which
+                % element corresponds to which problem. 
+                batchindex = kron(1:x*y,ones(1,nEcho)); 
+                % Set the function parameters. Note its a bit confusing here as we are 
+                % solving for modelfun = 0; so if we want y = m*x+c then we need to write 
+                % modelfun = @(variables) m*x+c-y. 
+                modelfun = @(a,Xk,Yk) a(1) + a(2)*exp(-Xk/a(3)) - Yk;
+                estcoefs = zeros(x*y,3); % estimated coefficients a(1) a(2) a(3)
+                param0 = [1 1 60]; % starting values
+                lb = [0 0 0]; % lower bounds 
+                ub = [1,1,2500]; % upper bounds
+                opts = optimset('lsqnonlin'); % method
+                opts.Display = 'off'; % verbose off
+                % we don't want to go all the way through matrix. It is sufficient to
+                % say that if a pixel is blank at each echo time then it will not have a
+                % T2 value.
+                msk = sum(Img,3);  
+                mask = reshape(msk,[],1)'>0; % 1 for non zero pixels.
+                 
+                parfor i = 1:x*y
+                    if  mask(i) == 1 % checks the echo times have non-zero pixel values
+                        n = (batchindex == i);
+                        Xk = Xdata(n); % this is the Echo time data for problem i 
+                        Yk = Ydata(n); % this is the pixel value data for problem i
+                        Yk = Yk(:)/max(Yk(:)) % normalise the Y-data for each series 
+                        % estimate coefficients using our earlier model function 
+                        estcoefs(i,:) = lsqnonlin(@(C) modelfun(C,Xk,Yk),param0,lb,ub,opts);
+                    end
+                end
+               
+                % get our T2 values out, reshape them back into an image. The T2 image 
+                % is a matrix of [x,y,nSlice]. T2 is the same as the map Matrix from
+                % section 2.
+                T2 = estcoefs(:,3);
+                T2img(:,:,k) = reshape(T2,x,y); 
+
+                a = estcoefs(:,2);
+                aimg(:,:,k) = reshape(a,x,y);
+                
+                c = estcoefs(:,1);
+                cimg(:,:,k) = reshape(c,x,y);
+            end
+            app.PostMapImage = imshow(T2img(:,:,12),'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap);
         end
     end
 
@@ -4414,7 +4485,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ChoosemaptypeDropDown = uidropdown(app.ParameterMapsTab);
             app.ChoosemaptypeDropDown.Items = {'DSC Mapping', 'T1/T2 Mapping', 'pASL Mapping', 'cASL Mapping'};
             app.ChoosemaptypeDropDown.Position = [518 644 292 22];
-            app.ChoosemaptypeDropDown.Value = 'T1/T2 Mapping';
+            app.ChoosemaptypeDropDown.Value = 'DSC Mapping';
 
             % Create MaskNrPixelsEditFieldLabel
             app.MaskNrPixelsEditFieldLabel = uilabel(app.ParameterMapsTab);
@@ -4698,6 +4769,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ProportionalityConstantsLabel.HorizontalAlignment = 'right';
             app.ProportionalityConstantsLabel.Position = [594 116 137 22];
             app.ProportionalityConstantsLabel.Text = 'Proportionality constants';
+
+            % Create TEvaluesEditFieldLabel
+            app.TEvaluesEditFieldLabel = uilabel(app.ParameterMapsTab);
+            app.TEvaluesEditFieldLabel.HorizontalAlignment = 'right';
+            app.TEvaluesEditFieldLabel.Position = [890 651 59 22];
+            app.TEvaluesEditFieldLabel.Text = 'TE values';
+
+            % Create TEvaluesEditField
+            app.TEvaluesEditField = uieditfield(app.ParameterMapsTab, 'numeric');
+            app.TEvaluesEditField.Position = [964 651 100 22];
+
+            % Create CalculateT2mapButton
+            app.CalculateT2mapButton = uibutton(app.ParameterMapsTab, 'push');
+            app.CalculateT2mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2mapButtonPushed, true);
+            app.CalculateT2mapButton.Position = [1102 651 109 22];
+            app.CalculateT2mapButton.Text = 'Calculate T2 map';
 
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
