@@ -143,9 +143,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectfixedLabel                matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
+        TEvaluesText                    matlab.ui.control.TextArea
+        TEvaluesLabel                   matlab.ui.control.Label
+        ColormapButtonGroup_PostMap     matlab.ui.container.ButtonGroup
+        TurboButton_PostMap             matlab.ui.control.RadioButton
+        GreyscaleButton_PostMap         matlab.ui.control.RadioButton
+        ContrastSlider_PostMap          matlab.ui.control.Slider
+        ContrastSliderLabel_Preview_2   matlab.ui.control.Label
+        BrightnessSlider_PostMap        matlab.ui.control.Slider
+        BrightnessSliderLabel_Preview_2  matlab.ui.control.Label
         CalculateT2mapButton            matlab.ui.control.Button
-        TEvaluesEditField               matlab.ui.control.NumericEditField
-        TEvaluesEditFieldLabel          matlab.ui.control.Label
         ProportionalityConstantsLabel   matlab.ui.control.Label
         kvoiEditField                   matlab.ui.control.NumericEditField
         kvoiEditFieldLabel              matlab.ui.control.Label
@@ -314,6 +321,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         HemisphereScalingFactorMenu     matlab.ui.container.Menu
         BelayevScalingFactorMenu        matlab.ui.container.Menu
         GerrietsCompressionFactorMenu   matlab.ui.container.Menu
+        ContextMenu_PostMap             matlab.ui.container.ContextMenu
+        RotateMenu_PostMap              matlab.ui.container.Menu
+        FlipVerticallyMenu_PostMap      matlab.ui.container.Menu
+        FlipHorizontallyMenu_PostMap    matlab.ui.container.Menu
+        ResetViewMenu_PostMap           matlab.ui.container.Menu
     end
 
     
@@ -327,6 +339,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PreviewImageData % Preview experiment image data matrix
         PreviewImage % Property for storing imshow of PreviewImageData
         ExpDimsPreview % Dimensions of preview experiment 
+        TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
+        TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
         
         SavedTable % Table for storing all saved segmenterd/registered data.
         % Segmenter tab
@@ -551,34 +565,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     %error alert missing
             end
             app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
             app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PreMap);
             app.PreMapImage.ContextMenu = app.ContextMenu_PreMap;
         end
 
         % Parameter Maps UIAxes output image updating
         function RefreshImagePostMap(app)
-            switch app.DSCMapDropDown.Value
-                case "CBF"
-                    if app.SVDButton.Value == true
-                        app.PreMapImage = imshow(app.CBFData.svd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
-                    elseif app.cSVDButton.Value == true
-                        app.PreMapImage = imshow(app.CBFData.csvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);    
-                    elseif app.oSVDButton.Value == true
-                        app.PreMapImage = imshow(app.CBFData.osvd.map(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
-                    end
-                case"CBV"
-                    app.PreMapImage = imshow(app.CBVData(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
-                case "MTT"
-                    if app.SVDButton.Value == true
-                        app.PreMapImage = imshow(app.MTTData.svd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);
-                    elseif app.cSVDButton.Value == true
-                        app.PreMapImage = imshow(app.MTTData.csvd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);       
-                    elseif app.oSVDButton.Value == true
-                        app.PreMapImage = imshow(app.MTTData.osvd(:,:,app.SliceSpinner_PreMap.Value), [], 'Parent', app.UIAxes_PreMap, Colormap = turbo);   
-                    end
+            app.ExpDimsPostMap = size(app.PostMapImageData);
+            switch numel(app.ExpDimsPostMap)
+                case 2
+                    app.CurrentSlice = app.PostMapImageData(:,:);
+                case 3
+                    app.CurrentSlice = app.PostMapImageData(:,:,app.SliceSpinner_PostMap.Value);
                 otherwise
+                    %error alert missing
             end
+            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_PostMap.Value) +  255 * app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
+            switch app.TurboButton_PostMap.Value
+                case true
+                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+                otherwise
+                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap);
+            end
+            app.PostMapImage.ContextMenu = app.ContextMenu_PostMap;
         end
         
         % Saving temporary experiment data to permanent tables
@@ -985,8 +995,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.8;
             progress.Message = "Importing individual experiments";
             visu_AcqProt = {'None'};
-            TE_time = zeros(1000, 1000);
-            TR_time = zeros(1000, 1000);
             exp_ImageData = {[]};
             voxel_Dims_X = 0;
             voxel_Dims_Y = 0;
@@ -1028,8 +1036,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 voxel_Dims_Y = cat(1, voxel_Dims_Y, 0);
                             end
                             try
-                                TE_time(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqEchoTime, 2)) = imageObj.Visu.VisuAcqEchoTime*10^-3;
-                                TR_time(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqRepetitionTime, 2)) = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
+                                app.TEvalues(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqEchoTime, 2)) = imageObj.Visu.VisuAcqEchoTime*10^-3;
+                                app.TRvalues(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqRepetitionTime, 2)) = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
                             catch
                             end
                             try
@@ -1055,7 +1063,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             exp_ID = visu_AcqProt;
             variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap"];
             app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
-                TE_time(1:size(visu_AcqProt, 1),1), TR_time(1:size(visu_AcqProt, 1),1), ...
+                app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
                 slice_Gap, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
             app.UITable.Data=app.ExperimentPropertyTable;
@@ -2815,6 +2823,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PermuteMenu_3_5_PreMap.Enable ='off';
                     app.PermuteMenu_4_5_PreMap.Enable ='off';
             end
+            
+            % Lookup TE values from ExperimentTable
+            expTEvalues = nonzeros(app.TEvalues(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, value),:));
+            app.TEvaluesText.Value = erase(mat2str(expTEvalues), ["[";"]"]);
 
             % Enable slice controls
             app.SliceSlider_PreMap.Enable = 'on';
@@ -3325,6 +3337,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: CalculateT2mapButton
         function CalculateT2mapButtonPushed(app, event)
+
+            tvalues = str2double(split(app.TEvaluesText.Value, ";")');
+
+            progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
+                 'Message', "Calculating T2 Maps", "Indeterminate", "on");
+            drawnow
+
             % https://www.mathworks.com/matlabcentral/fileexchange/64579-parametric-mapping-scripts-for-mri-data 
             % To save the headache of working in 4D (M x N x nEcho x nSlice) Matrix 
             % I have chosen to selectivly process  each image slice independently. 
@@ -3379,7 +3398,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % is a matrix of [x,y,nSlice]. T2 is the same as the map Matrix from
                 % section 2.
                 T2 = estcoefs(:,3);
-                T2img(:,:,k) = reshape(T2,x,y); 
+                T2img(:,:,k) = reshape(T2,x,y);
 
                 a = estcoefs(:,2);
                 aimg(:,:,k) = reshape(a,x,y);
@@ -3387,7 +3406,45 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 c = estcoefs(:,1);
                 cimg(:,:,k) = reshape(c,x,y);
             end
+
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+            
             app.PostMapImage = imshow(T2img(:,:,12),'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap);
+        end
+
+        % Menu selected function: RotateMenu_PostMap
+        function RotateMenu_PostMapSelected(app, event)
+            % Rotate image data, show image
+            app.PostMapImageData = rot90(app.PostMapImageData, -1);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: FlipVerticallyMenu_PostMap
+        function FlipVerticallyMenu_PostMapSelected(app, event)
+            % Flip image data, show image
+            app.PostMapImageData = flipud(app.PostMapImageData);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: FlipHorizontallyMenu_PostMap
+        function FlipHorizontallyMenu_PostMapSelected(app, event)
+            % Flip image data, show image
+            app.PostMapImageData = fliplr(app.PostMapImageData);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: ResetViewMenu_PostMap
+        function ResetViewMenu_PostMapSelected(app, event)
+            % Reset zoom
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
+
+            RefreshImagePostMap(app);
         end
     end
 
@@ -4344,12 +4401,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PostMap.XTickLabel = '';
             app.UIAxes_PostMap.YTick = [];
             app.UIAxes_PostMap.YTickLabel = '';
-            app.UIAxes_PostMap.Position = [883 150 523 468];
+            app.UIAxes_PostMap.Position = [847 113 523 468];
 
             % Create CalculateDSCmapsButton
             app.CalculateDSCmapsButton = uibutton(app.ParameterMapsTab, 'push');
             app.CalculateDSCmapsButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateDSCmapsButtonPushed, true);
-            app.CalculateDSCmapsButton.Position = [628 33 128 22];
+            app.CalculateDSCmapsButton.Position = [605 37 128 22];
             app.CalculateDSCmapsButton.Text = 'Calculate DSC maps';
 
             % Create SliceSpinner_PreMap
@@ -4362,7 +4419,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PostMap = uispinner(app.ParameterMapsTab);
             app.SliceSpinner_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PostMapValueChanged, true);
             app.SliceSpinner_PostMap.Enable = 'off';
-            app.SliceSpinner_PostMap.Position = [1232 96 57 22];
+            app.SliceSpinner_PostMap.Position = [1166 43 57 22];
 
             % Create MethodButtonGroup
             app.MethodButtonGroup = uibuttongroup(app.ParameterMapsTab);
@@ -4371,7 +4428,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.MethodButtonGroup.BorderType = 'none';
             app.MethodButtonGroup.TitlePosition = 'centertop';
             app.MethodButtonGroup.Title = 'Method';
-            app.MethodButtonGroup.Position = [433 13 176 53];
+            app.MethodButtonGroup.Position = [410 17 176 53];
 
             % Create SVDButton
             app.SVDButton = uiradiobutton(app.MethodButtonGroup);
@@ -4406,7 +4463,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create DSCMapDropDownLabel
             app.DSCMapDropDownLabel = uilabel(app.ParameterMapsTab);
             app.DSCMapDropDownLabel.HorizontalAlignment = 'center';
-            app.DSCMapDropDownLabel.Position = [755 54 101 22];
+            app.DSCMapDropDownLabel.Position = [732 58 101 22];
             app.DSCMapDropDownLabel.Text = 'DSC Map';
 
             % Create DSCMapDropDown
@@ -4414,7 +4471,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DSCMapDropDown.Items = {'CBF', 'CBV', 'MTT'};
             app.DSCMapDropDown.ValueChangedFcn = createCallbackFcn(app, @DSCMapDropDownValueChanged, true);
             app.DSCMapDropDown.Enable = 'off';
-            app.DSCMapDropDown.Position = [776 25 61 23];
+            app.DSCMapDropDown.Position = [753 29 61 23];
             app.DSCMapDropDown.Value = 'CBF';
 
             % Create SliceLabel_Preview_2
@@ -4437,7 +4494,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SliceLabel_Preview_3
             app.SliceLabel_Preview_3 = uilabel(app.ParameterMapsTab);
             app.SliceLabel_Preview_3.HorizontalAlignment = 'right';
-            app.SliceLabel_Preview_3.Position = [944 95 31 22];
+            app.SliceLabel_Preview_3.Position = [871 45 31 22];
             app.SliceLabel_Preview_3.Text = 'Slice';
 
             % Create SliceSlider_PostMap
@@ -4448,7 +4505,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSlider_PostMapValueChanged, true);
             app.SliceSlider_PostMap.MinorTicks = [];
             app.SliceSlider_PostMap.Enable = 'off';
-            app.SliceSlider_PostMap.Position = [996 104 221 3];
+            app.SliceSlider_PostMap.Position = [923 54 221 3];
             app.SliceSlider_PostMap.Value = 1;
 
             % Create Dim4Spinner_SegmenterLabel_2
@@ -4490,18 +4547,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create MaskNrPixelsEditFieldLabel
             app.MaskNrPixelsEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.MaskNrPixelsEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaskNrPixelsEditFieldLabel.Position = [457 596 88 22];
+            app.MaskNrPixelsEditFieldLabel.Position = [434 600 88 22];
             app.MaskNrPixelsEditFieldLabel.Text = 'Mask Nr. Pixels';
 
             % Create MaskNrPixelsEditField
             app.MaskNrPixelsEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.MaskNrPixelsEditField.Position = [560 596 100 22];
+            app.MaskNrPixelsEditField.Position = [537 600 100 22];
 
             % Create ImagevaluetypeButtonGroup
             app.ImagevaluetypeButtonGroup = uibuttongroup(app.ParameterMapsTab);
             app.ImagevaluetypeButtonGroup.TitlePosition = 'centertop';
             app.ImagevaluetypeButtonGroup.Title = 'Image value type';
-            app.ImagevaluetypeButtonGroup.Position = [669 571 169 46];
+            app.ImagevaluetypeButtonGroup.Position = [646 575 169 46];
 
             % Create SignalButton
             app.SignalButton = uiradiobutton(app.ImagevaluetypeButtonGroup);
@@ -4517,42 +4574,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create S0minpixnrEditFieldLabel
             app.S0minpixnrEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.S0minpixnrEditFieldLabel.HorizontalAlignment = 'right';
-            app.S0minpixnrEditFieldLabel.Position = [482 534 85 22];
+            app.S0minpixnrEditFieldLabel.Position = [459 538 85 22];
             app.S0minpixnrEditFieldLabel.Text = 'S0 min. pix. nr.';
 
             % Create S0minpixnrEditField
             app.S0minpixnrEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.S0minpixnrEditField.Position = [577 534 25 22];
+            app.S0minpixnrEditField.Position = [554 538 25 22];
 
             % Create S0maxpixnrEditFieldLabel
             app.S0maxpixnrEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.S0maxpixnrEditFieldLabel.HorizontalAlignment = 'right';
-            app.S0maxpixnrEditFieldLabel.Position = [672 534 88 22];
+            app.S0maxpixnrEditFieldLabel.Position = [649 538 88 22];
             app.S0maxpixnrEditFieldLabel.Text = 'S0 max. pix. nr.';
 
             % Create S0maxpixnrEditField
             app.S0maxpixnrEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.S0maxpixnrEditField.Position = [768 534 26 22];
+            app.S0maxpixnrEditField.Position = [745 538 26 22];
 
             % Create S0ThresholdEditFieldLabel
             app.S0ThresholdEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.S0ThresholdEditFieldLabel.HorizontalAlignment = 'right';
-            app.S0ThresholdEditFieldLabel.Position = [471 503 77 22];
+            app.S0ThresholdEditFieldLabel.Position = [448 507 77 22];
             app.S0ThresholdEditFieldLabel.Text = 'S0 Threshold';
 
             % Create S0ThresholdEditField
             app.S0ThresholdEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.S0ThresholdEditField.Position = [563 503 100 22];
+            app.S0ThresholdEditField.Position = [540 507 100 22];
 
             % Create AIFenableCheckBox
             app.AIFenableCheckBox = uicheckbox(app.ParameterMapsTab);
             app.AIFenableCheckBox.Text = 'AIF enable';
-            app.AIFenableCheckBox.Position = [681 503 80 22];
+            app.AIFenableCheckBox.Position = [658 507 80 22];
 
             % Create CorrectAIFforrecirculationCheckBox
             app.CorrectAIFforrecirculationCheckBox = uicheckbox(app.ParameterMapsTab);
             app.CorrectAIFforrecirculationCheckBox.Text = 'Correct AIF for recirculation';
-            app.CorrectAIFforrecirculationCheckBox.Position = [477 475 168 22];
+            app.CorrectAIFforrecirculationCheckBox.Position = [454 479 168 22];
 
             % Create SlicenrtouseforAIFEditFieldLabel
             app.SlicenrtouseforAIFEditFieldLabel = uilabel(app.ParameterMapsTab);
@@ -4567,224 +4624,275 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create AIFROImajorsemiaxisEditFieldLabel
             app.AIFROImajorsemiaxisEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.AIFROImajorsemiaxisEditFieldLabel.HorizontalAlignment = 'right';
-            app.AIFROImajorsemiaxisEditFieldLabel.Position = [460 448 132 22];
+            app.AIFROImajorsemiaxisEditFieldLabel.Position = [437 452 132 22];
             app.AIFROImajorsemiaxisEditFieldLabel.Text = 'AIF ROI major semiaxis';
 
             % Create AIFROImajorsemiaxisEditField
             app.AIFROImajorsemiaxisEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.AIFROImajorsemiaxisEditField.Position = [606 448 40 22];
+            app.AIFROImajorsemiaxisEditField.Position = [583 452 40 22];
 
             % Create AIFROIminorsemiaxisEditFieldLabel
             app.AIFROIminorsemiaxisEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.AIFROIminorsemiaxisEditFieldLabel.HorizontalAlignment = 'right';
-            app.AIFROIminorsemiaxisEditFieldLabel.Position = [662 448 132 22];
+            app.AIFROIminorsemiaxisEditFieldLabel.Position = [639 452 132 22];
             app.AIFROIminorsemiaxisEditFieldLabel.Text = 'AIF ROI minor semiaxis';
 
             % Create AIFROIminorsemiaxisEditField
             app.AIFROIminorsemiaxisEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.AIFROIminorsemiaxisEditField.Position = [802 448 47 22];
+            app.AIFROIminorsemiaxisEditField.Position = [779 452 47 22];
 
             % Create FractionofpixtodiscardduetoAUCEditFieldLabel
             app.FractionofpixtodiscardduetoAUCEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.FractionofpixtodiscardduetoAUCEditFieldLabel.HorizontalAlignment = 'right';
-            app.FractionofpixtodiscardduetoAUCEditFieldLabel.Position = [466 411 205 22];
+            app.FractionofpixtodiscardduetoAUCEditFieldLabel.Position = [443 415 205 22];
             app.FractionofpixtodiscardduetoAUCEditFieldLabel.Text = 'Fraction of pix. to discard due to AUC';
 
             % Create FractionofpixtodiscardduetoAUCEditField
             app.FractionofpixtodiscardduetoAUCEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.FractionofpixtodiscardduetoAUCEditField.Position = [686 411 100 22];
+            app.FractionofpixtodiscardduetoAUCEditField.Position = [663 415 100 22];
 
             % Create FractionofpixtodiscardduetoTTPEditFieldLabel
             app.FractionofpixtodiscardduetoTTPEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.FractionofpixtodiscardduetoTTPEditFieldLabel.HorizontalAlignment = 'right';
-            app.FractionofpixtodiscardduetoTTPEditFieldLabel.Position = [476 384 203 22];
+            app.FractionofpixtodiscardduetoTTPEditFieldLabel.Position = [453 388 203 22];
             app.FractionofpixtodiscardduetoTTPEditFieldLabel.Text = 'Fraction of pix. to discard due to TTP';
 
             % Create FractionofpixtodiscardduetoTTPEditField
             app.FractionofpixtodiscardduetoTTPEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.FractionofpixtodiscardduetoTTPEditField.Position = [694 384 100 22];
+            app.FractionofpixtodiscardduetoTTPEditField.Position = [671 388 100 22];
 
             % Create FractionofpixelstodiscardonregularitybasisEditFieldLabel
             app.FractionofpixelstodiscardonregularitybasisEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.FractionofpixelstodiscardonregularitybasisEditFieldLabel.HorizontalAlignment = 'right';
-            app.FractionofpixelstodiscardonregularitybasisEditFieldLabel.Position = [460 356 254 22];
+            app.FractionofpixelstodiscardonregularitybasisEditFieldLabel.Position = [437 360 254 22];
             app.FractionofpixelstodiscardonregularitybasisEditFieldLabel.Text = 'Fraction of pixels to discard on regularity basis';
 
             % Create FractionofpixelstodiscardonregularitybasisEditField
             app.FractionofpixelstodiscardonregularitybasisEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.FractionofpixelstodiscardonregularitybasisEditField.Position = [729 356 100 22];
+            app.FractionofpixelstodiscardonregularitybasisEditField.Position = [706 360 100 22];
 
             % Create ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel
             app.ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel.HorizontalAlignment = 'right';
-            app.ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel.Position = [442 321 293 22];
+            app.ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel.Position = [419 325 293 22];
             app.ThresholdforclusterselectioncriterionpeakorTTPEditFieldLabel.Text = 'Threshold for cluster selection criterion (peak or TTP)';
 
             % Create ThresholdforclusterselectioncriterionpeakorTTPEditField
             app.ThresholdforclusterselectioncriterionpeakorTTPEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.ThresholdforclusterselectioncriterionpeakorTTPEditField.Position = [750 321 100 22];
+            app.ThresholdforclusterselectioncriterionpeakorTTPEditField.Position = [727 325 100 22];
 
             % Create AIFminpixnrEditFieldLabel
             app.AIFminpixnrEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.AIFminpixnrEditFieldLabel.HorizontalAlignment = 'right';
-            app.AIFminpixnrEditFieldLabel.Position = [415 286 89 22];
+            app.AIFminpixnrEditFieldLabel.Position = [392 290 89 22];
             app.AIFminpixnrEditFieldLabel.Text = 'AIF min. pix. nr.';
 
             % Create AIFminpixnrEditField
             app.AIFminpixnrEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.AIFminpixnrEditField.Position = [515 286 100 22];
+            app.AIFminpixnrEditField.Position = [492 290 100 22];
 
             % Create AIFmaxpixnrEditFieldLabel
             app.AIFmaxpixnrEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.AIFmaxpixnrEditFieldLabel.HorizontalAlignment = 'right';
-            app.AIFmaxpixnrEditFieldLabel.Position = [614 286 92 22];
+            app.AIFmaxpixnrEditFieldLabel.Position = [591 290 92 22];
             app.AIFmaxpixnrEditFieldLabel.Text = 'AIF max. pix. nr.';
 
             % Create AIFmaxpixnrEditField
             app.AIFmaxpixnrEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.AIFmaxpixnrEditField.Position = [721 286 100 22];
+            app.AIFmaxpixnrEditField.Position = [698 290 100 22];
 
             % Create ConcentrationcorrectionCheckBox
             app.ConcentrationcorrectionCheckBox = uicheckbox(app.ParameterMapsTab);
             app.ConcentrationcorrectionCheckBox.Text = 'Concentration correction';
-            app.ConcentrationcorrectionCheckBox.Position = [456 257 153 22];
+            app.ConcentrationcorrectionCheckBox.Position = [433 261 153 22];
 
             % Create bEditFieldLabel
             app.bEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.bEditFieldLabel.HorizontalAlignment = 'right';
-            app.bEditFieldLabel.Position = [704 259 25 22];
+            app.bEditFieldLabel.Position = [681 263 25 22];
             app.bEditFieldLabel.Text = 'b';
 
             % Create bEditField
             app.bEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.bEditField.Position = [737 259 38 22];
+            app.bEditField.Position = [714 263 38 22];
 
             % Create aEditFieldLabel
             app.aEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.aEditFieldLabel.HorizontalAlignment = 'right';
-            app.aEditFieldLabel.Position = [617 259 25 22];
+            app.aEditFieldLabel.Position = [594 263 25 22];
             app.aEditFieldLabel.Text = 'a';
 
             % Create aEditField
             app.aEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.aEditField.Position = [649 259 47 22];
+            app.aEditField.Position = [626 263 47 22];
 
             % Create rEditFieldLabel
             app.rEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.rEditFieldLabel.HorizontalAlignment = 'right';
-            app.rEditFieldLabel.Position = [772 259 25 22];
+            app.rEditFieldLabel.Position = [749 263 25 22];
             app.rEditFieldLabel.Text = 'r';
 
             % Create rEditField
             app.rEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.rEditField.Position = [817 259 44 22];
+            app.rEditField.Position = [794 263 44 22];
 
             % Create SVDthresholdEditFieldLabel
             app.SVDthresholdEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.SVDthresholdEditFieldLabel.HorizontalAlignment = 'right';
-            app.SVDthresholdEditFieldLabel.Position = [462 224 83 22];
+            app.SVDthresholdEditFieldLabel.Position = [439 228 83 22];
             app.SVDthresholdEditFieldLabel.Text = 'SVD threshold';
 
             % Create SVDthresholdEditField
             app.SVDthresholdEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.SVDthresholdEditField.Position = [560 224 100 22];
+            app.SVDthresholdEditField.Position = [537 228 100 22];
 
             % Create SaveSVDresidualsCheckBox
             app.SaveSVDresidualsCheckBox = uicheckbox(app.ParameterMapsTab);
             app.SaveSVDresidualsCheckBox.Text = 'Save SVD residuals';
-            app.SaveSVDresidualsCheckBox.Position = [676 225 129 22];
+            app.SaveSVDresidualsCheckBox.Position = [653 229 129 22];
 
             % Create cSVDthresholdEditFieldLabel
             app.cSVDthresholdEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.cSVDthresholdEditFieldLabel.HorizontalAlignment = 'right';
-            app.cSVDthresholdEditFieldLabel.Position = [456 200 89 22];
+            app.cSVDthresholdEditFieldLabel.Position = [433 204 89 22];
             app.cSVDthresholdEditFieldLabel.Text = 'cSVD threshold';
 
             % Create cSVDthresholdEditField
             app.cSVDthresholdEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.cSVDthresholdEditField.Position = [560 200 100 22];
+            app.cSVDthresholdEditField.Position = [537 204 100 22];
 
             % Create SavecSVDresidualsCheckBox
             app.SavecSVDresidualsCheckBox = uicheckbox(app.ParameterMapsTab);
             app.SavecSVDresidualsCheckBox.Text = 'Save cSVD residuals';
-            app.SavecSVDresidualsCheckBox.Position = [676 200 135 22];
+            app.SavecSVDresidualsCheckBox.Position = [653 204 135 22];
 
             % Create oSVDthresholdEditFieldLabel
             app.oSVDthresholdEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.oSVDthresholdEditFieldLabel.HorizontalAlignment = 'right';
-            app.oSVDthresholdEditFieldLabel.Position = [455 175 90 22];
+            app.oSVDthresholdEditFieldLabel.Position = [432 179 90 22];
             app.oSVDthresholdEditFieldLabel.Text = 'oSVD threshold';
 
             % Create oSVDthresholdEditField
             app.oSVDthresholdEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.oSVDthresholdEditField.Position = [560 175 100 22];
+            app.oSVDthresholdEditField.Position = [537 179 100 22];
 
             % Create SaveoSVDresidualsCheckBox
             app.SaveoSVDresidualsCheckBox = uicheckbox(app.ParameterMapsTab);
             app.SaveoSVDresidualsCheckBox.Text = 'Save oSVD residuals';
-            app.SaveoSVDresidualsCheckBox.Position = [677 175 135 22];
+            app.SaveoSVDresidualsCheckBox.Position = [654 179 135 22];
 
             % Create oSVDcounterEditFieldLabel
             app.oSVDcounterEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.oSVDcounterEditFieldLabel.HorizontalAlignment = 'right';
-            app.oSVDcounterEditFieldLabel.Position = [465 149 80 22];
+            app.oSVDcounterEditFieldLabel.Position = [442 153 80 22];
             app.oSVDcounterEditFieldLabel.Text = 'oSVD counter';
 
             % Create oSVDcounterEditField
             app.oSVDcounterEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.oSVDcounterEditField.Position = [560 149 100 22];
+            app.oSVDcounterEditField.Position = [537 153 100 22];
 
             % Create khEditFieldLabel
             app.khEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.khEditFieldLabel.HorizontalAlignment = 'right';
-            app.khEditFieldLabel.Position = [505 90 25 22];
+            app.khEditFieldLabel.Position = [482 94 25 22];
             app.khEditFieldLabel.Text = 'kh';
 
             % Create khEditField
             app.khEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.khEditField.Position = [544 90 51 22];
+            app.khEditField.Position = [521 94 51 22];
 
             % Create rhoEditFieldLabel
             app.rhoEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.rhoEditFieldLabel.HorizontalAlignment = 'right';
-            app.rhoEditFieldLabel.Position = [616 90 25 22];
+            app.rhoEditFieldLabel.Position = [593 94 25 22];
             app.rhoEditFieldLabel.Text = 'rho';
 
             % Create rhoEditField
             app.rhoEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.rhoEditField.Position = [656 90 60 22];
+            app.rhoEditField.Position = [633 94 60 22];
 
             % Create kvoiEditFieldLabel
             app.kvoiEditFieldLabel = uilabel(app.ParameterMapsTab);
             app.kvoiEditFieldLabel.HorizontalAlignment = 'right';
-            app.kvoiEditFieldLabel.Position = [741 90 27 22];
+            app.kvoiEditFieldLabel.Position = [718 94 27 22];
             app.kvoiEditFieldLabel.Text = 'kvoi';
 
             % Create kvoiEditField
             app.kvoiEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.kvoiEditField.Position = [780 90 50 22];
+            app.kvoiEditField.Position = [757 94 50 22];
 
             % Create ProportionalityConstantsLabel
             app.ProportionalityConstantsLabel = uilabel(app.ParameterMapsTab);
             app.ProportionalityConstantsLabel.HorizontalAlignment = 'right';
-            app.ProportionalityConstantsLabel.Position = [594 116 137 22];
+            app.ProportionalityConstantsLabel.Position = [571 120 137 22];
             app.ProportionalityConstantsLabel.Text = 'Proportionality constants';
-
-            % Create TEvaluesEditFieldLabel
-            app.TEvaluesEditFieldLabel = uilabel(app.ParameterMapsTab);
-            app.TEvaluesEditFieldLabel.HorizontalAlignment = 'right';
-            app.TEvaluesEditFieldLabel.Position = [890 651 59 22];
-            app.TEvaluesEditFieldLabel.Text = 'TE values';
-
-            % Create TEvaluesEditField
-            app.TEvaluesEditField = uieditfield(app.ParameterMapsTab, 'numeric');
-            app.TEvaluesEditField.Position = [964 651 100 22];
 
             % Create CalculateT2mapButton
             app.CalculateT2mapButton = uibutton(app.ParameterMapsTab, 'push');
             app.CalculateT2mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2mapButtonPushed, true);
             app.CalculateT2mapButton.Position = [1102 651 109 22];
             app.CalculateT2mapButton.Text = 'Calculate T2 map';
+
+            % Create BrightnessSliderLabel_Preview_2
+            app.BrightnessSliderLabel_Preview_2 = uilabel(app.ParameterMapsTab);
+            app.BrightnessSliderLabel_Preview_2.HorizontalAlignment = 'center';
+            app.BrightnessSliderLabel_Preview_2.Position = [1367 355 62 22];
+            app.BrightnessSliderLabel_Preview_2.Text = 'Brightness';
+
+            % Create BrightnessSlider_PostMap
+            app.BrightnessSlider_PostMap = uislider(app.ParameterMapsTab);
+            app.BrightnessSlider_PostMap.Limits = [-1 1];
+            app.BrightnessSlider_PostMap.MajorTicks = 0;
+            app.BrightnessSlider_PostMap.Orientation = 'vertical';
+            app.BrightnessSlider_PostMap.MinorTicks = [];
+            app.BrightnessSlider_PostMap.Enable = 'off';
+            app.BrightnessSlider_PostMap.Position = [1396 385 3 150];
+
+            % Create ContrastSliderLabel_Preview_2
+            app.ContrastSliderLabel_Preview_2 = uilabel(app.ParameterMapsTab);
+            app.ContrastSliderLabel_Preview_2.HorizontalAlignment = 'center';
+            app.ContrastSliderLabel_Preview_2.Position = [1371 157 51 22];
+            app.ContrastSliderLabel_Preview_2.Text = 'Contrast';
+
+            % Create ContrastSlider_PostMap
+            app.ContrastSlider_PostMap = uislider(app.ParameterMapsTab);
+            app.ContrastSlider_PostMap.Limits = [-1 1];
+            app.ContrastSlider_PostMap.MajorTicks = 0;
+            app.ContrastSlider_PostMap.Orientation = 'vertical';
+            app.ContrastSlider_PostMap.MinorTicks = [];
+            app.ContrastSlider_PostMap.Enable = 'off';
+            app.ContrastSlider_PostMap.Position = [1395 187 3 150];
+
+            % Create ColormapButtonGroup_PostMap
+            app.ColormapButtonGroup_PostMap = uibuttongroup(app.ParameterMapsTab);
+            app.ColormapButtonGroup_PostMap.AutoResizeChildren = 'off';
+            app.ColormapButtonGroup_PostMap.BorderType = 'none';
+            app.ColormapButtonGroup_PostMap.TitlePosition = 'centertop';
+            app.ColormapButtonGroup_PostMap.Title = 'Colormap';
+            app.ColormapButtonGroup_PostMap.Position = [1246 34 168 38];
+
+            % Create GreyscaleButton_PostMap
+            app.GreyscaleButton_PostMap = uiradiobutton(app.ColormapButtonGroup_PostMap);
+            app.GreyscaleButton_PostMap.Enable = 'off';
+            app.GreyscaleButton_PostMap.Text = 'Greyscale';
+            app.GreyscaleButton_PostMap.Position = [94 -3 76 22];
+            app.GreyscaleButton_PostMap.Value = true;
+
+            % Create TurboButton_PostMap
+            app.TurboButton_PostMap = uiradiobutton(app.ColormapButtonGroup_PostMap);
+            app.TurboButton_PostMap.Enable = 'off';
+            app.TurboButton_PostMap.Text = 'Turbo';
+            app.TurboButton_PostMap.Position = [2 -3 65 22];
+
+            % Create TEvaluesLabel
+            app.TEvaluesLabel = uilabel(app.ParameterMapsTab);
+            app.TEvaluesLabel.HorizontalAlignment = 'right';
+            app.TEvaluesLabel.Position = [860 661 59 22];
+            app.TEvaluesLabel.Text = 'TE values';
+
+            % Create TEvaluesText
+            app.TEvaluesText = uitextarea(app.ParameterMapsTab);
+            app.TEvaluesText.Position = [934 625 150 60];
 
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
@@ -5255,6 +5363,29 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Assign app.ContextMenuEdema
             app.ApplyEdemaCorrectionCheckBox.ContextMenu = app.ContextMenuEdema;
+
+            % Create ContextMenu_PostMap
+            app.ContextMenu_PostMap = uicontextmenu(app.UIFigure);
+
+            % Create RotateMenu_PostMap
+            app.RotateMenu_PostMap = uimenu(app.ContextMenu_PostMap);
+            app.RotateMenu_PostMap.MenuSelectedFcn = createCallbackFcn(app, @RotateMenu_PostMapSelected, true);
+            app.RotateMenu_PostMap.Text = 'Rotate';
+
+            % Create FlipVerticallyMenu_PostMap
+            app.FlipVerticallyMenu_PostMap = uimenu(app.ContextMenu_PostMap);
+            app.FlipVerticallyMenu_PostMap.MenuSelectedFcn = createCallbackFcn(app, @FlipVerticallyMenu_PostMapSelected, true);
+            app.FlipVerticallyMenu_PostMap.Text = 'Flip Vertically';
+
+            % Create FlipHorizontallyMenu_PostMap
+            app.FlipHorizontallyMenu_PostMap = uimenu(app.ContextMenu_PostMap);
+            app.FlipHorizontallyMenu_PostMap.MenuSelectedFcn = createCallbackFcn(app, @FlipHorizontallyMenu_PostMapSelected, true);
+            app.FlipHorizontallyMenu_PostMap.Text = 'Flip Horizontally';
+
+            % Create ResetViewMenu_PostMap
+            app.ResetViewMenu_PostMap = uimenu(app.ContextMenu_PostMap);
+            app.ResetViewMenu_PostMap.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_PostMapSelected, true);
+            app.ResetViewMenu_PostMap.Text = 'Reset View';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
