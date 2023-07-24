@@ -35,7 +35,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SubjectIDEditField              matlab.ui.control.EditField
         SubjectIDEditFieldLabel         matlab.ui.control.Label
         ResetEnvironmentButton          matlab.ui.control.Button
-        UITable                         matlab.ui.control.Table
+        UITable_Preview                 matlab.ui.control.Table
         ArchiveFileEditField            matlab.ui.control.EditField
         LoadPvDatasetsFileButton        matlab.ui.control.Button
         ContrastSlider_Preview          matlab.ui.control.Slider
@@ -108,6 +108,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectExperimentToSegmentLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         VolumetryTab                    matlab.ui.container.Tab
+        VolumeUnitLabel                 matlab.ui.control.Label
+        AreaUnitLabel                   matlab.ui.control.Label
+        VolumeLabel                     matlab.ui.control.Label
+        AreaLabel                       matlab.ui.control.Label
+        UnitsLabel                      matlab.ui.control.Label
         ROIPanel_Volumetry              matlab.ui.container.Panel
         IQRUpperEditField_ROI           matlab.ui.control.NumericEditField
         IQRLowerEditField_ROI           matlab.ui.control.NumericEditField
@@ -474,10 +479,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             hold(app.UIAxes_Segmenter, "off");
                             try
                                 index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
-                                if numel(app.ExpDimsSegmenter) ~= 2
-                                    mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
+                                if ~isequal(index, [])
+                                    if numel(app.ExpDimsSegmenter) ~= 2
+                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
+                                    else
+                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,index)-0.8;
+                                    end
                                 else
-                                    mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,index)-0.8;
+                                    mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
                                 end
                             catch
                                 mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
@@ -562,6 +571,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     vox_dim_Y = app.ExperimentPropertyTable.(6)(app.PreviewDropDown.Value);
                     slice_Thickness = app.ExperimentPropertyTable.(7)(app.PreviewDropDown.Value);
                     slice_Gap = app.ExperimentPropertyTable.(8)(app.PreviewDropDown.Value);
+                    units = app.ExperimentPropertyTable.(9)(app.PreviewDropDown.Value);
                 case 'Segmenter'
                     exp_ID = app.SegmentDropDown.Value;
                     image_Data = app.WorkingSegmenterImageData;
@@ -594,6 +604,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
                     slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
                     slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
+                    units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
                 case 'Registration'
                     exp_ID = append('Registered data ', num2str(app.RegistrationCounter), '.');
                     % Update registration counter used for naming
@@ -614,6 +625,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
                     slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
                     slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
+                    units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
 
                     % Update Segmenter drop down
                     app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
@@ -621,7 +633,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             % Construct temporary table of saved data
-            temp_Table = table({image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, 'RowNames', {exp_ID}, 'VariableNames', {'Image' 'BrainMask' 'HemiMask' 'ROI' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap'});
+            temp_Table = table({image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, units, 'RowNames', {exp_ID}, 'VariableNames', {'Image' 'BrainMask' 'HemiMask' 'ROI' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap' 'Units'});
             try
                 % Move temporarily saved data to permanent app table
                 app.SavedTable = [app.SavedTable; temp_Table];
@@ -650,6 +662,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 app.SavedTable.VoxDimY(exp_ID) = vox_dim_Y;
                                 app.SavedTable.SliceThickness(exp_ID) = slice_Thickness;
                                 app.SavedTable.SliceGap(exp_ID) = slice_Gap;
+                                app.SavedTable.Units(exp_ID) = units;
                                 
                                 % Display confirmation figure
                                 uiconfirm(app.UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -957,6 +970,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             voxel_Dims_Y = 0;
             slice_Thickness = 0;
             slice_Gap = 0;
+            dim_Units = "Unspecifed";
 
             filelist_studyPath = dir(app.StudyPath);
             filelist_studyPath = sort(rmmissing(str2double({filelist_studyPath.name})));
@@ -1011,6 +1025,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             catch
                                 slice_Gap = cat(1, slice_Gap, 0);
                             end
+                            try
+                                dim_Units = cat(1, dim_Units, strjoin(string(imageObj.Visu.VisuCoreUnits)));
+                            catch
+                                dim_Units = cat(1, dim_Units, "Unspecifed");
+                            end
                         else
                         end
                     catch
@@ -1022,13 +1041,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.9;
             progress.Message = "Constructing property table";
             exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap"];
+            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units"];
             app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
                 app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
-                slice_Gap, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
-            app.UITable.Data=app.ExperimentPropertyTable;
-            app.UITable.ColumnName = variable_Names;
+                slice_Gap, dim_Units, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+            app.UITable_Preview.Data=app.ExperimentPropertyTable;
+            app.UITable_Preview.ColumnName = variable_Names;
 
             % Populate text fields from last loaded imageObj for study info
             progress.Message = "Populating information fields";
@@ -1087,7 +1106,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'OK'  
                     % Reset tables
                     app.ExperimentPropertyTable = table();
-                    app.UITable.Data=app.ExperimentPropertyTable;
+                    app.UITable_Preview.Data=app.ExperimentPropertyTable;
                     app.SavedTable = table();
     
                     % Reset counters
@@ -1226,6 +1245,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'Cancel'
                     return
             end
+        end
+
+        % Cell edit callback: UITable_Preview
+        function UITable_PreviewCellEdit(app, event)
+ 
+            % Update Experiment property table
+            app.ExperimentPropertyTable = app.UITable_Preview.Data;         
         end
 
         % Value changed function: PreviewDropDown
@@ -1668,6 +1694,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Rotate image data, update dimensions, show image
             app.OriginalSegmenterImageData = rot90(app.OriginalSegmenterImageData, -1);
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
             app.WorkingSegmenterImageData = rot90(app.WorkingSegmenterImageData, -1);
             app.BrainMask = rot90(app.BrainMask, -1);
             app.SavedBrainMask = rot90(app.SavedBrainMask, -1);
@@ -1685,6 +1712,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = flipud(app.OriginalSegmenterImageData);
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
             app.WorkingSegmenterImageData = flipud(app.WorkingSegmenterImageData);
             app.BrainMask = flipud(app.BrainMask);
             app.SavedBrainMask = flipud(app.SavedBrainMask);
@@ -1702,6 +1730,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Flip image data, update dimensions, show image
             app.OriginalSegmenterImageData = fliplr(app.OriginalSegmenterImageData);
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
             app.WorkingSegmenterImageData = fliplr(app.WorkingSegmenterImageData);
             app.BrainMask = fliplr(app.BrainMask);
             app.SavedBrainMask = fliplr(app.SavedBrainMask);
@@ -2354,6 +2383,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.IQRUpperEditField_ROI.Value = 0;
                 app.MinEditField_ROI.Value = 0;
                 app.MaxEditField_ROI.Value = 0;
+                app.AreaUnitLabel.Text = "";
+                app.VolumeUnitLabel.Text = "";
                 return
             end
             
@@ -2374,8 +2405,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             voxel_Area = app.VolumetryDimY*app.VolumetryDimX;
             app.VolumetryThickness = app.SavedTable.SliceThickness(app.SelectVolumetryDropDown.Value);
             app.VolumetryGap = app.SavedTable.SliceGap(app.SelectVolumetryDropDown.Value);
-
+            dim_units = split(app.SavedTable.Units(app.SelectVolumetryDropDown.Value));
             
+            % Set unit edit fields
+            if dim_units == "Unspecified"
+                app.AreaUnitLabel.Text = "Unspecified";
+                app.VolumeUnitLabel.Text = "Unspecified";
+            elseif dim_units(1) == "mm" & dim_units(2) == "mm"
+                app.AreaUnitLabel.Text = "mm^2";
+                app.VolumeUnitLabel.Text = "mm^3";
+            end
+
             % Get volume for segmented brain and area for separate slices
             progress.Value = 0.3;
             progress.Message = "Calculating brain volume and descriptive statistics.";
@@ -2475,7 +2515,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.MaxEditField_ROI.Value = max_val;
             else
                 app.SelectROIDropDown.Enable = 'off';
-                app.SelectROIDropDown.Value = "None";
+                app.SelectROIDropDown.Items = "None";
                 app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
                 app.ApplyEdemaCorrectionCheckBox.Value = 0;
                 app.UITable_VolumetryROI.Data = table();
@@ -3597,12 +3637,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ArchiveFileEditField.Editable = 'off';
             app.ArchiveFileEditField.Position = [116 667 558 22];
 
-            % Create UITable
-            app.UITable = uitable(app.PreviewTab);
-            app.UITable.ColumnName = {'Slice Number'; 'Slice Area'};
-            app.UITable.RowName = {};
-            app.UITable.ColumnEditable = true;
-            app.UITable.Position = [44 19 630 576];
+            % Create UITable_Preview
+            app.UITable_Preview = uitable(app.PreviewTab);
+            app.UITable_Preview.ColumnName = {'Slice Number'; 'Slice Area'};
+            app.UITable_Preview.RowName = {};
+            app.UITable_Preview.ColumnEditable = true;
+            app.UITable_Preview.CellEditCallback = createCallbackFcn(app, @UITable_PreviewCellEdit, true);
+            app.UITable_Preview.Position = [44 19 630 576];
 
             % Create ResetEnvironmentButton
             app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
@@ -4183,7 +4224,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrainPanel.BorderType = 'none';
             app.BrainPanel.TitlePosition = 'centertop';
             app.BrainPanel.Title = 'Brain';
-            app.BrainPanel.Position = [37 25 440 572];
+            app.BrainPanel.Position = [37 14 440 572];
 
             % Create UITable_VolumetryBrain
             app.UITable_VolumetryBrain = uitable(app.BrainPanel);
@@ -4277,7 +4318,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemispherePanel.BorderType = 'none';
             app.HemispherePanel.TitlePosition = 'centertop';
             app.HemispherePanel.Title = 'Hemisphere';
-            app.HemispherePanel.Position = [498 25 440 572];
+            app.HemispherePanel.Position = [498 14 440 572];
 
             % Create UITable_VolumetryHemisphere
             app.UITable_VolumetryHemisphere = uitable(app.HemispherePanel);
@@ -4386,7 +4427,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIPanel_Volumetry.BorderType = 'none';
             app.ROIPanel_Volumetry.TitlePosition = 'centertop';
             app.ROIPanel_Volumetry.Title = 'ROI';
-            app.ROIPanel_Volumetry.Position = [959 25 440 572];
+            app.ROIPanel_Volumetry.Position = [959 14 440 572];
 
             % Create UITable_VolumetryROI
             app.UITable_VolumetryROI = uitable(app.ROIPanel_Volumetry);
@@ -4496,6 +4537,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create IQRUpperEditField_ROI
             app.IQRUpperEditField_ROI = uieditfield(app.ROIPanel_Volumetry, 'numeric');
             app.IQRUpperEditField_ROI.Position = [268 326 27 22];
+
+            % Create UnitsLabel
+            app.UnitsLabel = uilabel(app.VolumetryTab);
+            app.UnitsLabel.Position = [599 605 39 26];
+            app.UnitsLabel.Text = 'Units:';
+
+            % Create AreaLabel
+            app.AreaLabel = uilabel(app.VolumetryTab);
+            app.AreaLabel.Position = [650 605 39 26];
+            app.AreaLabel.Text = 'Area';
+
+            % Create VolumeLabel
+            app.VolumeLabel = uilabel(app.VolumetryTab);
+            app.VolumeLabel.Position = [750 605 46 26];
+            app.VolumeLabel.Text = 'Volume';
+
+            % Create AreaUnitLabel
+            app.AreaUnitLabel = uilabel(app.VolumetryTab);
+            app.AreaUnitLabel.FontWeight = 'bold';
+            app.AreaUnitLabel.Position = [692 605 39 26];
+            app.AreaUnitLabel.Text = '';
+
+            % Create VolumeUnitLabel
+            app.VolumeUnitLabel = uilabel(app.VolumetryTab);
+            app.VolumeUnitLabel.FontWeight = 'bold';
+            app.VolumeUnitLabel.Position = [798 605 39 26];
+            app.VolumeUnitLabel.Text = '';
 
             % Create RegistrationTab
             app.RegistrationTab = uitab(app.TabGroup);
