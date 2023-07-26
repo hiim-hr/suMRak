@@ -211,6 +211,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectfixedLabel                matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
+        ExportDataButton_Map            matlab.ui.control.Button
+        SaveParameterMapButton          matlab.ui.control.Button
         T1T2MappingOptionsPanel         matlab.ui.container.Panel
         CalculateT2mapButton            matlab.ui.control.Button
         TEvaluesText                    matlab.ui.control.TextArea
@@ -337,7 +339,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Parameter Maps tab
         DSCSettingsWindow % DSC Settings dialogue window
-        
         MTTData % MTT data of a DSC sequence
         CBFData % CBF data of a DSC sequence
         CBVData % CBV data of a DSC sequence
@@ -348,6 +349,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PostMapImageData % Image data of currently displayed parameter map
         PostMapImage % Property for storing imshow of currently displayed parameter map without mask overlay
         ExpDimsPreMap % Dimensions of currently displayed sequence for mapping
+        ExpDimsPostMap % Dimensions of currently displayed parameter map
+
 
         % Volumetry tab
         VolumetryImageData % Property for storing image data of currently selected experiment in volumetry tab
@@ -875,10 +878,54 @@ classdef BrukKit_exported < matlab.apps.AppBase
         end
         
         function ExportImageData(app, tab)
-            info = load('niftiinfo_template.mat');
 
-            
+            switch tab
+                case 'Preview'
+                    ImageData = app.PreviewImageData;
+                    DropDownValue = app.PreviewDropDown.Value;
+                    Suffix = ".nii";
+                case 'Segmenter'
+                    ImageData = app.WorkingSegmenterImageData;
+                    DropDownValue = app.SegmentDropDown.Value;
+                    Suffix = "_segmented.nii";
+                case 'Registration'
+                    ImageData = app.RegisteredImageData;
+                    DropDownValue = app.SelectmovingDropDown.Value;
+                    Suffix = "_registered.nii";
+                case 'Map'
+                    ImageData = app.PostMapImageData;
+                    DropDownValue = app.SelectPreMapDropDown.Value;
+                    Suffix = "_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
+            end
 
+            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
+            info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
+            info.Description = 'Image file generated in Brukkit 0.8';
+            info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
+                table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
+                table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness")) + ...
+                table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"))];
+            temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
+            switch temp(1)
+                case "mm"
+                    info.SpaceUnits = 'Millimeter';
+                case "um"
+                    info.SpaceUnits = 'Micron';
+                case "m"
+                    info.SpaceUnits = 'Meter';
+            end
+            rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
+            info.Transform.T(1:3,1:3) = rotm;
+            info.TransformName = 'Qform';
+            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
+            if  strcmp(tab, 'Segmenter')
+                try
+                niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
+                niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
+                niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
+                catch
+                end
+            end
         end
     end   
 
@@ -978,6 +1025,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             slice_Thickness = 0;
             slice_Gap = 0;
             dim_Units = "Unspecifed";
+            rot_Matrix = {[]};
 
             filelist_studyPath = dir(app.StudyPath);
             filelist_studyPath = sort(rmmissing(str2double({filelist_studyPath.name})));
@@ -1037,6 +1085,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             catch
                                 dim_Units = cat(1, dim_Units, "Unspecifed");
                             end
+                            try
+                                rot_Matrix = cat(1, rot_Matrix, {reshape(round(imageObj.Visu.VisuCoreOrientation(1,:)), 3, 3)});
+                            catch
+                                rot_Matrix = cat(1, rot_Matrix, {zeros(3,3)});
+                            end
                         else
                         end
                     catch
@@ -1048,11 +1101,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.9;
             progress.Message = "Constructing property table";
             exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units"];
+            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
             app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
                 app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
-                slice_Gap, dim_Units, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+                slice_Gap, dim_Units, rot_Matrix, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
             app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
             app.UITable_Preview.ColumnName = variable_Names;
 
@@ -1137,8 +1190,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 imagedata_String = cat(1, imagedata_String, imagedata_Name);
             end
             imagedata_String = imagedata_String(2:end);
-            writing_Table = cat(2, app.ExperimentPropertyTable(:,1), table(imagedata_String, 'VariableNames', {'Image Data'}), app.ExperimentPropertyTable(:,3:end));
-            writetable(writing_Table(2:end,:), 'data_info.xlsx')
+            writing_Table = cat(2, app.ExperimentPropertyTable(:,1), table(imagedata_String, 'VariableNames', {'Image Data'}), app.ExperimentPropertyTable(:,3:end-1));
+            writetable(writing_Table(2:end,:), 'data_info.xlsx');
         end
 
         % Button pushed function: ResetEnvironmentButton
@@ -1620,7 +1673,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIPanel.Visible = 'on';
             app.ROIPanel.Position = [1200,110,149,140];
             app.SaveSegmentedDataButton.Enable = 'on';
-            app.ExportDataButton_Segmenter.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportDataButton_Segmenter.Enable = 'on';
+            end
 
             % Check if there is a saved non-zero brain mask to enable hemisphere segmentation
             if ~isequal(app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value), false(app.ExpDimsSegmenter(1:2))) 
@@ -2385,11 +2440,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: ExportDataButton_Segmenter
         function ExportDataButton_SegmenterPushed(app, event)
             
-            % Get directory and export image and mask data in NIfTI format
-            temp_dir = uigetdir;
-            temp_dir = append(temp_dir, '\');
-            niftiwrite(app.WorkingSegmenterImageData, append(temp_dir, 'Image'))
-            niftiwrite(double(app.SavedBrainMask), append(temp_dir, 'Mask')) % DOUBLE IS TEMP FIX
+            ExportImageData(app, 'Segmenter');
             
             uiconfirm(app.UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
@@ -2864,7 +2915,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: AddsliceButton
         function AddsliceButtonPushed(app, event)
             
-            if app.SelectmovingDropDown.Value == "None"||app.SelectfixedDropDown.Value == "None"||(app.SelectparameterDropDown.Value == "None" && app.UsedifferentparametermapCheckBox.Value ==1)
+            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.UIFigure, 'Cannot add slice instructions: valid registration data not selected.', 'Instruction Error.')
                 return
             end
@@ -2938,7 +2989,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
-            if app.SelectmovingDropDown.Value == "None"||app.SelectfixedDropDown.Value == "None"||(app.SelectparameterDropDown.Value == "None" && app.UsedifferentparametermapCheckBox.Value ==1)
+            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.UIFigure, 'Registration not possible; valid data not selected.', 'Registration Error.')
                 return
             elseif app.RegistrationInstructionsTextArea.Value == ""
@@ -3063,6 +3114,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceSpinner_Registration.Value = 1;
             end
 
+            app.SaveRegisteredDataButton.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportDataButton_Registration.Enable = 'on';
+            end
+
             % Close the dialog box
             close(progress)
         end
@@ -3075,18 +3131,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: ExportDataButton_Registration
         function ExportDataButton_RegistrationPushed(app, event)
-            % Get directory and export image and mask data in NIfTI format
-            temp_dir = uigetdir;
-            temp_dir = append(temp_dir, '\');
-            niftiwrite(app.RegisteredImageData, append(temp_dir, 'RegisteredImageData'))
+            
+            ExportImageData(app, 'Registration');
             
             % Update last action label
-            uiconfirm(app.UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: SaveRegisteredDataButton
         function SaveRegisteredDataButtonPushed(app, event)
-            SaveData(app, 'Registration')
+            SaveData(app, 'Registration');
         end
 
         % Value changed function: SelectPreMapDropDown
@@ -3177,34 +3231,49 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Set options display to 1
                 app.DSCOptions.display = 1;
                 app.DSCOptions.aif.nSlice = app.AIFExtractionSliceSpinner.Value;
+                if app.SVDButton.Value == 1
+                    app.DSCOptions.deconv.method = {'SVD'};
+                elseif app.cSVDButton.Value == 1
+                    app.DSCOptions.deconv.method = {'cSVD'};
+                elseif app.oSVDButton.Value == 1
+                    app.DSCOptions.deconv.method = {'oSVD'};
+                end
                 
                 % Get volumetric data and sequence parameters for map
                 % calculation
                 drop_Value = app.SelectPreMapDropDown.Value; 
                 TE = app.ExperimentPropertyTable.(3)(drop_Value);
                 TR = app.ExperimentPropertyTable.(4)(drop_Value);            
-                work_Data = app.PreMapImageData;
                 
                 % Calculate and display DSC maps
-                if numel(size(work_Data)) == 4   
-                    [cbv,cbf,mtt,cbv_lc,ttp,mask,aif,conc,s0]=DSC_mri_core(work_Data, TE, TR, app.DSCOptions); %#ok<ASGLU> 
-                    assignin('base',"mtt", mtt);
-                    assignin('base',"cbf", cbf);
-                    assignin('base',"cbv", cbv);
+                if numel(size(app.PreMapImageData)) == 4   
+                    [cbv,cbf,mtt,cbv_lc,ttp,mask,aif,conc,s0]=DSC_mri_core(app.PreMapImageData, TE, TR, app.DSCOptions); %#ok<ASGLU> 
                     
-                    app.MTTData = mtt; 
-                    app.MTTData.svd(isnan(app.MTTData.svd)) = 0;
-                    app.MTTData.svd(isnan(app.MTTData.csvd)) = 0;
-                    app.MTTData.svd(isnan(app.MTTData.osvd)) = 0;
-                    app.CBFData = cbf;
+                    app.MTTData = struct2array(mtt);
+                    app.MTTData(isnan(app.MTTData)) = 0;
+                    app.MTTData(app.MTTData == inf) = 0;
+                    app.CBFData = struct2array(cbf);
+                    app.CBFData.map(app.CBFData.map == inf) = 0;
                     app.CBVData = cbv;
+                    app.CBVData(app.CBVData == inf) = 0;
                     app.CBVLCData = cbv_lc;
-                    
-                    data_dims = size(app.CBFData.svd.map);
-                    app.SliceSpinner_PreMap.Limits = [1, data_dims(3)];              
-                    app.SliceSpinner_PreMap.Enable = 'on';
-                    app.SliceSpinner_PreMap.Value = 1;
-        
+                    app.CBVLCData(app.CBVLCData == inf) = 0;
+
+                    switch app.DSCMapDropDown.Value
+                        case 'CBF'
+                            app.PostMapImageData = app.CBFData.map;
+                        case 'CBV'
+                            app.PostMapImageData = app.CBVData;
+                        case 'MTT'
+                            app.PostMapImageData = app.MTTData;
+                    end
+                    data_dims = size(app.PostMapImageData);
+                    app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];              
+                    app.SliceSpinner_PostMap.Enable = 'on';
+                    app.SliceSpinner_PostMap.Value = 1;
+                    app.SliceSlider_PostMap.Limits = [1, data_dims(3)];              
+                    app.SliceSlider_PostMap.Enable = 'on';
+                    app.SliceSlider_PostMap.Value = 1;
                 else
                     uialert(app.UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
                 end
@@ -3213,6 +3282,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.UIAxes_PreMap.Interactions = [regionZoomInteraction zoomInteraction];
                 
                 app.DSCMapDropDown.Enable = 'on';
+                app.TurboButton_PostMap.Enable = 'on';
+                app.GreyscaleButton_PostMap.Enable = 'on';
+                app.ContrastSlider_PostMap.Enable = 'on';
+                app.BrightnessSlider_PostMap.Enable = 'on';
+
+                app.SaveParameterMapButton.Enable = 'on';
+                if isstring(app.ExportFolderPath)
+                    app.ExportDataButton_Map.Enable = 'on';
+                end
+
                 RefreshImagePostMap(app);
             catch
             end
@@ -3230,8 +3309,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PostMap.YLim = [-inf inf];
         end
 
-        % Value changed function: SliceSlider_PreMap
-        function SliceSlider_PreMapValueChanged(app, event)
+        % Value changing function: SliceSlider_PreMap
+        function SliceSlider_PreMapValueChanging(app, event)
             event.Source.Value = round(event.Value);
             app.SliceSpinner_PreMap.Value = event.Source.Value;
 
@@ -3239,7 +3318,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Reset zoom
             app.UIAxes_PreMap.XLim = [-inf inf];
-            app.UIAxes_PreMap.YLim = [-inf inf];
+            app.UIAxes_PreMap.YLim = [-inf inf];         
         end
 
         % Value changed function: Dim4Spinner_PreMap
@@ -3351,23 +3430,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImagePreMap(app);
         end
 
-        % Value changed function: SliceSlider_PostMap
-        function SliceSlider_PostMapValueChanged(app, event)
-            event.Source.Value = round(event.Value);
-            app.SliceSpinner_PostMap.Value = event.Source.Value;
-
-            RefreshImagePostMap(app);
-
-            % Reset zoom
-            app.UIAxes_PostMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
-        end
-
         % Value changed function: SliceSpinner_PostMap
         function SliceSpinner_PostMapValueChanged(app, event)
             event.Source.Value = round(event.Value);
             app.SliceSlider_PostMap.Value = event.Source.Value;
-
+            
+            RefreshImagePostMap(app);
+            
             % Reset zoom
             app.UIAxes_PostMap.XLim = [-inf inf];
             app.UIAxes_PostMap.YLim = [-inf inf];
@@ -3375,31 +3444,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: DSCMapDropDown
         function DSCMapDropDownValueChanged(app, event)
-            % Display chosen map image based on method selected
-            RefreshImagePostMap(app);
-
-            if app.DSCMapDropDown.Value == "CBV"
-                app.SVDButton.Enable = 'off';
-                app.cSVDButton.Enable = 'off';
-                app.oSVDButton.Enable = 'off';
-            else
-                app.SVDButton.Enable = 'on';
-                app.cSVDButton.Enable = 'on';
-                app.oSVDButton.Enable = 'on';
+            switch app.DSCMapDropDown.Value
+                case "CBF"
+                    app.PostMapImageData = app.CBFData.map;
+                case "CBV"
+                    app.PostMapImageData = app.CBVData;
+                case "MTT"
+                    app.PostMapImageData = app.MTTData;
             end
             
-            % Reset zoom and comparation data
-            app.UIAxes_PreMap.XLim = [-inf inf];
-            app.UIAxes_PreMap.YLim = [-inf inf];
-            app.ComparationregionsListBox.Value = {};
-        end
-
-        % Selection changed function: MethodButtonGroup
-        function MethodButtonGroupSelectionChanged(app, event)
             % Display chosen map image based on method selected
             RefreshImagePostMap(app);
             
-            % Reset zoom
+            % Reset zoom and comparation data
             app.UIAxes_PreMap.XLim = [-inf inf];
             app.UIAxes_PreMap.YLim = [-inf inf];
         end
@@ -3528,15 +3585,56 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case "DSC Mapping"
                     app.DSCMappingOptionsPanel.Visible = 'on';
                     app.T1T2MappingOptionsPanel.Visible = 'off';
-                case "T1/T2 Mapping"
-                    app.DSCMappingOptionsPanel.Visible = 'off';
-                    app.T1T2MappingOptionsPanel.Visible = 'on';
+%                 case "T1/T2 Mapping"
+%                     app.DSCMappingOptionsPanel.Visible = 'off';
+%                     app.T1T2MappingOptionsPanel.Visible = 'on';
             end
         end
 
         % Button pushed function: ExportDataButton_Preview
         function ExportDataButton_PreviewPushed(app, event)
+            ExportImageData(app, 'Preview');
+        end
+
+        % Selection changed function: ColormapButtonGroup_PostMap
+        function ColormapButtonGroup_PostMapSelectionChanged(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Value changing function: ContrastSlider_PostMap
+        function ContrastSlider_PostMapValueChanging(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Value changing function: BrightnessSlider_PostMap
+        function BrightnessSlider_PostMapValueChanging(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Value changing function: SliceSlider_PostMap
+        function SliceSlider_PostMapValueChanging(app, event)
+            event.Source.Value = round(event.Value);
+            app.SliceSpinner_PostMap.Value = event.Source.Value;
+
+            RefreshImagePostMap(app);
+
+            % Reset zoom
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
+        end
+
+        % Button pushed function: ExportDataButton_Map
+        function ExportDataButton_MapPushed(app, event)
             
+            ExportImageData(app, 'Map');
+            
+            % Update last action label
+            uiconfirm(app.UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+        end
+
+        % Button pushed function: SaveParameterMapButton
+        function SaveParameterMapButtonPushed(app, event)
+            SaveData(app, 'Map');
         end
     end
 
@@ -4645,11 +4743,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SelectfixedDropDown
             app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
-            app.SelectfixedDropDown.Items = {};
+            app.SelectfixedDropDown.Items = {'None'};
             app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
             app.SelectfixedDropDown.Placeholder = 'None';
             app.SelectfixedDropDown.Position = [1059 499 182 21];
-            app.SelectfixedDropDown.Value = {};
+            app.SelectfixedDropDown.Value = 'None';
 
             % Create SelectmovingLabel
             app.SelectmovingLabel = uilabel(app.RegistrationTab);
@@ -4659,12 +4757,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SelectmovingDropDown
             app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
-            app.SelectmovingDropDown.Items = {};
+            app.SelectmovingDropDown.Items = {'None'};
             app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
             app.SelectmovingDropDown.Tooltip = {'ROI = ROI*[1-(Ipsilateral-Contralateral)/Contralateral]'};
             app.SelectmovingDropDown.Placeholder = 'None';
             app.SelectmovingDropDown.Position = [1059 596 182 21];
-            app.SelectmovingDropDown.Value = {};
+            app.SelectmovingDropDown.Value = 'None';
 
             % Create RegisterButton
             app.RegisterButton = uibutton(app.RegistrationTab, 'push');
@@ -4686,12 +4784,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SelectparameterDropDown
             app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
-            app.SelectparameterDropDown.Items = {};
+            app.SelectparameterDropDown.Items = {'None'};
             app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
             app.SelectparameterDropDown.Enable = 'off';
             app.SelectparameterDropDown.Placeholder = 'None';
             app.SelectparameterDropDown.Position = [1059 354 182 21];
-            app.SelectparameterDropDown.Value = {};
+            app.SelectparameterDropDown.Value = 'None';
 
             % Create SliceSpinner_ParameterLabel
             app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
@@ -4909,7 +5007,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PreMap.Limits = [1 100];
             app.SliceSlider_PreMap.MajorTicks = [];
             app.SliceSlider_PreMap.MajorTickLabels = {};
-            app.SliceSlider_PreMap.ValueChangedFcn = createCallbackFcn(app, @SliceSlider_PreMapValueChanged, true);
+            app.SliceSlider_PreMap.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreMapValueChanging, true);
             app.SliceSlider_PreMap.MinorTicks = [];
             app.SliceSlider_PreMap.Enable = 'off';
             app.SliceSlider_PreMap.Position = [161 79 221 3];
@@ -4964,6 +5062,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_PostMap.Limits = [-1 1];
             app.BrightnessSlider_PostMap.MajorTicks = 0;
             app.BrightnessSlider_PostMap.Orientation = 'vertical';
+            app.BrightnessSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @BrightnessSlider_PostMapValueChanging, true);
             app.BrightnessSlider_PostMap.MinorTicks = [];
             app.BrightnessSlider_PostMap.Enable = 'off';
             app.BrightnessSlider_PostMap.Position = [1396 385 3 150];
@@ -4979,6 +5078,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_PostMap.Limits = [-1 1];
             app.ContrastSlider_PostMap.MajorTicks = 0;
             app.ContrastSlider_PostMap.Orientation = 'vertical';
+            app.ContrastSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @ContrastSlider_PostMapValueChanging, true);
             app.ContrastSlider_PostMap.MinorTicks = [];
             app.ContrastSlider_PostMap.Enable = 'off';
             app.ContrastSlider_PostMap.Position = [1395 187 3 150];
@@ -4986,6 +5086,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ColormapButtonGroup_PostMap
             app.ColormapButtonGroup_PostMap = uibuttongroup(app.ParameterMapsTab);
             app.ColormapButtonGroup_PostMap.AutoResizeChildren = 'off';
+            app.ColormapButtonGroup_PostMap.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_PostMapSelectionChanged, true);
             app.ColormapButtonGroup_PostMap.BorderType = 'none';
             app.ColormapButtonGroup_PostMap.TitlePosition = 'centertop';
             app.ColormapButtonGroup_PostMap.Title = 'Colormap';
@@ -5020,7 +5121,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create MethodButtonGroup
             app.MethodButtonGroup = uibuttongroup(app.DSCMappingOptionsPanel);
             app.MethodButtonGroup.AutoResizeChildren = 'off';
-            app.MethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MethodButtonGroupSelectionChanged, true);
             app.MethodButtonGroup.BorderType = 'none';
             app.MethodButtonGroup.TitlePosition = 'centertop';
             app.MethodButtonGroup.Title = 'Method';
@@ -5090,7 +5190,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PostMap.Limits = [1 100];
             app.SliceSlider_PostMap.MajorTicks = [];
             app.SliceSlider_PostMap.MajorTickLabels = {};
-            app.SliceSlider_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSlider_PostMapValueChanged, true);
+            app.SliceSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PostMapValueChanging, true);
             app.SliceSlider_PostMap.MinorTicks = [];
             app.SliceSlider_PostMap.Enable = 'off';
             app.SliceSlider_PostMap.Position = [999 79 221 3];
@@ -5119,6 +5219,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.CalculateT2mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2mapButtonPushed, true);
             app.CalculateT2mapButton.Position = [68 15 109 22];
             app.CalculateT2mapButton.Text = 'Calculate T2 map';
+
+            % Create SaveParameterMapButton
+            app.SaveParameterMapButton = uibutton(app.ParameterMapsTab, 'push');
+            app.SaveParameterMapButton.ButtonPushedFcn = createCallbackFcn(app, @SaveParameterMapButtonPushed, true);
+            app.SaveParameterMapButton.Enable = 'off';
+            app.SaveParameterMapButton.Position = [1234 594 129 22];
+            app.SaveParameterMapButton.Text = 'Save Parameter Map';
+
+            % Create ExportDataButton_Map
+            app.ExportDataButton_Map = uibutton(app.ParameterMapsTab, 'push');
+            app.ExportDataButton_Map.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_MapPushed, true);
+            app.ExportDataButton_Map.Enable = 'off';
+            app.ExportDataButton_Map.Position = [1080 594 136 22];
+            app.ExportDataButton_Map.Text = 'Export Parameter Map';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.UIFigure);
