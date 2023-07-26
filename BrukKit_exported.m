@@ -873,6 +873,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.MinEditField_ROI.Value = min_val;
             app.MaxEditField_ROI.Value = max_val;
         end
+        
+        function ExportImageData(app, tab)
+            info = load('niftiinfo_template.mat');
+
+            
+
+        end
     end   
 
     % Callbacks that handle component events
@@ -1078,6 +1085,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsSegmenter = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
             app.SelectPreMapDropDown.Items = exp_ID;
+            app.CreateExportFolderButton.Enable = 'on';
             
             % close the dialog box
             progress.Value = 1;
@@ -1089,13 +1097,37 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: CreateExportFolderButton
         function CreateExportFolderButtonPushed(app, event)
             selected_path = uigetdir;
-            selected_path = string(selected_path)+"\BrukKit Export Folder";
-            if ~exist(selected_path, 'dir')
-                app.ExportFolderPath = string(selected_path)+"\BrukKit Export Folder";
-                mkdir(app.ExportFolderPath)
+            app.ExportFolderPath = string(selected_path) + filesep + app.SubjectIDEditField.Value + "_" + app.StudyIDEditField.Value;
+            figure(app.UIFigure);
+            if exist(app.ExportFolderPath, 'dir')
+                selection = uiconfirm(app.UIFigure, 'BrukKit Study Folder already existes in chosen directory. Are you sure you want to overwrite?', 'Confirm Overwrite', ...
+                    'Icon', 'warning');
+                switch selection
+                    case 'OK'
+                        cd(app.ExportFolderPath);
+                    case 'Cancel'
+                        return
+                end  
             else
-                uialert(app.UIFigure, 'BrukKit Export Folder already existes in chosen directory.', 'Folder Creation Error')
-            end   
+                mkdir(app.ExportFolderPath);
+                cd(app.ExportFolderPath);
+            end
+            
+            infofile = fopen('info.txt', 'w+');
+            fprintf(infofile, "########## Brukkit study info 0.8\r\n\r\n");
+            fprintf(infofile, "Subject ID: %s\r\n", app.SubjectIDEditField.Value);
+            fprintf(infofile, "Subject Comment: %s\r\n", app.SubjectCommentEditField.Value);
+            fprintf(infofile, "Subject Age: %s\r\n", app.SubjectAgeEditField.Value);
+            fprintf(infofile, "Subject Type: %s\r\n", app.SubjectTypeEditField.Value);
+            fprintf(infofile, "Subject Age: %s\r\n", app.SubjectAgeEditField.Value);
+            fprintf(infofile, "Subject Sex: %s\r\n", app.SexEditField.Value);
+            fprintf(infofile, "Subject Weight: %s\r\n", app.WeightEditField.Value);
+            fprintf(infofile, "\r\n");
+            fprintf(infofile, "Study ID: %s\r\n", app.StudyIDEditField.Value);
+            fprintf(infofile, "Study Comment: %s\r\n", app.StudyCommentEditField.Value);
+            fprintf(infofile, "Study Start Time: %s\r\n", app.StudyStartTimeEditField.Value);
+            fprintf(infofile, "Study Start Date: %s\r\n", app.StudyStartDateEditField.Value);
+            fclose(infofile);
         end
 
         % Button pushed function: ResetEnvironmentButton
@@ -1269,6 +1301,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.Dim5Slider_Preview.Enable = 'off';
                 app.TurboButton_Preview.Enable = 'off';
                 app.GreyscaleButton_Preview.Enable = 'off';
+                app.SaveDataButton_Preview.Enable = 'off';
+                app.ExportDataButton_Preview.Enable = 'off';
                 return
             end
             
@@ -1314,6 +1348,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Enable = 'on';
             app.TurboButton_Preview.Enable = 'on';
             app.GreyscaleButton_Preview.Enable = 'on';
+            app.SaveDataButton_Preview.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportDataButton_Preview.Enable = 'on';
+            end
             
             % Display sequence
             RefreshImagePreview(app);
@@ -3484,6 +3522,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.T1T2MappingOptionsPanel.Visible = 'on';
             end
         end
+
+        % Button pushed function: ExportDataButton_Preview
+        function ExportDataButton_PreviewPushed(app, event)
+            
+        end
     end
 
     % Component initialization
@@ -3629,7 +3672,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadPvDatasetsFileButton
             app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
-            app.LoadPvDatasetsFileButton.Position = [272 637 142 22];
+            app.LoadPvDatasetsFileButton.Position = [533 635 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveFileEditField
@@ -3648,7 +3691,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ResetEnvironmentButton
             app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
-            app.ResetEnvironmentButton.Position = [553 637 118 22];
+            app.ResetEnvironmentButton.Position = [401 634 118 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
@@ -3807,19 +3850,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create ExportDataButton_Preview
             app.ExportDataButton_Preview = uibutton(app.PreviewTab, 'push');
+            app.ExportDataButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_PreviewPushed, true);
+            app.ExportDataButton_Preview.Enable = 'off';
             app.ExportDataButton_Preview.Position = [1110 483 102 22];
             app.ExportDataButton_Preview.Text = 'Export Data';
 
             % Create SaveDataButton_Preview
             app.SaveDataButton_Preview = uibutton(app.PreviewTab, 'push');
             app.SaveDataButton_Preview.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_PreviewPushed, true);
+            app.SaveDataButton_Preview.Enable = 'off';
             app.SaveDataButton_Preview.Position = [1221 483 102 22];
             app.SaveDataButton_Preview.Text = 'Save Data';
 
             % Create CreateExportFolderButton
             app.CreateExportFolderButton = uibutton(app.PreviewTab, 'push');
             app.CreateExportFolderButton.ButtonPushedFcn = createCallbackFcn(app, @CreateExportFolderButtonPushed, true);
-            app.CreateExportFolderButton.Position = [420 637 127 22];
+            app.CreateExportFolderButton.Enable = 'off';
+            app.CreateExportFolderButton.Position = [1109 539 127 22];
             app.CreateExportFolderButton.Text = 'Create Export Folder';
 
             % Create SegmenterTab
@@ -4685,12 +4732,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
             app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
+            app.SaveRegisteredDataButton.Enable = 'off';
             app.SaveRegisteredDataButton.Position = [1161 75 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportDataButton_Registration
             app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
             app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
+            app.ExportDataButton_Registration.Enable = 'off';
             app.ExportDataButton_Registration.Position = [1161 43 140 22];
             app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
