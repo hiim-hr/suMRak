@@ -1053,7 +1053,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
                 slice_Gap, dim_Units, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
-            app.UITable_Preview.Data=app.ExperimentPropertyTable;
+            app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
             app.UITable_Preview.ColumnName = variable_Names;
 
             % Populate text fields from last loaded imageObj for study info
@@ -1128,6 +1128,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             fprintf(infofile, "Study Start Time: %s\r\n", app.StudyStartTimeEditField.Value);
             fprintf(infofile, "Study Start Date: %s\r\n", app.StudyStartDateEditField.Value);
             fclose(infofile);
+            
+            imagedata_Column = table2array(app.ExperimentPropertyTable(:,2));
+            imagedata_String = "";
+            for i = 1:numel(imagedata_Column)
+                current_Data = cell2mat(imagedata_Column(i));
+                imagedata_Name = strjoin(string(size(current_Data)), 'x') + " " + string(class(current_Data));
+                imagedata_String = cat(1, imagedata_String, imagedata_Name);
+            end
+            imagedata_String = imagedata_String(2:end);
+            writing_Table = cat(2, app.ExperimentPropertyTable(:,1), table(imagedata_String, 'VariableNames', {'Image Data'}), app.ExperimentPropertyTable(:,3:end));
+            writetable(writing_Table(2:end,:), 'data_info.xlsx')
         end
 
         % Button pushed function: ResetEnvironmentButton
@@ -1283,7 +1294,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function UITable_PreviewCellEdit(app, event)
  
             % Update Experiment property table
-            app.ExperimentPropertyTable = app.UITable_Preview.Data;         
+            app.ExperimentPropertyTable(2:end,:) = app.UITable_Preview.Data;         
         end
 
         % Value changed function: PreviewDropDown
@@ -3617,13 +3628,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Preview.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreviewValueChanged, true);
             app.SliceSpinner_Preview.HorizontalAlignment = 'center';
             app.SliceSpinner_Preview.Enable = 'off';
-            app.SliceSpinner_Preview.Position = [1082 15 53 22];
+            app.SliceSpinner_Preview.Position = [1077 20 53 22];
             app.SliceSpinner_Preview.Value = 1;
 
             % Create SliceLabel_Preview
             app.SliceLabel_Preview = uilabel(app.PreviewTab);
             app.SliceLabel_Preview.HorizontalAlignment = 'right';
-            app.SliceLabel_Preview.Position = [791 15 31 22];
+            app.SliceLabel_Preview.Position = [786 20 31 22];
             app.SliceLabel_Preview.Text = 'Slice';
 
             % Create SliceSlider_Preview
@@ -3634,7 +3645,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreviewValueChanging, true);
             app.SliceSlider_Preview.MinorTicks = [];
             app.SliceSlider_Preview.Enable = 'off';
-            app.SliceSlider_Preview.Position = [843 24 221 3];
+            app.SliceSlider_Preview.Position = [838 29 221 3];
             app.SliceSlider_Preview.Value = 1;
 
             % Create BrightnessSliderLabel_Preview
@@ -3691,7 +3702,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ResetEnvironmentButton
             app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
-            app.ResetEnvironmentButton.Position = [401 634 118 22];
+            app.ResetEnvironmentButton.Position = [402 635 118 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
@@ -3833,7 +3844,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Preview.BorderType = 'none';
             app.ColormapButtonGroup_Preview.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Preview.Title = 'Colormap';
-            app.ColormapButtonGroup_Preview.Position = [1175 15 167 38];
+            app.ColormapButtonGroup_Preview.Position = [1167 13 167 38];
 
             % Create GreyscaleButton_Preview
             app.GreyscaleButton_Preview = uiradiobutton(app.ColormapButtonGroup_Preview);
