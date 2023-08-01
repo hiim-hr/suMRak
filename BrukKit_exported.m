@@ -5,6 +5,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BrukKitAlphav08UIFigure         matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        LoadBrukKitFolderButton         matlab.ui.control.Button
+        LoadBrukerStudyButton           matlab.ui.control.Button
         CreateExportFolderButton        matlab.ui.control.Button
         SaveDataButton_Preview          matlab.ui.control.Button
         ExportDataButton_Preview        matlab.ui.control.Button
@@ -1007,8 +1009,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: LoadPvDatasetsFileButton
         function LoadPvDatasetsFileButtonPushed(app, event)
                         
-            % Draw a progress box 
-
+            % Draw progress box 
             progress = uiprogressdlg(app.BrukKitAlphav08UIFigure,'Title',"Please wait",...
                  'Message', "Purging old temporary data");
             drawnow
@@ -1181,6 +1182,160 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Message = "Done!";
             pause(0.5);
             close(progress);
+        end
+
+        % Button pushed function: LoadBrukerStudyButton
+        function LoadBrukerStudyButtonPushed(app, event)
+            
+            % Draw progress box
+            progress = uiprogressdlg(app.BrukKitAlphav08UIFigure,'Title',"Please wait",...
+                 'Message', "Selecting Bruker study");
+            drawnow
+            
+            % Select Bruker study folder, check for cancel and update the edit field text
+            progress.Value = 0.2;
+            app.StudyPath = uigetdir; 
+            figure(app.BrukKitAlphav08UIFigure);
+            if isequal(app.StudyPath, 0)
+                close(progress);
+                return;
+            end
+           
+             % Create property arrays of sequences in selected study
+            progress.Value = 0.6;
+            progress.Message = "Importing individual experiments";
+            visu_AcqProt = {'None'};
+            exp_ImageData = {[]};
+            voxel_Dims_X = 0;
+            voxel_Dims_Y = 0;
+            slice_Thickness = 0;
+            slice_Gap = 0;
+            dim_Units = "Unspecifed";
+            rot_Matrix = {[]};
+
+            filelist_studyPath = dir(app.StudyPath);
+            filelist_studyPath = sort(rmmissing(str2double({filelist_studyPath.name})));
+            
+            for i=filelist_studyPath % List through experiments 
+                experiment_dir = fullfile(app.StudyPath, filesep, num2str(i), filesep, 'pdata');
+                filelist_expDir = dir(experiment_dir);
+                filelist_expDir = rmmissing(str2double({filelist_expDir.name}));
+
+                for j=filelist_expDir % List through processings
+                    progress.Message = "Importing experiment nr." + num2str(i) + " processing nr." + num2str(j);
+                    try
+                        % Create image object
+                        processing_dir = fullfile(experiment_dir, filesep, num2str(j));
+                        imageObj = ImageDataObject(processing_dir);
+                        try
+                            attempt_AcqProt = imageObj.Visu.VisuAcquisitionProtocol;
+                        catch
+                            attempt_AcqProt = imageObj.Visu.VisuSeriesTypeId;
+                        end
+                        
+                        % Store properties into respective arrays if a
+                        % minimum of 3 dimensions is sastisfied
+                        n_dims = numel(size(squeeze(imageObj.data)));
+                        if n_dims >= 3 
+                            exp_ImageData = cat(1, exp_ImageData, {squeeze(pagetranspose(imageObj.data))});
+                            visu_AcqProt = cat(1, visu_AcqProt, append(num2str(i), '-', num2str(j), '. ', attempt_AcqProt));
+                            try
+                                voxel_Dims = imageObj.Visu.VisuCoreExtent./imageObj.Visu.VisuCoreSize;
+                                voxel_Dims_X = cat(1, voxel_Dims_X, voxel_Dims(1)); 
+                                voxel_Dims_Y = cat(1, voxel_Dims_Y, voxel_Dims(2));
+                            catch
+                                voxel_Dims_X = cat(1, voxel_Dims_X, 0); 
+                                voxel_Dims_Y = cat(1, voxel_Dims_Y, 0);
+                            end
+                            try
+                                app.TEvalues(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqEchoTime, 2)) = imageObj.Visu.VisuAcqEchoTime*10^-3;
+                                app.TRvalues(size(visu_AcqProt, 1),1:size(imageObj.Visu.VisuAcqRepetitionTime, 2)) = imageObj.Visu.VisuAcqRepetitionTime*10^-3;
+                            catch
+                            end
+                            try
+                                if numel(voxel_Dims) == 3
+                                    slice_Thickness = cat(1, slice_Thickness, voxel_Dims(3));
+                                else
+                                    slice_Thickness = cat(1, slice_Thickness, imageObj.Visu.VisuCoreFrameThickness);
+                                end
+                            catch
+                                slice_Thickness = cat(1, slice_Thickness, 0);
+                            end
+                            try
+                                slice_Gap = cat(1, slice_Gap, imageObj.Visu.VisuCoreSlicePacksSliceDist-imageObj.Visu.VisuCoreFrameThickness);
+                            catch
+                                slice_Gap = cat(1, slice_Gap, 0);
+                            end
+                            try
+                                dim_Units = cat(1, dim_Units, strjoin(string(imageObj.Visu.VisuCoreUnits)));
+                            catch
+                                dim_Units = cat(1, dim_Units, "Unspecifed");
+                            end
+                            try
+                                rot_Matrix = cat(1, rot_Matrix, {reshape(round(imageObj.Visu.VisuCoreOrientation(1,:)), 3, 3)});
+                            catch
+                                rot_Matrix = cat(1, rot_Matrix, {zeros(3,3)});
+                            end
+                        else
+                        end
+                    catch
+                    end
+                end
+            end
+
+            % Construct experiment property table
+            progress.Value = 0.9;
+            progress.Message = "Constructing property table";
+            exp_ID = visu_AcqProt;
+            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+            app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
+                app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
+                voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
+                slice_Gap, dim_Units, rot_Matrix, 'RowNames', visu_AcqProt, 'VariableNames', variable_Names);
+            app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
+            app.UITable_Preview.ColumnName = variable_Names;
+
+            % Populate text fields from last loaded imageObj for study info
+            progress.Message = "Populating information fields";
+            app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
+            app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
+            app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
+            app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
+            app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
+            app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
+            app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
+            app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
+            app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
+            BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
+                str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
+            StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
+                str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
+                str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
+            app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+
+            % Update drop down items
+            app.PreviewDropDown.Items = exp_ID;
+            app.DropDownItemsSegmenter = exp_ID;
+            app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+            app.SelectPreMapDropDown.Items = exp_ID;
+            app.CreateExportFolderButton.Enable = 'on';
+            
+            % close the dialog box
+            progress.Value = 1;
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+        end
+
+        % Button pushed function: LoadBrukKitFolderButton
+        function LoadBrukKitFolderButtonPushed(app, event)
+            
         end
 
         % Button pushed function: CreateExportFolderButton
@@ -3952,7 +4107,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadPvDatasetsFileButton
             app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
-            app.LoadPvDatasetsFileButton.Position = [533 635 142 22];
+            app.LoadPvDatasetsFileButton.Position = [532 635 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveFileEditField
@@ -3971,7 +4126,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ResetEnvironmentButton
             app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
-            app.ResetEnvironmentButton.Position = [402 635 118 22];
+            app.ResetEnvironmentButton.Position = [135 635 123 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
@@ -4148,6 +4303,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.CreateExportFolderButton.Enable = 'off';
             app.CreateExportFolderButton.Position = [1109 539 127 22];
             app.CreateExportFolderButton.Text = 'Create Export Folder';
+
+            % Create LoadBrukerStudyButton
+            app.LoadBrukerStudyButton = uibutton(app.PreviewTab, 'push');
+            app.LoadBrukerStudyButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukerStudyButtonPushed, true);
+            app.LoadBrukerStudyButton.Position = [400 635 126 22];
+            app.LoadBrukerStudyButton.Text = 'Load Bruker Study';
+
+            % Create LoadBrukKitFolderButton
+            app.LoadBrukKitFolderButton = uibutton(app.PreviewTab, 'push');
+            app.LoadBrukKitFolderButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukKitFolderButtonPushed, true);
+            app.LoadBrukKitFolderButton.Position = [265 635 129 22];
+            app.LoadBrukKitFolderButton.Text = 'Load BrukKit Folder';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
