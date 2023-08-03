@@ -5,6 +5,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BrukKitAlphav08UIFigure         matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
+        SaveEnvironmentButton           matlab.ui.control.Button
         LoadBrukKitFolderButton         matlab.ui.control.Button
         LoadBrukerStudyButton           matlab.ui.control.Button
         CreateExportFolderButton        matlab.ui.control.Button
@@ -13,7 +14,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
         TurboButton_Preview             matlab.ui.control.RadioButton
         GreyscaleButton_Preview         matlab.ui.control.RadioButton
-        ArchiveFileLabel                matlab.ui.control.Label
+        ArchiveLabel                    matlab.ui.control.Label
         WeightEditFieldLabel_kg         matlab.ui.control.Label
         WeightEditField                 matlab.ui.control.EditField
         WeightEditFieldLabel            matlab.ui.control.Label
@@ -38,7 +39,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SubjectIDEditFieldLabel         matlab.ui.control.Label
         ResetEnvironmentButton          matlab.ui.control.Button
         UITable_Preview                 matlab.ui.control.Table
-        ArchiveFileEditField            matlab.ui.control.EditField
+        ArchiveEditField                matlab.ui.control.EditField
         LoadPvDatasetsFileButton        matlab.ui.control.Button
         ContrastSlider_Preview          matlab.ui.control.Slider
         ContrastSliderLabel_Preview     matlab.ui.control.Label
@@ -293,18 +294,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
     properties (Access = private)
         
         % Loading and preview tab properties
+        WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
         ExportFolderPath % Filepath of created export folder
         PvDatasetsFile % Filepath of selected archive file
         StudyPath % Filepath of selected study directory
-        ExperimentPropertyTable % Table of loaded sequence properties
-        WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
+        TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
+        TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
+        ExperimentPropertyTable % Table of loaded experiment properties
+        SavedTable % Table for storing all saved segmenterd/registered data.
+
         PreviewImageData % Preview experiment image data matrix
         PreviewImage % Property for storing imshow of PreviewImageData
         ExpDimsPreview % Dimensions of preview experiment 
-        TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
-        TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
-        
-        SavedTable % Table for storing all saved segmenterd/registered data.
+
         % Segmenter tab
         DropDownItemsSegmenter = {'None'}; % Stored items featured in segmenter experiment drop down menu
         % Brain segmentation
@@ -965,6 +967,175 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end
         end
+        function ResetEnvironment(app)
+            % Reset tables
+            app.ExperimentPropertyTable = table();
+            app.SavedTable = table();
+    
+            % Reset counters
+            app.RegistrationCounter = 1;
+    
+            % Reset drop downs and text fields
+            app.PreviewDropDown.Items = {'None'};
+            app.SegmentDropDown.Items = {'None'};
+            app.DropDownItemsSaved = {'None'};
+            app.DropDownItemsSegmenter = {'None'};
+            app.SelectVolumetryDropDown.Items = {'None'};
+            app.SelectROIDropDown.Items = {'None'};
+            app.SelectfixedDropDown.Items = {'None'};
+            app.SelectmovingDropDown.Items = {'None'};
+            app.SelectparameterDropDown.Items = {'None'};
+            app.SelectPreMapDropDown.Items = {'None'};
+    
+            % Disable and reset components in different tabs
+    
+            % Preview
+            app.SaveEnvironmentButton.Enable = 'off';
+            app.CreateExportFolderButton.Enable = 'off';
+            % Reset UIAxes
+            cla(app.UIAxes_Preview);
+            app.UITable_Preview.Data=table();
+            app.BrightnessSlider_Preview.Value = 0;
+            app.BrightnessSlider_Preview.Enable = 'off';
+            app.ContrastSlider_Preview.Value = 0;
+            app.ContrastSlider_Preview.Enable = 'off';
+            app.SliceSpinner_Preview.Value = 1;
+            app.SliceSpinner_Preview.Enable = 'off';
+            app.SliceSlider_Preview.Value = 1;
+            app.SliceSlider_Preview.Enable = 'off';
+            app.Dim4Slider_Preview.Value = 1;
+            app.Dim5Slider_Preview.Value = 1;
+            app.TurboButton_Preview.Enable = 'off';
+            app.GreyscaleButton_Preview.Enable = 'off';
+             % Reset text fields Preview
+            app.ArchiveEditField.Value = "";
+            app.SubjectIDEditField.Value = "";
+            app.StudyIDEditField.Value = "";
+            app.SubjectCommentEditField.Value = "";
+            app.StudyCommentEditField.Value = "";
+            app.SubjectTypeEditField.Value = "";
+            app.SexEditField.Value = "";
+            app.WeightEditField.Value = "";
+            app.StudyStartDateEditField.Value = "";
+            app.StudyStartTimeEditField.Value = "";
+            app.SubjectAgeEditField.Value = "";
+            
+            % Segmenter
+            % Reset UIAxes
+            cla(app.UIAxes_Segmenter);
+            app.SliceSlider_Segmenter.Enable = 'off';
+            app.SliceSpinner_Segmenter.Enable = 'off';
+            app.Dim4Spinner_Segmenter.Enable = 'off';
+            app.Dim5Spinner_Segmenter.Enable = 'off';
+            app.BrightnessSlider_Segmenter.Enable = 'off';
+            app.ContrastSlider_Segmenter.Enable = 'off';
+            app.SliceSlider_Segmenter.Value = 1;
+            app.SliceSpinner_Segmenter.Value = 1;
+            app.Dim4Spinner_Segmenter.Value = 1;
+            app.Dim5Spinner_Segmenter.Value = 1;
+            app.ContrastSlider_Segmenter.Value = 0;
+            app.BrightnessSlider_Segmenter.Value = 0;
+            app.TurboButton_Segmenter.Enable = 'off';
+            app.GreyscaleButton_Segmenter.Enable = 'off';
+            app.CurrentSegmentationDropDown.Enable = 'off';
+            app.CurrentSegmentationDropDown.Value = 'Brain';
+            app.BrainSegmentationToolsPanel.Visible = 'off';
+            app.HemisphereSegmentationToolsPanel.Visible = 'off';
+            app.ROISegmentationToolsPanel.Visible = 'off';
+            app.ROIPanel.Visible = 'off';
+            app.SaveSegmentedDataButton.Enable = 'off';
+            app.ExportDataButton_Segmenter.Enable = 'off';
+    
+            % Registration
+            % Reset UIAxes
+            cla(app.UIAxes_Registration);
+            app.Dim5Spinner_Fixed.Enable = 'off';
+            app.Dim5Spinner_Fixed.Value = 1;
+            app.Dim4Spinner_Fixed.Enable = 'off';
+            app.Dim4Spinner_Fixed.Value = 1;
+            app.SliceSpinner_Fixed.Enable = 'off';
+            app.SliceSpinner_Fixed.Value = 1;
+            app.Dim5Spinner_Moving.Enable = 'off';
+            app.Dim5Spinner_Moving.Value = 1;
+            app.Dim4Spinner_Moving.Enable = 'off';
+            app.Dim4Spinner_Moving.Value = 1;
+            app.SliceSpinner_Moving.Enable = 'off';
+            app.SliceSpinner_Moving.Value = 1;
+            app.Dim5Spinner_Parameter.Enable = 'off';
+            app.Dim5Spinner_Parameter.Value = 1;
+            app.Dim4Spinner_Parameter.Enable = 'off';
+            app.Dim4Spinner_Parameter.Value = 1;
+            app.SliceSpinner_Parameter.Enable = 'off';
+            app.SliceSpinner_Parameter.Value = 1;
+            app.UsedifferentparametermapCheckBox.Value = 0;
+            app.RegistrationInstructionsTextArea.Value = '';
+    
+            % Volumetry 
+            app.ExportDataButton_Volumetry.Enable = 'off';
+            % Reset brain fields and table
+            app.UITable_VolumetryBrain.Data = table();
+            app.VolumeEditField_Brain.Value = 0;
+            app.MeanEditField_Brain.Value = 0;
+            app.SDEditField_Brain.Value = 0;
+            app.MedianEditField_Brain.Value = 0;
+            app.IQRLowerEditField_Brain.Value = 0;
+            app.IQRUpperEditField_Brain.Value = 0;
+            app.MinEditField_Brain.Value = 0;
+            app.MaxEditField_Brain.Value = 0;
+            % Reset hemisphere fields and table
+            app.SelectHemisphereDropDown.Enable = 'off';
+            app.UITable_VolumetryHemisphere.Data = table();
+            app.VolumeEditField_Hemisphere.Value = 0;
+            app.MeanEditField_Hemisphere.Value = 0;
+            app.SDEditField_Hemisphere.Value = 0;
+            app.MedianEditField_Hemisphere.Value = 0;
+            app.IQRLowerEditField_Hemisphere.Value = 0;
+            app.IQRUpperEditField_Hemisphere.Value = 0;
+            app.MinEditField_Hemisphere.Value = 0;
+            app.MaxEditField_Hemisphere.Value = 0;
+            % Reset ROI fields and table
+            app.SelectROIDropDown.Enable = 'off';
+            app.SelectROIDropDown.Items = "None";
+            app.UITable_VolumetryROI.Data = table();
+            app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+            app.ApplyEdemaCorrectionCheckBox.Value = 0;
+            app.VolumeEditField_ROI.Value = 0;
+            app.MeanEditField_ROI.Value = 0;
+            app.SDEditField_ROI.Value = 0;
+            app.MedianEditField_ROI.Value = 0;
+            app.IQRLowerEditField_ROI.Value = 0;
+            app.IQRUpperEditField_ROI.Value = 0;
+            app.MinEditField_ROI.Value = 0;
+            app.MaxEditField_ROI.Value = 0;
+    
+            % Parameter Maps
+            % Reset UIAxes
+            cla(app.UIAxes_PreMap);
+            cla(app.UIAxes_PostMap);
+            app.ExportDataButton_Map.Enable = 'off';
+            app.SaveParameterMapButton.Enable = 'off';
+            app.DSCMapDropDown.Value = 'CBF';
+            app.DSCMapDropDown.Enable = 'off';
+            app.SliceSlider_PreMap.Enable = 'off';
+            app.SliceSlider_PreMap.Value = 1;
+            app.SliceSpinner_PreMap.Enable = 'off';
+            app.SliceSpinner_PreMap.Value = 1;
+            app.Dim5Spinner_PreMap.Enable = 'off';
+            app.Dim5Spinner_PreMap.Value = 1;
+            app.Dim4Spinner_PreMap.Enable = 'off';
+            app.Dim4Spinner_PreMap.Value = 1;
+            app.SliceSlider_PostMap.Enable = 'off';
+            app.SliceSlider_PostMap.Value = 1;
+            app.SliceSpinner_PostMap.Enable = 'off';
+            app.SliceSpinner_PostMap.Value = 1;
+            app.ContrastSlider_PostMap.Enable = 'off';
+            app.ContrastSlider_PostMap.Value = 0;
+            app.BrightnessSlider_PostMap.Enable = 'off';
+            app.BrightnessSlider_PostMap.Value = 0;
+            app.AIFExtractionSliceSpinner.Value = 1;
+            app.TurboButton_PostMap.Enable = 'off';
+            app.GreyscaleButton_PostMap.Enable = 'off';
+        end
     end   
 
     % Callbacks that handle component events
@@ -1029,8 +1200,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 close(progress);
                 return;
             end
+            ResetEnvironment(app);
             app.PvDatasetsFile = fullfile(folder, file);
-            app.ArchiveFileEditField.Value = app.PvDatasetsFile;
+            app.ArchiveEditField.Value = app.PvDatasetsFile;
             
             % Extract the archive file to TEMP folder
             progress.Value = 0.4;
@@ -1184,6 +1356,65 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
         end
 
+        % Button pushed function: LoadBrukKitFolderButton
+        function LoadBrukKitFolderButtonPushed(app, event)
+            % Draw progress box
+            progress = uiprogressdlg(app.BrukKitAlphav08UIFigure,'Title',"Please wait",...
+                 'Message', "Selecting BrukKit folder");
+            drawnow    
+            
+            % Select BrukKit folder, check for cancel and update the edit field text
+            progress.Value = 0.2;
+            folder_path = uigetdir;
+            figure(app.BrukKitAlphav08UIFigure);
+            env_Path = string(folder_path) + filesep + "saved_environment" + filesep + "main_properties.mat";
+            if exist(env_Path, 'file')
+                progress.Value = 0.6;
+                progress.Message = "Importing saved data";
+
+                % Load properties from saved environment
+                LoadedProps = load(env_Path);
+                
+                % Set app properties 
+                app.ExperimentPropertyTable = LoadedProps.ExperimentPropertyTable; 
+                app.SavedTable = LoadedProps.SavedTable; 
+                app.SubjectIDEditField.Value = LoadedProps.SubjectID;
+                app.StudyIDEditField.Value = LoadedProps.StudyID;
+                app.SubjectCommentEditField.Value = LoadedProps.SubjectComment;
+                app.StudyCommentEditField.Value = LoadedProps.StudyComment;
+                app.SubjectTypeEditField.Value = LoadedProps.SubjectType;
+                app.SexEditField.Value = LoadedProps.Sex;
+                app.WeightEditField.Value = LoadedProps.Weight;
+                app.StudyStartDateEditField.Value = LoadedProps.StudyStartDate;
+                app.StudyStartTimeEditField.Value = LoadedProps.StudyStartTime;
+                app.SubjectAgeEditField.Value = LoadedProps.SubjectAge;
+                app.DropDownItemsSaved = LoadedProps.DropDownItemsSaved;
+                app.DropDownItemsSegmenter = LoadedProps.DropDownItemsSegmenter;
+                
+                % Update app drop down menus
+                app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
+                app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+                app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
+                app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
+                app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
+                app.SelectVolumetryDropDown.Items = app.DropDownItemsSaved;
+
+                % Set Preview Table
+                app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
+                variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+                app.UITable_Preview.ColumnName = variable_Names;
+
+                % close the dialog box
+                progress.Value = 1;
+                progress.Message = "Done!";
+                pause(0.5);
+                close(progress);
+            else
+                close(progress);
+                uialert(app.BrukKitAlphav08UIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
+            end
+        end
+
         % Button pushed function: LoadBrukerStudyButton
         function LoadBrukerStudyButtonPushed(app, event)
             
@@ -1200,6 +1431,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 close(progress);
                 return;
             end
+            ResetEnvironment(app);
+            app.ArchiveEditField.Value = app.StudyPath;
            
              % Create property arrays of sequences in selected study
             progress.Value = 0.6;
@@ -1333,11 +1566,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
         end
 
-        % Button pushed function: LoadBrukKitFolderButton
-        function LoadBrukKitFolderButtonPushed(app, event)
-            
-        end
-
         % Button pushed function: CreateExportFolderButton
         function CreateExportFolderButtonPushed(app, event)
             selected_path = uigetdir;
@@ -1383,6 +1611,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             imagedata_String = imagedata_String(2:end);
             writing_Table = cat(2, app.ExperimentPropertyTable(:,1), table(imagedata_String, 'VariableNames', {'Image Data'}), app.ExperimentPropertyTable(:,3:end-1));
             writetable(writing_Table(2:end,:), 'data_info.xlsx');
+            
+            % Enable Save Environment
+            app.SaveEnvironmentButton.Enable = 'on';
 
             % Enable export buttons
             if app.PreviewDropDown.Value ~= "None"
@@ -1393,177 +1624,56 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
+        % Button pushed function: SaveEnvironmentButton
+        function SaveEnvironmentButtonPushed(app, event)
+            
+            % Get main environment properties 
+            ExperimentPropertyTable = app.ExperimentPropertyTable; %#ok<ADPROPLC> 
+            SavedTable = app.SavedTable; %#ok<ADPROPLC> 
+            SubjectID = app.SubjectIDEditField.Value;
+            StudyID = app.StudyIDEditField.Value;
+            SubjectComment = app.SubjectCommentEditField.Value;
+            StudyComment = app.StudyCommentEditField.Value;
+            SubjectType = app.SubjectTypeEditField.Value;
+            Sex = app.SexEditField.Value;
+            Weight = app.WeightEditField.Value;
+            StudyStartDate = app.StudyStartDateEditField.Value;
+            StudyStartTime = app.StudyStartTimeEditField.Value;
+            SubjectAge = app.SubjectAgeEditField.Value;
+            DropDownItemsSaved = app.DropDownItemsSaved; %#ok<ADPROPLC>
+            PreviewDropDownItems = app.PreviewDropDown.Items; 
+            DropDownItemsSegmenter = app.DropDownItemsSegmenter; %#ok<ADPROPLC> 
+            
+            % Save environment inside export folder
+            env_Path = app.ExportFolderPath + filesep + "saved_environment";
+            if exist(env_Path, 'dir')
+                selection = uiconfirm(app.BrukKitAlphav08UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
+                    'Icon', 'warning');
+                switch selection
+                    case 'OK'
+                        env_Path = env_Path + filesep + "main_properties.mat";
+                        save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
+                            "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSaved", "DropDownItemsSegmenter", "PreviewDropDownItems")
+                    case 'Cancel'
+                        return
+                end  
+            else
+                mkdir(env_Path);
+                env_Path = env_Path + filesep + "main_properties.mat";
+                save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
+                            "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSaved", "DropDownItemsSegmenter", "PreviewDropDownItems")
+            end
+        end
+
         % Button pushed function: ResetEnvironmentButton
         function ResetEnvironmentButtonButtonPushed(app, event)
             selection = uiconfirm(app.BrukKitAlphav08UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
                         'Icon','warning');
             switch selection 
                 case 'OK'  
-                    % Reset tables
-                    app.ExperimentPropertyTable = table();
-                    app.SavedTable = table();
-    
-                    % Reset counters
-                    app.RegistrationCounter = 1;
-    
-                    % Reset drop downs and text fields
-                    app.PreviewDropDown.Items = {'None'};
-                    app.SegmentDropDown.Items = {'None'};
-                    app.DropDownItemsSaved = {'None'};
-                    app.DropDownItemsSegmenter = {'None'};
-                    app.SelectVolumetryDropDown.Items = {'None'};
-                    app.SelectROIDropDown.Items = {'None'};
-                    app.SelectfixedDropDown.Items = {'None'};
-                    app.SelectmovingDropDown.Items = {'None'};
-                    app.SelectparameterDropDown.Items = {'None'};
-                    app.SelectPreMapDropDown.Items = {'None'};
-
-                    % Disable and reset components in different tabs
-
-                    % Preview
-                    % Reset UIAxes
-                    cla(app.UIAxes_Preview);
-                    app.UITable_Preview.Data=table();
-                    app.BrightnessSlider_Preview.Value = 0;
-                    app.BrightnessSlider_Preview.Enable = 'off';
-                    app.ContrastSlider_Preview.Value = 0;
-                    app.ContrastSlider_Preview.Enable = 'off';
-                    app.SliceSpinner_Preview.Value = 1;
-                    app.SliceSpinner_Preview.Enable = 'off';
-                    app.SliceSlider_Preview.Value = 1;
-                    app.SliceSlider_Preview.Enable = 'off';
-                    app.Dim4Slider_Preview.Value = 1;
-                    app.Dim5Slider_Preview.Value = 1;
-                    app.TurboButton_Preview.Enable = 'off';
-                    app.GreyscaleButton_Preview.Enable = 'off';
-                     % Reset text fields Preview
-                    app.ArchiveFileEditField.Value = "";
-                    app.SubjectIDEditField.Value = "";
-                    app.StudyIDEditField.Value = "";
-                    app.SubjectCommentEditField.Value = "";
-                    app.StudyCommentEditField.Value = "";
-                    app.SubjectTypeEditField.Value = "";
-                    app.SexEditField.Value = "";
-                    app.WeightEditField.Value = "";
-                    app.StudyStartDateEditField.Value = "";
-                    app.StudyStartTimeEditField.Value = "";
-                    app.SubjectAgeEditField.Value = "";
-                    
-                    % Segmenter
-                    % Reset UIAxes
-                    cla(app.UIAxes_Segmenter);
-                    app.SliceSlider_Segmenter.Enable = 'off';
-                    app.SliceSpinner_Segmenter.Enable = 'off';
-                    app.Dim4Spinner_Segmenter.Enable = 'off';
-                    app.Dim5Spinner_Segmenter.Enable = 'off';
-                    app.BrightnessSlider_Segmenter.Enable = 'off';
-                    app.ContrastSlider_Segmenter.Enable = 'off';
-                    app.SliceSlider_Segmenter.Value = 1;
-                    app.SliceSpinner_Segmenter.Value = 1;
-                    app.Dim4Spinner_Segmenter.Value = 1;
-                    app.Dim5Spinner_Segmenter.Value = 1;
-                    app.ContrastSlider_Segmenter.Value = 0;
-                    app.BrightnessSlider_Segmenter.Value = 0;
-                    app.TurboButton_Segmenter.Enable = 'off';
-                    app.GreyscaleButton_Segmenter.Enable = 'off';
-                    app.CurrentSegmentationDropDown.Enable = 'off';
-                    app.CurrentSegmentationDropDown.Value = 'Brain';
-                    app.BrainSegmentationToolsPanel.Visible = 'off';
-                    app.HemisphereSegmentationToolsPanel.Visible = 'off';
-                    app.ROISegmentationToolsPanel.Visible = 'off';
-                    app.ROIPanel.Visible = 'off';
-                    app.SaveSegmentedDataButton.Enable = 'off';
-                    app.ExportDataButton_Segmenter.Enable = 'off';
-
-                    % Registration
-                    % Reset UIAxes
-                    cla(app.UIAxes_Registration);
-                    app.Dim5Spinner_Fixed.Enable = 'off';
-                    app.Dim5Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Enable = 'off';
-                    app.Dim4Spinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Enable = 'off';
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.Dim5Spinner_Moving.Enable = 'off';
-                    app.Dim5Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Enable = 'off';
-                    app.Dim4Spinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Enable = 'off';
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.Dim5Spinner_Parameter.Enable = 'off';
-                    app.Dim5Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Enable = 'off';
-                    app.Dim4Spinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Enable = 'off';
-                    app.SliceSpinner_Parameter.Value = 1;
-                    app.UsedifferentparametermapCheckBox.Value = 0;
-                    app.RegistrationInstructionsTextArea.Value = '';
-
-                    % Volumetry 
-                    app.ExportDataButton_Volumetry.Enable = 'off';
-                    % Reset brain fields and table
-                    app.UITable_VolumetryBrain.Data = table();
-                    app.VolumeEditField_Brain.Value = 0;
-                    app.MeanEditField_Brain.Value = 0;
-                    app.SDEditField_Brain.Value = 0;
-                    app.MedianEditField_Brain.Value = 0;
-                    app.IQRLowerEditField_Brain.Value = 0;
-                    app.IQRUpperEditField_Brain.Value = 0;
-                    app.MinEditField_Brain.Value = 0;
-                    app.MaxEditField_Brain.Value = 0;
-                    % Reset hemisphere fields and table
-                    app.SelectHemisphereDropDown.Enable = 'off';
-                    app.UITable_VolumetryHemisphere.Data = table();
-                    app.VolumeEditField_Hemisphere.Value = 0;
-                    app.MeanEditField_Hemisphere.Value = 0;
-                    app.SDEditField_Hemisphere.Value = 0;
-                    app.MedianEditField_Hemisphere.Value = 0;
-                    app.IQRLowerEditField_Hemisphere.Value = 0;
-                    app.IQRUpperEditField_Hemisphere.Value = 0;
-                    app.MinEditField_Hemisphere.Value = 0;
-                    app.MaxEditField_Hemisphere.Value = 0;
-                    % Reset ROI fields and table
-                    app.SelectROIDropDown.Enable = 'off';
-                    app.SelectROIDropDown.Items = "None";
-                    app.UITable_VolumetryROI.Data = table();
-                    app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
-                    app.ApplyEdemaCorrectionCheckBox.Value = 0;
-                    app.VolumeEditField_ROI.Value = 0;
-                    app.MeanEditField_ROI.Value = 0;
-                    app.SDEditField_ROI.Value = 0;
-                    app.MedianEditField_ROI.Value = 0;
-                    app.IQRLowerEditField_ROI.Value = 0;
-                    app.IQRUpperEditField_ROI.Value = 0;
-                    app.MinEditField_ROI.Value = 0;
-                    app.MaxEditField_ROI.Value = 0;
-
-                    % Parameter Maps
-                    % Reset UIAxes
-                    cla(app.UIAxes_PreMap);
-                    cla(app.UIAxes_PostMap);
-                    app.ExportDataButton_Map.Enable = 'off';
-                    app.SaveParameterMapButton.Enable = 'off';
-                    app.DSCMapDropDown.Value = 'CBF';
-                    app.DSCMapDropDown.Enable = 'off';
-                    app.SliceSlider_PreMap.Enable = 'off';
-                    app.SliceSlider_PreMap.Value = 1;
-                    app.SliceSpinner_PreMap.Enable = 'off';
-                    app.SliceSpinner_PreMap.Value = 1;
-                    app.Dim5Spinner_PreMap.Enable = 'off';
-                    app.Dim5Spinner_PreMap.Value = 1;
-                    app.Dim4Spinner_PreMap.Enable = 'off';
-                    app.Dim4Spinner_PreMap.Value = 1;
-                    app.SliceSlider_PostMap.Enable = 'off';
-                    app.SliceSlider_PostMap.Value = 1;
-                    app.SliceSpinner_PostMap.Enable = 'off';
-                    app.SliceSpinner_PostMap.Value = 1;
-                    app.ContrastSlider_PostMap.Enable = 'off';
-                    app.ContrastSlider_PostMap.Value = 0;
-                    app.BrightnessSlider_PostMap.Enable = 'off';
-                    app.BrightnessSlider_PostMap.Value = 0;
-                    app.AIFExtractionSliceSpinner.Value = 1;
-                    app.TurboButton_PostMap.Enable = 'off';
-                    app.GreyscaleButton_PostMap.Enable = 'off';
+                    ResetEnvironment(app);
                 case 'Cancel'
                     return
             end
@@ -4107,26 +4217,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadPvDatasetsFileButton
             app.LoadPvDatasetsFileButton = uibutton(app.PreviewTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
-            app.LoadPvDatasetsFileButton.Position = [532 635 142 22];
+            app.LoadPvDatasetsFileButton.Position = [410 634 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
-            % Create ArchiveFileEditField
-            app.ArchiveFileEditField = uieditfield(app.PreviewTab, 'text');
-            app.ArchiveFileEditField.Editable = 'off';
-            app.ArchiveFileEditField.Position = [116 667 558 22];
+            % Create ArchiveEditField
+            app.ArchiveEditField = uieditfield(app.PreviewTab, 'text');
+            app.ArchiveEditField.Editable = 'off';
+            app.ArchiveEditField.Position = [107 667 558 22];
 
             % Create UITable_Preview
             app.UITable_Preview = uitable(app.PreviewTab);
-            app.UITable_Preview.ColumnName = {'Slice Number'; 'Slice Area'};
+            app.UITable_Preview.ColumnName = {''; ''};
             app.UITable_Preview.RowName = {};
             app.UITable_Preview.ColumnEditable = true;
             app.UITable_Preview.CellEditCallback = createCallbackFcn(app, @UITable_PreviewCellEdit, true);
-            app.UITable_Preview.Position = [44 19 630 576];
+            app.UITable_Preview.Position = [44 19 630 542];
 
             % Create ResetEnvironmentButton
             app.ResetEnvironmentButton = uibutton(app.PreviewTab, 'push');
             app.ResetEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ResetEnvironmentButtonButtonPushed, true);
-            app.ResetEnvironmentButton.Position = [135 635 123 22];
+            app.ResetEnvironmentButton.Position = [349 594 132 22];
             app.ResetEnvironmentButton.Text = 'Reset Environment';
 
             % Create SubjectIDEditFieldLabel
@@ -4151,7 +4261,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.StudyIDEditField = uieditfield(app.PreviewTab, 'text');
             app.StudyIDEditField.Editable = 'off';
             app.StudyIDEditField.HorizontalAlignment = 'center';
-            app.StudyIDEditField.Position = [1132 667 276 22];
+            app.StudyIDEditField.Position = [1132 667 275 22];
 
             % Create SubjectCommentEditFieldLabel
             app.SubjectCommentEditFieldLabel = uilabel(app.PreviewTab);
@@ -4173,7 +4283,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create StudyCommentEditField
             app.StudyCommentEditField = uieditfield(app.PreviewTab, 'text');
             app.StudyCommentEditField.Editable = 'off';
-            app.StudyCommentEditField.Position = [1164 634 243 22];
+            app.StudyCommentEditField.Position = [1169 634 238 22];
 
             % Create SubjectAgeEditFieldLabel
             app.SubjectAgeEditFieldLabel = uilabel(app.PreviewTab);
@@ -4202,7 +4312,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.StudyStartTimeEditField = uieditfield(app.PreviewTab, 'text');
             app.StudyStartTimeEditField.Editable = 'off';
             app.StudyStartTimeEditField.HorizontalAlignment = 'right';
-            app.StudyStartTimeEditField.Position = [1169 602 239 22];
+            app.StudyStartTimeEditField.Position = [1169 602 238 22];
 
             % Create StudyStartDateEditFieldLabel
             app.StudyStartDateEditFieldLabel = uilabel(app.PreviewTab);
@@ -4255,11 +4365,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.WeightEditFieldLabel_kg.Position = [1041 538 16 22];
             app.WeightEditFieldLabel_kg.Text = 'kg';
 
-            % Create ArchiveFileLabel
-            app.ArchiveFileLabel = uilabel(app.PreviewTab);
-            app.ArchiveFileLabel.HorizontalAlignment = 'right';
-            app.ArchiveFileLabel.Position = [40 667 68 22];
-            app.ArchiveFileLabel.Text = 'Archive File';
+            % Create ArchiveLabel
+            app.ArchiveLabel = uilabel(app.PreviewTab);
+            app.ArchiveLabel.HorizontalAlignment = 'right';
+            app.ArchiveLabel.Position = [53 667 46 22];
+            app.ArchiveLabel.Text = 'Archive';
 
             % Create ColormapButtonGroup_Preview
             app.ColormapButtonGroup_Preview = uibuttongroup(app.PreviewTab);
@@ -4307,14 +4417,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadBrukerStudyButton
             app.LoadBrukerStudyButton = uibutton(app.PreviewTab, 'push');
             app.LoadBrukerStudyButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukerStudyButtonPushed, true);
-            app.LoadBrukerStudyButton.Position = [400 635 126 22];
+            app.LoadBrukerStudyButton.Position = [278 634 126 22];
             app.LoadBrukerStudyButton.Text = 'Load Bruker Study';
 
             % Create LoadBrukKitFolderButton
             app.LoadBrukKitFolderButton = uibutton(app.PreviewTab, 'push');
             app.LoadBrukKitFolderButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukKitFolderButtonPushed, true);
-            app.LoadBrukKitFolderButton.Position = [265 635 129 22];
+            app.LoadBrukKitFolderButton.Position = [143 634 129 22];
             app.LoadBrukKitFolderButton.Text = 'Load BrukKit Folder';
+
+            % Create SaveEnvironmentButton
+            app.SaveEnvironmentButton = uibutton(app.PreviewTab, 'push');
+            app.SaveEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @SaveEnvironmentButtonPushed, true);
+            app.SaveEnvironmentButton.Enable = 'off';
+            app.SaveEnvironmentButton.Position = [209 594 132 22];
+            app.SaveEnvironmentButton.Text = 'Save Environment';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
