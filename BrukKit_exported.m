@@ -5,7 +5,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BrukKitAlphav08UIFigure         matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
-        SaveEnvironmentButton           matlab.ui.control.Button
+        ExportEnvironmentButton         matlab.ui.control.Button
         LoadBrukKitFolderButton         matlab.ui.control.Button
         LoadBrukerStudyButton           matlab.ui.control.Button
         CreateExportFolderButton        matlab.ui.control.Button
@@ -308,7 +308,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPreview % Dimensions of preview experiment 
 
         % Segmenter tab
-        DropDownItemsSegmenter = {'None'}; % Stored items featured in segmenter experiment drop down menu
+        DropDownItemsCombined = {'None'}; % Stored items featuring loaded and saved experiments
         % Brain segmentation
         CurrentSlice % Points to current slice matrix
         OriginalSegmenterImageData % Original experiment image data matrix
@@ -333,7 +333,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Saved segmenter data
         SavedBrainMask % Saved brain mask data of current experiment
-        DropDownItemsSaved = {'None'}; % Working tab drop down placeholder
+        DropDownItemsSavedOnly = {'None'}; % Stored items featuring only saved experiments
 
         % Registration tab
         MovingNDims % Number of moving image data dimensions
@@ -341,7 +341,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ParameterNDims % Number of parameter image data dimensions
         RegisteredImageData % Property for storing registered image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
-        RegistrationCounter = 1; % Counter used for registration data nomenclature and storage
         
         % Parameter Maps tab
         DSCSettingsWindow % DSC Settings dialogue window
@@ -570,19 +569,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function SaveData(app, tab)
             switch tab
                 case 'Preview'
+                    OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.PreviewDropDown.Value));
                     exp_ID = app.PreviewDropDown.Value;
                     image_Data = app.PreviewImageData;
                     saved_BrainMask = false(size(image_Data));
                     hemi_Mask = false(1);
                     roi.Mask = false(1);
                     roi.ID = {'None'};
+                    TE = app.ExperimentPropertyTable.(3)(app.PreviewDropDown.Value);
+                    TR = app.ExperimentPropertyTable.(4)(app.PreviewDropDown.Value);
                     vox_dim_X = app.ExperimentPropertyTable.(5)(app.PreviewDropDown.Value); 
                     vox_dim_Y = app.ExperimentPropertyTable.(6)(app.PreviewDropDown.Value);
                     slice_Thickness = app.ExperimentPropertyTable.(7)(app.PreviewDropDown.Value);
                     slice_Gap = app.ExperimentPropertyTable.(8)(app.PreviewDropDown.Value);
                     units = app.ExperimentPropertyTable.(9)(app.PreviewDropDown.Value);
+                    RotMat = app.ExperimentPropertyTable.(10)(app.PreviewDropDown.Value);
                 case 'Segmenter'
-                    exp_ID = app.SegmentDropDown.Value;
+                    exp_ID = append(app.SegmentDropDown.Value, '_Segmented');
                     image_Data = app.WorkingSegmenterImageData;
                     saved_BrainMask = app.SavedBrainMask;
                     switch numel(app.ExpDimsSegmenter)
@@ -609,15 +612,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     else
                         roi.ID = {'None'};
                     end
-                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
-                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
-                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
-                    slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
-                    units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
+                    try
+                        OrigIndex = app.SavedTable.OrigIndex(app.SegmentDropDown.Value);
+                        TE = app.SavedTable.TE(app.SegmentDropDown.Value);
+                        TR = app.SavedTable.TR(app.SegmentDropDown.Value);
+                        vox_dim_X = app.SavedTable.VoxDimX(app.SegmentDropDown.Value); 
+                        vox_dim_Y = app.SavedTable.VoxDimY(app.SegmentDropDown.Value);
+                        slice_Thickness = app.SavedTable.SliceThickness(app.SegmentDropDown.Value);
+                        slice_Gap = app.SavedTable.SliceGap(app.SegmentDropDown.Value);
+                        units = app.SavedTable.Units(app.SegmentDropDown.Value);
+                        RotMat = app.SavedTable.RotMat(app.SegmentDropDown.Value);
+                    catch
+                        try
+                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SegmentDropDown.Value));
+                            TE = app.ExperimentPropertyTable.(3)(app.SegmentDropDown.Value);
+                            TR = app.ExperimentPropertyTable.(4)(app.SegmentDropDown.Value);
+                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
+                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
+                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
+                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
+                            units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
+                            RotMat = app.ExperimentPropertyTable.(10)(app.SegmentDropDown.Value);
+                        catch
+                        end
+                    end
                 case 'Registration'
-                    exp_ID = append('Registered data ', num2str(app.RegistrationCounter), '.');
-                    % Update registration counter used for naming
-                    app.RegistrationCounter = app.RegistrationCounter+1;
+                    OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
+                    exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
                     image_Data = app.RegisteredImageData;
                     selection = uiconfirm(app.BrukKitAlphav08UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
                         ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
@@ -630,45 +651,64 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     hemi_Mask = false(1);
                     roi.Mask = false(1);
                     roi.ID = {'None'};
+                    TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
+                    TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
                     vox_dim_X = app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value); 
                     vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
                     slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
                     slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
                     units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
-
-                    % Update Segmenter drop down
-                    app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
-                    app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+                    RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
                 case 'Map'
                     exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
                     image_Data = app.PostMapImageData;
                     saved_BrainMask = false(size(image_Data));
                     hemi_Mask = false(1);
                     roi.Mask = false(1);
-                    roi.ID = {'None'};
-                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectPreMapDropDown.Value); 
-                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectPreMapDropDown.Value);
-                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectPreMapDropDown.Value);
-                    slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectPreMapDropDown.Value);
-                    units = app.ExperimentPropertyTable.(9)(app.SelectPreMapDropDown.Value);
-
-                    % Update Segmenter drop down
-                    app.DropDownItemsSegmenter = cat(1, app.DropDownItemsSegmenter, exp_ID);
-                    app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
+                    roi.ID = {'None'};                 
+                    try
+                        OrigIndex = app.SavedTable.OrigIndex(app.SelectPreMapDropDown.Value);
+                        TE = app.SavedTable.TE(app.SelectPreMapDropDown.Value);
+                        TR = app.SavedTable.TR(app.SelectPreMapDropDown.Value);
+                        vox_dim_X = app.SavedTable.VoxDimX(app.SelectPreMapDropDown.Value); 
+                        vox_dim_Y = app.SavedTable.VoxDimY(app.SelectPreMapDropDown.Value);
+                        slice_Thickness = app.SavedTable.SliceThickness(app.SelectPreMapDropDown.Value);
+                        slice_Gap = app.SavedTable.SliceGap(app.SelectPreMapDropDown.Value);
+                        units = app.SavedTable.Units(app.SelectPreMapDropDown.Value);
+                        RotMat = app.SavedTable.RotMat(app.SelectPreMapDropDown.Value);
+                    catch
+                        try
+                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectPreMapDropDown.Value));
+                            TE = app.ExperimentPropertyTable.(3)(app.SelectPreMapDropDown.Value);
+                            TR = app.ExperimentPropertyTable.(4)(app.SelectPreMapDropDown.Value);
+                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectPreMapDropDown.Value); 
+                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectPreMapDropDown.Value);
+                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectPreMapDropDown.Value);
+                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectPreMapDropDown.Value);
+                            units = app.ExperimentPropertyTable.(9)(app.SelectPreMapDropDown.Value);
+                            RotMat = app.ExperimentPropertyTable.(10)(app.SelectPreMapDropDown.Value);
+                        catch
+                        end
+                    end
             end
 
             % Construct temporary table of saved data
-            temp_Table = table({image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, units, 'RowNames', {exp_ID}, 'VariableNames', {'Image' 'BrainMask' 'HemiMask' 'ROI' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap' 'Units'});
+            temp_Table = table(OrigIndex, {image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, TE, TR, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, units, RotMat,'RowNames', {exp_ID}, 'VariableNames', {'OrigIndex' 'Image' 'BrainMask' 'HemiMask' 'ROI' 'TE' 'TR' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap' 'Units' 'RotMat'});
             try
                 % Move temporarily saved data to permanent app table
                 app.SavedTable = [app.SavedTable; temp_Table];
+                
+                % Update Combined drop down
+                app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
+                app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
 
                 % Update DSC and Registration tab drop down menus
-                app.DropDownItemsSaved = cat(1, app.DropDownItemsSaved, exp_ID);
-                app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
-                app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
-                app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
-                app.SelectVolumetryDropDown.Items = app.DropDownItemsSaved;
+                app.DropDownItemsSavedOnly = cat(1, app.DropDownItemsSavedOnly, exp_ID);
+                app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
                 uiconfirm(app.BrukKitAlphav08UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -683,11 +723,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 app.SavedTable.BrainMask(exp_ID) = {saved_BrainMask};
                                 app.SavedTable.HemiMask(exp_ID) = {hemi_Mask};
                                 app.SavedTable.ROI(exp_ID) = {roi};
+                                app.SavedTable.TE(exp_ID) = TE;
+                                app.SavedTable.TR(exp_ID) = TR;
                                 app.SavedTable.VoxDimX(exp_ID) = vox_dim_X;
                                 app.SavedTable.VoxDimY(exp_ID) = vox_dim_Y;
                                 app.SavedTable.SliceThickness(exp_ID) = slice_Thickness;
                                 app.SavedTable.SliceGap(exp_ID) = slice_Gap;
                                 app.SavedTable.Units(exp_ID) = units;
+                                app.SavedTable.RotMat(exp_ID) = RotMat;
                                 
                                 % Display confirmation figure
                                 uiconfirm(app.BrukKitAlphav08UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -910,7 +953,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         end
         
         function ExportImageData(app, tab)
-
             switch tab
                 case 'Preview'
                     ImageData = app.PreviewImageData;
@@ -941,11 +983,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 5
                     DimPadding = [1,1];
             end
-            info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
-                table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
-                table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness")) + ...
-                table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap")), DimPadding];
-            temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
+            
+            try
+                info.PixelDimensions = [table2array(app.SavedTable.VoxDimX(DropDownValue)), ...
+                    table2array(app.SavedTable.VoxDimY(DropDownValue)), ...
+                    table2array(app.SavedTable.SliceThickness(DropDownValue)) + ...
+                    table2array(app.SavedTable.SliceGap(DropDownValue)), DimPadding];
+                temp = split(table2array(app.SavedTable.Units(DropDownValue)));
+                rotm = cell2mat(table2array(app.SavedTable.RotMat(DropDownValue)));
+            catch
+                info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
+                    table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
+                    table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness")) + ...
+                    table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap")), DimPadding];
+                temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
+                rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
+            end
+
             switch temp(1)
                 case "mm"
                     info.SpaceUnits = 'Millimeter';
@@ -954,7 +1008,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case "m"
                     info.SpaceUnits = 'Meter';
             end
-            rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
+           
             info.Transform.T(1:3,1:3) = rotm;
             info.TransformName = 'Qform';
             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
@@ -967,19 +1021,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end
         end
+
         function ResetEnvironment(app)
             % Reset tables
             app.ExperimentPropertyTable = table();
             app.SavedTable = table();
     
-            % Reset counters
-            app.RegistrationCounter = 1;
-    
             % Reset drop downs and text fields
             app.PreviewDropDown.Items = {'None'};
             app.SegmentDropDown.Items = {'None'};
-            app.DropDownItemsSaved = {'None'};
-            app.DropDownItemsSegmenter = {'None'};
+            app.DropDownItemsSavedOnly = {'None'};
+            app.DropDownItemsCombined = {'None'};
             app.SelectVolumetryDropDown.Items = {'None'};
             app.SelectROIDropDown.Items = {'None'};
             app.SelectfixedDropDown.Items = {'None'};
@@ -990,7 +1042,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Disable and reset components in different tabs
     
             % Preview
-            app.SaveEnvironmentButton.Enable = 'off';
+            app.ExportEnvironmentButton.Enable = 'off';
             app.CreateExportFolderButton.Enable = 'off';
             % Reset UIAxes
             cla(app.UIAxes_Preview);
@@ -1344,9 +1396,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Update drop down items
             app.PreviewDropDown.Items = exp_ID;
-            app.DropDownItemsSegmenter = exp_ID;
-            app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
-            app.SelectPreMapDropDown.Items = exp_ID;
+            app.DropDownItemsCombined = exp_ID;
+            app.SegmentDropDown.Items = app.DropDownItemsCombined;
+            app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
             app.CreateExportFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -1367,7 +1419,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.2;
             folder_path = uigetdir;
             figure(app.BrukKitAlphav08UIFigure);
-            env_Path = string(folder_path) + filesep + "saved_environment" + filesep + "main_properties.mat";
+            env_Path = string(folder_path) + filesep + "exported_environment" + filesep + "main_properties.mat";
             if exist(env_Path, 'file')
                 progress.Value = 0.6;
                 progress.Message = "Importing saved data";
@@ -1388,16 +1440,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.StudyStartDateEditField.Value = LoadedProps.StudyStartDate;
                 app.StudyStartTimeEditField.Value = LoadedProps.StudyStartTime;
                 app.SubjectAgeEditField.Value = LoadedProps.SubjectAge;
-                app.DropDownItemsSaved = LoadedProps.DropDownItemsSaved;
-                app.DropDownItemsSegmenter = LoadedProps.DropDownItemsSegmenter;
+                app.DropDownItemsSavedOnly = LoadedProps.DropDownItemsSavedOnly;
+                app.DropDownItemsCombined = LoadedProps.DropDownItemsCombined;
                 
                 % Update app drop down menus
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
-                app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
-                app.SelectfixedDropDown.Items = app.DropDownItemsSaved;
-                app.SelectmovingDropDown.Items = app.DropDownItemsSaved;
-                app.SelectparameterDropDown.Items = app.DropDownItemsSaved;
-                app.SelectVolumetryDropDown.Items = app.DropDownItemsSaved;
+                app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
@@ -1554,9 +1606,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Update drop down items
             app.PreviewDropDown.Items = exp_ID;
-            app.DropDownItemsSegmenter = exp_ID;
-            app.SegmentDropDown.Items = app.DropDownItemsSegmenter;
-            app.SelectPreMapDropDown.Items = exp_ID;
+            app.DropDownItemsCombined = exp_ID;
+            app.SegmentDropDown.Items = app.DropDownItemsCombined;
+            app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
             app.CreateExportFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -1612,8 +1664,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             writing_Table = cat(2, app.ExperimentPropertyTable(:,1), table(imagedata_String, 'VariableNames', {'Image Data'}), app.ExperimentPropertyTable(:,3:end-1));
             writetable(writing_Table(2:end,:), 'data_info.xlsx');
             
-            % Enable Save Environment
-            app.SaveEnvironmentButton.Enable = 'on';
+            % Enable export Environment
+            app.ExportEnvironmentButton.Enable = 'on';
 
             % Enable export buttons
             if app.PreviewDropDown.Value ~= "None"
@@ -1622,10 +1674,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if app.SegmentDropDown.Value ~= "None"
                 app.ExportDataButton_Segmenter.Enable = 'on';
             end
+            if app.SelectVolumetryDropDown.Value ~= "None"
+                app.ExportDataButton_Volumetry.Enable = 'on';
+            end
+            if ~isequal(app.RegisteredImageData, [])
+                app.ExportDataButton_Registration.Enable = 'on';
+            end
+            if ~isequal(app.PostMapImageData, [])
+                app.ExportDataButton_Map.Enable = 'on';
+            end    
         end
 
-        % Button pushed function: SaveEnvironmentButton
-        function SaveEnvironmentButtonPushed(app, event)
+        % Button pushed function: ExportEnvironmentButton
+        function ExportEnvironmentButtonPushed(app, event)
             
             % Get main environment properties 
             ExperimentPropertyTable = app.ExperimentPropertyTable; %#ok<ADPROPLC> 
@@ -1640,12 +1701,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             StudyStartDate = app.StudyStartDateEditField.Value;
             StudyStartTime = app.StudyStartTimeEditField.Value;
             SubjectAge = app.SubjectAgeEditField.Value;
-            DropDownItemsSaved = app.DropDownItemsSaved; %#ok<ADPROPLC>
+            DropDownItemsSavedOnly = app.DropDownItemsSavedOnly; %#ok<ADPROPLC>
             PreviewDropDownItems = app.PreviewDropDown.Items; 
-            DropDownItemsSegmenter = app.DropDownItemsSegmenter; %#ok<ADPROPLC> 
+            DropDownItemsCombined = app.DropDownItemsCombined; %#ok<ADPROPLC> 
             
             % Save environment inside export folder
-            env_Path = app.ExportFolderPath + filesep + "saved_environment";
+            env_Path = app.ExportFolderPath + filesep + "exported_environment";
             if exist(env_Path, 'dir')
                 selection = uiconfirm(app.BrukKitAlphav08UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
                     'Icon', 'warning');
@@ -1654,7 +1715,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         env_Path = env_Path + filesep + "main_properties.mat";
                         save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
                             "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
-                            "StudyStartTime", "SubjectAge", "DropDownItemsSaved", "DropDownItemsSegmenter", "PreviewDropDownItems")
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems")
                     case 'Cancel'
                         return
                 end  
@@ -1663,8 +1724,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 env_Path = env_Path + filesep + "main_properties.mat";
                 save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
                             "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
-                            "StudyStartTime", "SubjectAge", "DropDownItemsSaved", "DropDownItemsSegmenter", "PreviewDropDownItems")
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems")
             end
+
+            uiconfirm(app.BrukKitAlphav08UIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: ResetEnvironmentButton
@@ -1892,13 +1955,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get selected sequence image data from loaded experiments or saved registration experiments
             try
-                app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
-                reset_indicator = 1;
+                app.OriginalSegmenterImageData = cell2mat(app.SavedTable.Image(value));
+                app.SavedBrainMask = cell2mat(app.SavedTable.BrainMask(value));
+                reset_indicator = 0;
+                
             catch
                 try
-                    app.OriginalSegmenterImageData = cell2mat(app.SavedTable.Image(value));
-                    app.SavedBrainMask = cell2mat(app.SavedTable.BrainMask(value));
-                    reset_indicator = 0;
+                    app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                    reset_indicator = 1;
                 catch
                 end
             end
@@ -2375,7 +2439,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.BrukKitAlphav08UIFigure)
             temp_Mask = niftiread(cat(2, temp_dir, temp_file));
-            app.BrainMask = temp_Mask;
+            app.BrainMask = pagetranspose(temp_Mask);
             
             RefreshImageSegmenter(app);
             uiconfirm(app.BrukKitAlphav08UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -3575,8 +3639,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 return
             end
             
-            % Get selected sequence image data
-            app.PreMapImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            % Get selected experiment image data from loaded experiments or saved registration experiments
+            try
+                app.PreMapImageData = cell2mat(app.SavedTable.Image(value));
+            catch
+                try
+                    app.PreMapImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                catch
+                end
+            end
             
             % Initialize default slider values
             app.Dim5Spinner_PreMap.Value = 1;
@@ -3623,7 +3694,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
             % Lookup TE values from ExperimentTable
-            expTEvalues = nonzeros(app.TEvalues(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, value),:));
+            try
+                expTEvalues = nonzeros(app.TEvalues(app.SavedTable.OrigIndex(value),:));
+            catch
+                expTEvalues = nonzeros(app.TEvalues(find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, value)),:));
+            end
             app.TEvaluesText.Value = erase(mat2str(expTEvalues), ["[";"]"]);
 
             % Enable slice controls
@@ -3805,8 +3880,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Get volumetric data and sequence parameters for map
                 % calculation
                 drop_Value = app.SelectPreMapDropDown.Value; 
-                TE = app.ExperimentPropertyTable.(3)(drop_Value);
-                TR = app.ExperimentPropertyTable.(4)(drop_Value);            
+                try
+                    TE = app.SavedTable.TE(drop_Value);
+                    TR = app.SavedTable.TR(drop_Value);
+                catch
+                    TE = app.ExperimentPropertyTable.(3)(drop_Value);
+                    TR = app.ExperimentPropertyTable.(4)(drop_Value);
+                end
                 
                 % Calculate and display DSC maps
                 if numel(size(app.PreMapImageData)) == 4   
@@ -4034,8 +4114,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ExportDataButton_MapPushed(app, event)
 
             ExportImageData(app, 'Map');
-            
-            % Update last action label
+
             uiconfirm(app.BrukKitAlphav08UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
@@ -4426,12 +4505,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.LoadBrukKitFolderButton.Position = [143 634 129 22];
             app.LoadBrukKitFolderButton.Text = 'Load BrukKit Folder';
 
-            % Create SaveEnvironmentButton
-            app.SaveEnvironmentButton = uibutton(app.PreviewTab, 'push');
-            app.SaveEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @SaveEnvironmentButtonPushed, true);
-            app.SaveEnvironmentButton.Enable = 'off';
-            app.SaveEnvironmentButton.Position = [209 594 132 22];
-            app.SaveEnvironmentButton.Text = 'Save Environment';
+            % Create ExportEnvironmentButton
+            app.ExportEnvironmentButton = uibutton(app.PreviewTab, 'push');
+            app.ExportEnvironmentButton.ButtonPushedFcn = createCallbackFcn(app, @ExportEnvironmentButtonPushed, true);
+            app.ExportEnvironmentButton.Enable = 'off';
+            app.ExportEnvironmentButton.Position = [209 594 132 22];
+            app.ExportEnvironmentButton.Text = 'Export Environment';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
