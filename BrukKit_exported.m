@@ -1200,10 +1200,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             screenHeight = screenSize(4);
             left = screenWidth*0.1;
             bottom = screenHeight*0.1;
-            width = screenWidth*0.8;
-            height = screenHeight*0.8;
+            width = 1436;
+            height = 746;
             drawnow;
-            app.BrukKitAlphav08UIFigure.Position = [left bottom width height]; 
+            %app.BrukKitAlphav08UIFigure.Position = [left bottom width height];
+            movegui(app.BrukKitAlphav08UIFigure, 'center');
         end
 
         % Key press function: BrukKitAlphav08UIFigure
@@ -1459,10 +1460,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Update app drop down menus
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
-                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
@@ -2091,7 +2093,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereSegmentationToolsPanel.Visible = 'off';
             app.ROISegmentationToolsPanel.Visible = 'off';
             app.ROIPanel.Visible = 'on';
-%             app.ROIPanel.Position = [1200,110,149,140];
+            brainPosition = app.BrainSegmentationToolsPanel.Position;
+            roiPosition = app.ROIPanel.Position;
+            roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+            app.ROIPanel.Position = roiPosition;
             app.SaveSegmentedDataButton.Enable = 'on';
             if isstring(app.ExportFolderPath)
                 app.ExportDataButton_Segmenter.Enable = 'on';
@@ -2138,10 +2143,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
             else
                 if app.CurrentSegmentationDropDown.Value == "Hemisphere"
-                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
             end
@@ -2166,10 +2174,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'Hemisphere', 'ROI'};
             else
                 if app.CurrentSegmentationDropDown.Value == "Hemisphere"
-                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'}; 
             end
@@ -2309,7 +2320,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.BrainSegmentationToolsPanel.Visible = 'on';
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
 
                     temp_limits = app.SliceSpinner_Segmenter.Limits;
                     temp_value = app.SliceSpinner_Segmenter.Value;
@@ -2352,7 +2366,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.BrainSegmentationToolsPanel.Visible = 'on';
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
 
                     temp_value_slice = app.SliceSpinner_Segmenter.Value;
                     temp_limits_slice = app.SliceSpinner_Segmenter.Limits;
@@ -2394,7 +2411,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.BrainSegmentationToolsPanel.Visible = 'on';
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
 
                     temp_limits = app.Dim5Spinner_Segmenter.Limits;
                     temp_value = app.Dim5Spinner_Segmenter.Value;
@@ -2421,20 +2441,29 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             switch app.CurrentSegmentationDropDown.Value
                 case 'Brain'
-                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.BrainSegmentationToolsPanel.Visible = 'on';
+                    app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,110,149,140];
+                    brainPosition = app.BrainSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
                 case 'Hemisphere'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='on';
                     app.ROISegmentationToolsPanel.Visible = 'off';
-%                     app.ROIPanel.Position = [1200,261,149,140];
+                    hemiPosition = app.HemisphereSegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = hemiPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
                 case 'ROI'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'on';
-%                     app.ROIPanel.Position = [1200,122,149,140];
+                    roitoolsPosition = app.ROISegmentationToolsPanel.Position;
+                    roiPosition = app.ROIPanel.Position;
+                    roiPosition(2) = roitoolsPosition(2)-10-roiPosition(4);
+                    app.ROIPanel.Position = roiPosition;
                 otherwise
             end
             RefreshImageSegmenter(app);
@@ -4884,13 +4913,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ResetSliceButton
             app.ResetSliceButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.ResetSliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetSliceButtonPushed, true);
-            app.ResetSliceButton.Position = [26 20 100 22];
+            app.ResetSliceButton.Position = [22 21 100 22];
             app.ResetSliceButton.Text = 'Reset Slice';
 
             % Create ApplyMaskButton
             app.ApplyMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.ApplyMaskButton.ButtonPushedFcn = createCallbackFcn(app, @ApplyMaskButtonPushed, true);
-            app.ApplyMaskButton.Position = [136 20 100 22];
+            app.ApplyMaskButton.Position = [132 21 100 22];
             app.ApplyMaskButton.Text = 'Apply Mask';
 
             % Create VolumetryTab
