@@ -2,7 +2,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        BrukKitAlphav081UIFigure        matlab.ui.Figure
+        BrukKitAlphav0820UIFigure       matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         PreviewTab                      matlab.ui.container.Tab
         ExportEnvironmentButton         matlab.ui.control.Button
@@ -82,7 +82,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         RightredButton                  matlab.ui.control.RadioButton
         LeftblueButton                  matlab.ui.control.RadioButton
         ResetHemispheresButton          matlab.ui.control.Button
-        ROIPanel                        matlab.ui.container.Panel
+        SelectionToolsPanel             matlab.ui.container.Panel
         DeleteButton                    matlab.ui.control.Button
         ConfirmButton                   matlab.ui.control.Button
         FreeButton_Remove               matlab.ui.control.Button
@@ -120,7 +120,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ROIPanel_Volumetry              matlab.ui.container.Panel
         IQRUpperEditField_ROI           matlab.ui.control.NumericEditField
         IQRLowerEditField_ROI           matlab.ui.control.NumericEditField
-        IQREditFieldLabel_Brain_3       matlab.ui.control.Label
+        IQREditFieldLabel_ROI           matlab.ui.control.Label
         MedianEditField_ROI             matlab.ui.control.NumericEditField
         MedianEditFieldLabel_ROI        matlab.ui.control.Label
         ApplyEdemaCorrectionCheckBox    matlab.ui.control.CheckBox
@@ -179,33 +179,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectVolumetryDropDown         matlab.ui.control.DropDown
         SelectExperimentForVolumetryLabel  matlab.ui.control.Label
         RegistrationTab                 matlab.ui.container.Tab
+        SliceSlider_Registration        matlab.ui.control.Slider
+        SliceSliderLabel_Registration   matlab.ui.control.Label
+        SliceSpinner_Registration       matlab.ui.control.Spinner
+        ColormapButtonGroup_Registration  matlab.ui.container.ButtonGroup
+        TurboButton_Registration        matlab.ui.control.RadioButton
+        GreyscaleButton_Registration    matlab.ui.control.RadioButton
+        RegistrationViewerButton        matlab.ui.control.Button
         DataavailableforregistrationonlyaftersegmentationLabel  matlab.ui.control.Label
-        Dim5Spinner_Moving              matlab.ui.control.Spinner
-        Dim5Spinner_MovingLabel         matlab.ui.control.Label
-        Dim4Spinner_Moving              matlab.ui.control.Spinner
-        Dim4Spinner_MovingLabel         matlab.ui.control.Label
-        SliceSpinner_Moving             matlab.ui.control.Spinner
-        SliceSpinner_MovingLabel        matlab.ui.control.Label
-        Dim5Spinner_Fixed               matlab.ui.control.Spinner
-        Dim5Spinner_FixedLabel          matlab.ui.control.Label
-        Dim4Spinner_Fixed               matlab.ui.control.Spinner
-        Dim4Spinner_FixedLabel          matlab.ui.control.Label
-        SliceSpinner_Fixed              matlab.ui.control.Spinner
-        SliceSpinner_FixedLabel         matlab.ui.control.Label
-        Dim5Spinner_Parameter           matlab.ui.control.Spinner
-        Dim5Spinner_ParameterLabel      matlab.ui.control.Label
-        Dim4Spinner_Parameter           matlab.ui.control.Spinner
-        Dim4Spinner_ParameterLabel      matlab.ui.control.Label
         ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
-        SliceSpinner_Registration       matlab.ui.control.Spinner
-        SliceSpinner_RegistrationLabel  matlab.ui.control.Label
         ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
-        AddsliceButton                  matlab.ui.control.Button
         RegistrationInstructionsTextArea  matlab.ui.control.TextArea
         RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
-        SliceSpinner_Parameter          matlab.ui.control.Spinner
-        SliceSpinner_ParameterLabel     matlab.ui.control.Label
         SelectparameterDropDown         matlab.ui.control.DropDown
         SelectparameterLabel            matlab.ui.control.Label
         UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
@@ -288,6 +274,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         FlipVerticallyMenu_PostMap      matlab.ui.container.Menu
         FlipHorizontallyMenu_PostMap    matlab.ui.container.Menu
         ResetViewMenu_PostMap           matlab.ui.container.Menu
+        ContextMenu_Registration        matlab.ui.container.ContextMenu
+        ResetViewMenu_Registration      matlab.ui.container.Menu
+        ContextMenu_RegistrationInstructions  matlab.ui.container.ContextMenu
+        ResetInstructionsMenu           matlab.ui.container.Menu
     end
 
     
@@ -335,7 +325,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SavedBrainMask % Saved brain mask data of current experiment
         DropDownItemsSavedOnly = {'None'}; % Stored items featuring only saved experiments
 
+        % Volumetry tab
+        VolumetryImageData % Property for storing image data of currently selected experiment in volumetry tab
+        VolumetryBrainMask % Property for storing brain mask of currently selected experiment in volumetry tab
+        VolumetryHemiMask % Property for storing hemisphere mask of currently selected experiment in volumetry tab
+        VolumetryROI % Property for storing roi data of currently selected experiment in volumetry tab
+        VolumetryDimX % Property for storing voxel dimension x of currently selected experiment in volumetry tab
+        VolumetryDimY % Property for storing voxel dimension y of currently selected experiment in volumetry tab
+        VolumetryThickness % Property for storing slice thickness of currently selected experiment in volumetry tab
+        VolumetryGap  % Property for storing slice gap of currently selected experiment in volumetry tab
+
         % Registration tab
+        ExpDimsRegistration % Dimensions of currently displayed registered data
+        RegistrationViewerWindow % Registration data viewer window
         MovingNDims % Number of moving image data dimensions
         FixedNDims % Number of fixed image data dimensions
         ParameterNDims % Number of parameter image data dimensions
@@ -356,19 +358,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPreMap % Dimensions of currently displayed sequence for mapping
         ExpDimsPostMap % Dimensions of currently displayed parameter map
 
-
-        % Volumetry tab
-        VolumetryImageData % Property for storing image data of currently selected experiment in volumetry tab
-        VolumetryBrainMask % Property for storing brain mask of currently selected experiment in volumetry tab
-        VolumetryHemiMask % Property for storing hemisphere mask of currently selected experiment in volumetry tab
-        VolumetryROI % Property for storing roi data of currently selected experiment in volumetry tab
-        VolumetryDimX % Property for storing voxel dimension x of currently selected experiment in volumetry tab
-        VolumetryDimY % Property for storing voxel dimension y of currently selected experiment in volumetry tab
-        VolumetryThickness % Property for storing slice thickness of currently selected experiment in volumetry tab
-        VolumetryGap  % Property for storing slice gap of currently selected experiment in volumetry tab
     end
     
     properties (Access = public)
+        ProgressBar % Property for storing progress dialogues when opening new windows
         DSCOptions = DSC_mri_getOptions; % DSC map calculation options
     end
     
@@ -522,6 +515,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
             end
         end
+        
+        % Registration UIAxes image updating
+        function RefreshImageRegistration(app)
+            app.ExpDimsRegistration = size(app.RegisteredImageData);
+            switch numel(app.ExpDimsRegistration)
+                case 2
+                    app.CurrentSlice = app.RegisteredImageData(:,:);
+                otherwise
+                    app.CurrentSlice = app.RegisteredImageData(:,:,app.SliceSpinner_Registration.Value);
+            end
+            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            switch app.TurboButton_Registration.Value
+                case true
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+                otherwise
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Registration);
+            end
+            reg.ContextMenu = app.ContextMenu_Registration;
+        end
 
         % Parameter Maps UIAxes input image updating
         function RefreshImagePreMap(app)
@@ -570,7 +582,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             switch tab
                 case 'Preview'
                     OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.PreviewDropDown.Value));
-                    exp_ID = app.PreviewDropDown.Value;
+                    exp_ID = append(app.PreviewDropDown.Value, '_Preview');
                     image_Data = app.PreviewImageData;
                     saved_BrainMask = false(size(image_Data));
                     hemi_Mask = false(1);
@@ -640,7 +652,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
                     exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
                     image_Data = app.RegisteredImageData;
-                    selection = uiconfirm(app.BrukKitAlphav081UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                    selection = uiconfirm(app.BrukKitAlphav0820UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
                         ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
                     switch selection
                         case 'Save Mask'
@@ -711,11 +723,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
-                uiconfirm(app.BrukKitAlphav081UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+                uiconfirm(app.BrukKitAlphav0820UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
             catch ME
                 switch ME.identifier
                     case 'MATLAB:table:DuplicateRowNames'
-                        selection = uiconfirm(app.BrukKitAlphav081UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
+                        selection = uiconfirm(app.BrukKitAlphav0820UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
                         switch selection
                             case 'OK'
                                 % Overwrite data of currently saved experiment under same identifier
@@ -733,7 +745,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 app.SavedTable.RotMat(exp_ID) = RotMat;
                                 
                                 % Display confirmation figure
-                                uiconfirm(app.BrukKitAlphav081UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+                                uiconfirm(app.BrukKitAlphav0820UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
                             case 'Cancel'
                                 return
                         end
@@ -1094,32 +1106,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrainSegmentationToolsPanel.Visible = 'off';
             app.HemisphereSegmentationToolsPanel.Visible = 'off';
             app.ROISegmentationToolsPanel.Visible = 'off';
-            app.ROIPanel.Visible = 'off';
+            app.SelectionToolsPanel.Visible = 'off';
             app.SaveSegmentedDataButton.Enable = 'off';
             app.ExportDataButton_Segmenter.Enable = 'off';
     
             % Registration
             % Reset UIAxes
             cla(app.UIAxes_Registration);
-            app.Dim5Spinner_Fixed.Enable = 'off';
-            app.Dim5Spinner_Fixed.Value = 1;
-            app.Dim4Spinner_Fixed.Enable = 'off';
-            app.Dim4Spinner_Fixed.Value = 1;
-            app.SliceSpinner_Fixed.Enable = 'off';
-            app.SliceSpinner_Fixed.Value = 1;
-            app.Dim5Spinner_Moving.Enable = 'off';
-            app.Dim5Spinner_Moving.Value = 1;
-            app.Dim4Spinner_Moving.Enable = 'off';
-            app.Dim4Spinner_Moving.Value = 1;
-            app.SliceSpinner_Moving.Enable = 'off';
-            app.SliceSpinner_Moving.Value = 1;
-            app.Dim5Spinner_Parameter.Enable = 'off';
-            app.Dim5Spinner_Parameter.Value = 1;
-            app.Dim4Spinner_Parameter.Enable = 'off';
-            app.Dim4Spinner_Parameter.Value = 1;
-            app.SliceSpinner_Parameter.Enable = 'off';
-            app.SliceSpinner_Parameter.Value = 1;
+            app.SliceSlider_Registration.Enable = 'off';
+            app.SliceSlider_Registration.Value = 1;
+            app.SliceSpinner_Registration.Enable = 'off';
+            app.SliceSpinner_Registration.Value = 1;
+            app.TurboButton_Registration.Enable = 'off';
+            app.GreyscaleButton_Registration.Enable = 'off';
             app.UsedifferentparametermapCheckBox.Value = 0;
+            app.SelectparameterDropDown.Enable = 'off';
             app.RegistrationInstructionsTextArea.Value = '';
     
             % Volumetry 
@@ -1198,11 +1199,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function StartUpFcn(app)
 
-            movegui(app.BrukKitAlphav081UIFigure, 'center');
+            movegui(app.BrukKitAlphav0820UIFigure, 'center');
         end
 
-        % Key press function: BrukKitAlphav081UIFigure
-        function BrukKitAlphav081UIFigureKeyPress(app, event)
+        % Key press function: BrukKitAlphav0820UIFigure
+        function BrukKitAlphav0820UIFigureKeyPress(app, event)
             key = event.Key;
             
             switch key
@@ -1241,7 +1242,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function LoadPvDatasetsFileButtonPushed(app, event)
                         
             % Draw progress box 
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Purging old temporary data");
             drawnow
 
@@ -1255,7 +1256,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.2;
             progress.Message = "Selecting an archive file";
             [file, folder] = uigetfile('*.PvDatasets', 'Select a Bruker archive file');
-            figure(app.BrukKitAlphav081UIFigure);
+            figure(app.BrukKitAlphav0820UIFigure);
             if isequal(file, 0)
                 close(progress);
                 return;
@@ -1277,9 +1278,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.StudyPath = fullfile(app.WorkingFolder, temp{1,end-1});
             elseif regexp(temp{1,end}, '.*\.subject$') == 1
                 app.StudyPath = uigetdir(app.WorkingFolder, 'Select a study folder to use');
-                figure(app.BrukKitAlphav081UIFigure);
+                figure(app.BrukKitAlphav0820UIFigure);
             else
-                uiconfirm(app.BrukKitAlphav081UIFigure, "Unkown archive type.", "","Options",{'OK'},"DefaultOption",1, "Icon","error");
+                uiconfirm(app.BrukKitAlphav0820UIFigure, "Unkown archive type.", "","Options",{'OK'},"DefaultOption",1, "Icon","error");
                 return;
             end
 
@@ -1419,14 +1420,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: LoadBrukKitFolderButton
         function LoadBrukKitFolderButtonPushed(app, event)
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Selecting BrukKit folder");
             drawnow    
             
             % Select BrukKit folder, check for cancel and update the edit field text
             progress.Value = 0.2;
             folder_path = uigetdir;
-            figure(app.BrukKitAlphav081UIFigure);
+            figure(app.BrukKitAlphav0820UIFigure);
             env_Path = string(folder_path) + filesep + "exported_environment" + filesep + "main_properties.mat";
             if exist(env_Path, 'file')
                 progress.Value = 0.6;
@@ -1464,6 +1465,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
                 variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
                 app.UITable_Preview.ColumnName = variable_Names;
+                
+                % Set export folder to loaded BrukKit folder and cd
+                app.ExportFolderPath = string(folder_path);
+                cd(app.ExportFolderPath);
+
+                % Enable export Environment
+                app.ExportEnvironmentButton.Enable = 'on';
+    
+                % Enable export buttons
+                if app.PreviewDropDown.Value ~= "None"
+                    app.ExportDataButton_Preview.Enable = 'on';
+                end
+                if app.SegmentDropDown.Value ~= "None"
+                    app.ExportDataButton_Segmenter.Enable = 'on';
+                end
+                if app.SelectVolumetryDropDown.Value ~= "None"
+                    app.ExportDataButton_Volumetry.Enable = 'on';
+                end
+                if ~isequal(app.RegisteredImageData, [])
+                    app.ExportDataButton_Registration.Enable = 'on';
+                end
+                if ~isequal(app.PostMapImageData, [])
+                    app.ExportDataButton_Map.Enable = 'on';
+                end    
 
                 % close the dialog box
                 progress.Value = 1;
@@ -1472,7 +1497,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 close(progress);
             else
                 close(progress);
-                uialert(app.BrukKitAlphav081UIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
+                uialert(app.BrukKitAlphav0820UIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
             end
         end
 
@@ -1480,14 +1505,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function LoadBrukerStudyButtonPushed(app, event)
             
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Selecting Bruker study");
             drawnow
             
             % Select Bruker study folder, check for cancel and update the edit field text
             progress.Value = 0.2;
             app.StudyPath = uigetdir; 
-            figure(app.BrukKitAlphav081UIFigure);
+            figure(app.BrukKitAlphav0820UIFigure);
             if isequal(app.StudyPath, 0)
                 close(progress);
                 return;
@@ -1631,9 +1656,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function CreateExportFolderButtonPushed(app, event)
             selected_path = uigetdir;
             app.ExportFolderPath = string(selected_path) + filesep + app.SubjectIDEditField.Value + "_" + app.StudyIDEditField.Value;
-            figure(app.BrukKitAlphav081UIFigure);
+            figure(app.BrukKitAlphav0820UIFigure);
             if exist(app.ExportFolderPath, 'dir')
-                selection = uiconfirm(app.BrukKitAlphav081UIFigure, 'BrukKit Study Folder already existes in chosen directory. Are you sure you want to overwrite?', 'Confirm Overwrite', ...
+                selection = uiconfirm(app.BrukKitAlphav0820UIFigure, 'BrukKit Study Folder already existes in chosen directory. Are you sure you want to overwrite?', 'Confirm Overwrite', ...
                     'Icon', 'warning');
                 switch selection
                     case 'OK'
@@ -1697,7 +1722,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: ExportEnvironmentButton
         function ExportEnvironmentButtonPushed(app, event)
             
-            % Get main environment properties 
+            % Draw progress box
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
+                 'Message', "Retrieving environment properties");
+            drawnow    
+
+            % Get main environment properties
+            progress.Value = 0.3;
+            pause(0.5);
             ExperimentPropertyTable = app.ExperimentPropertyTable; %#ok<ADPROPLC> 
             SavedTable = app.SavedTable; %#ok<ADPROPLC> 
             SubjectID = app.SubjectIDEditField.Value;
@@ -1715,9 +1747,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             DropDownItemsCombined = app.DropDownItemsCombined; %#ok<ADPROPLC> 
             
             % Save environment inside export folder
+            progress.Value = 0.6;
+            progress.Message = "Exporting environment";
             env_Path = app.ExportFolderPath + filesep + "exported_environment";
             if exist(env_Path, 'dir')
-                selection = uiconfirm(app.BrukKitAlphav081UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
+                selection = uiconfirm(app.BrukKitAlphav0820UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
                     'Icon', 'warning');
                 switch selection
                     case 'OK'
@@ -1736,12 +1770,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems")
             end
 
-            uiconfirm(app.BrukKitAlphav081UIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            % close the dialog box
+            progress.Value = 1;
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: ResetEnvironmentButton
         function ResetEnvironmentButtonButtonPushed(app, event)
-            selection = uiconfirm(app.BrukKitAlphav081UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
+            selection = uiconfirm(app.BrukKitAlphav0820UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
                         'Icon','warning');
             switch selection 
                 case 'OK'  
@@ -1838,7 +1878,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ExportDataButton_PreviewPushed(app, event)
             ExportImageData(app, 'Preview');
 
-            uiconfirm(app.BrukKitAlphav081UIFigure, "Image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "Image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changing function: SliceSlider_Preview
@@ -1956,7 +1996,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.BrainSegmentationToolsPanel.Visible = 'off';
                 app.HemisphereSegmentationToolsPanel.Visible = 'off';
                 app.ROISegmentationToolsPanel.Visible = 'off';
-                app.ROIPanel.Visible = 'off';
+                app.SelectionToolsPanel.Visible = 'off';
                 app.SaveSegmentedDataButton.Enable = 'off';
                 app.ExportDataButton_Segmenter.Enable = 'off';
                 return
@@ -2086,11 +2126,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrainSegmentationToolsPanel.Visible = 'on';
             app.HemisphereSegmentationToolsPanel.Visible = 'off';
             app.ROISegmentationToolsPanel.Visible = 'off';
-            app.ROIPanel.Visible = 'on';
+            app.SelectionToolsPanel.Visible = 'on';
             brainPosition = app.BrainSegmentationToolsPanel.Position;
-            roiPosition = app.ROIPanel.Position;
+            roiPosition = app.SelectionToolsPanel.Position;
             roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-            app.ROIPanel.Position = roiPosition;
+            app.SelectionToolsPanel.Position = roiPosition;
             app.SaveSegmentedDataButton.Enable = 'on';
             if isstring(app.ExportFolderPath)
                 app.ExportDataButton_Segmenter.Enable = 'on';
@@ -2141,9 +2181,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
             end
@@ -2172,9 +2212,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'}; 
             end
@@ -2288,7 +2328,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: PermuteMenu_3_4
         function PermuteMenu_3_4Selected(app, event)
                 
-            selection = uiconfirm(app.BrukKitAlphav081UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitAlphav0820UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     switch numel(app.ExpDimsSegmenter)
@@ -2315,9 +2355,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_limits = app.SliceSpinner_Segmenter.Limits;
                     temp_value = app.SliceSpinner_Segmenter.Value;
@@ -2339,7 +2379,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: PermuteMenu_3_5
         function PermuteMenu_3_5Selected(app, event)
             
-            selection = uiconfirm(app.BrukKitAlphav081UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitAlphav0820UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,5,4,3]);
@@ -2361,9 +2401,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_value_slice = app.SliceSpinner_Segmenter.Value;
                     temp_limits_slice = app.SliceSpinner_Segmenter.Limits;
@@ -2384,7 +2424,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Menu selected function: PermuteMenu_4_5
         function PermuteMenu_4_5Selected(app, event)
-            selection = uiconfirm(app.BrukKitAlphav081UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitAlphav0820UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,3,5,4]);
@@ -2406,9 +2446,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible = 'off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_limits = app.Dim5Spinner_Segmenter.Limits;
                     temp_value = app.Dim5Spinner_Segmenter.Value;
@@ -2439,25 +2479,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = brainPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
                 case 'Hemisphere'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='on';
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     hemiPosition = app.HemisphereSegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = hemiPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
                 case 'ROI'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
                     app.HemisphereSegmentationToolsPanel.Visible ='off';
                     app.ROISegmentationToolsPanel.Visible = 'on';
                     roitoolsPosition = app.ROISegmentationToolsPanel.Position;
-                    roiPosition = app.ROIPanel.Position;
+                    roiPosition = app.SelectionToolsPanel.Position;
                     roiPosition(2) = roitoolsPosition(2)-10-roiPosition(4);
-                    app.ROIPanel.Position = roiPosition;
+                    app.SelectionToolsPanel.Position = roiPosition;
                 otherwise
             end
             RefreshImageSegmenter(app);
@@ -2473,12 +2513,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get external mask data
             [temp_file, temp_dir] = uigetfile('.nii');
-            figure(app.BrukKitAlphav081UIFigure)
+            figure(app.BrukKitAlphav0820UIFigure)
             temp_Mask = niftiread(cat(2, temp_dir, temp_file));
             app.BrainMask = pagetranspose(temp_Mask);
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitAlphav081UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: InitialSelectionButton
@@ -2657,7 +2697,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROIMask = cat(3, app.ROIMask, false(app.ExpDimsSegmenter));
                 end
             else
-                uialert(app.BrukKitAlphav081UIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error')
+                uialert(app.BrukKitAlphav0820UIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error')
             end
             RefreshImageSegmenter(app);
         end
@@ -2885,7 +2925,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             ExportImageData(app, 'Segmenter');
             
-            uiconfirm(app.BrukKitAlphav081UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: SelectVolumetryDropDown
@@ -2934,7 +2974,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
             % Draw a progress box 
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving saved data.");
             drawnow
             
@@ -3239,258 +3279,71 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
             
-            % Get fixed image data, enable/disable components based on number of dimensions
-            if app.SelectfixedDropDown.Value == "None"
-                app.Dim5Spinner_Fixed.Enable = 'off';
-                app.Dim5Spinner_Fixed.Value = 1;
-                app.Dim4Spinner_Fixed.Enable = 'off';
-                app.Dim4Spinner_Fixed.Value = 1;
-                app.SliceSpinner_Fixed.Enable = 'off';
-                app.SliceSpinner_Fixed.Value = 1;
-                return
-            end
-
+            % Get fixed image data number of dimensions
             fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
-            dims = size(fixed_Image);
-            switch numel(dims)
-                case 5
-                    app.FixedNDims = 5;
-                    app.Dim5Spinner_Fixed.Enable = 'on';
-                    app.Dim5Spinner_Fixed.Value = 1;
-                    app.Dim5Spinner_Fixed.Limits = [1, dims(5)];
-                    app.Dim4Spinner_Fixed.Enable = 'on';
-                    app.Dim4Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Limits = [1, dims(4)];
-                    app.SliceSpinner_Fixed.Enable = 'on';
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Limits = [1, dims(3)];
-                case 4
-                    app.FixedNDims = 4;
-                    app.Dim5Spinner_Fixed.Enable = 'off';
-                    app.Dim5Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Enable = 'on';
-                    app.Dim4Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Limits = [1, dims(4)];
-                    app.SliceSpinner_Fixed.Enable = 'on';
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Limits = [1, dims(3)];
-                case 3
-                    app.FixedNDims = 3;
-                    app.Dim5Spinner_Fixed.Enable = 'off';
-                    app.Dim5Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Enable = 'off';
-                    app.Dim4Spinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Enable = 'on';
-                    app.SliceSpinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Limits = [1, dims(3)];
-                case 2
-                    app.FixedNDims = 2;
-                    app.Dim5Spinner_Fixed.Enable = 'off';
-                    app.Dim5Spinner_Fixed.Value = 1;
-                    app.Dim4Spinner_Fixed.Enable = 'off';
-                    app.Dim4Spinner_Fixed.Value = 1;
-                    app.SliceSpinner_Fixed.Enable = 'off';
-                    app.SliceSpinner_Fixed.Value = 1;
-            end
+            app.FixedNDims = numel(size(fixed_Image));
+
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
             
-            % Get moving image data, enable/disable components based on number of dimensions
-            if app.SelectmovingDropDown.Value == "None"
-                app.Dim5Spinner_Moving.Enable = 'off';
-                app.Dim5Spinner_Moving.Value = 1;
-                app.Dim4Spinner_Moving.Enable = 'off';
-                app.Dim4Spinner_Moving.Value = 1;
-                app.SliceSpinner_Moving.Enable = 'off';
-                app.SliceSpinner_Moving.Value = 1;
-                return
-            end
-
+            % Get moving image data number of dimensions
             moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
-            dims = size(moving_Image);
-            switch numel(dims)
-                case 5
-                    app.MovingNDims = 5;
-                    app.Dim5Spinner_Moving.Enable = 'on';
-                    app.Dim5Spinner_Moving.Value = 1;
-                    app.Dim5Spinner_Moving.Limits = [1, dims(5)];
-                    app.Dim4Spinner_Moving.Enable = 'on';
-                    app.Dim4Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Limits = [1, dims(4)];
-                    app.SliceSpinner_Moving.Enable = 'on';
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Limits = [1, dims(3)];
-                case 4
-                    app.MovingNDims = 4;
-                    app.Dim5Spinner_Moving.Enable = 'off';
-                    app.Dim5Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Enable = 'on';
-                    app.Dim4Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Limits = [1, dims(4)];
-                    app.SliceSpinner_Moving.Enable = 'on';
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Limits = [1, dims(3)];
-                case 3
-                    app.MovingNDims = 3;
-                    app.Dim5Spinner_Moving.Enable = 'off';
-                    app.Dim5Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Enable = 'off';
-                    app.Dim4Spinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Enable = 'on';
-                    app.SliceSpinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Limits = [1, dims(3)];
-                case 2
-                    app.MovingNDims = 2;
-                    app.Dim5Spinner_Moving.Enable = 'off';
-                    app.Dim5Spinner_Moving.Value = 1;
-                    app.Dim4Spinner_Moving.Enable = 'off';
-                    app.Dim4Spinner_Moving.Value = 1;
-                    app.SliceSpinner_Moving.Enable = 'off';
-                    app.SliceSpinner_Moving.Value = 1;
-            end
+            app.MovingNDims = numel(size(moving_Image));
+
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: UsedifferentparametermapCheckBox
         function UsedifferentparametermapCheckBoxValueChanged(app, event)
-            value = app.UsedifferentparametermapCheckBox.Value;
 
-            if value == 1
+            if app.UsedifferentparametermapCheckBox.Value == 1
                 app.SelectparameterDropDown.Enable = 'on';
             else
                 app.SelectparameterDropDown.Enable = 'off';
-                app.Dim5Spinner_Parameter.Enable = 'off';
-                app.Dim5Spinner_Parameter.Value = 1;
-                app.Dim4Spinner_Parameter.Enable = 'off';
-                app.Dim4Spinner_Parameter.Value = 1;
-                app.SliceSpinner_Parameter.Enable = 'off';
-                app.SliceSpinner_Parameter.Value = 1;
             end
+            app.SelectparameterDropDown.Value = "None";
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
             
-            % Get parameter image data, enable/disable components based on number of dimensions
-            if app.SelectparameterDropDown.Value == "None"
-                app.Dim5Spinner_Parameter.Enable = 'off';
-                app.Dim5Spinner_Parameter.Value = 1;
-                app.Dim4Spinner_Parameter.Enable = 'off';
-                app.Dim4Spinner_Parameter.Value = 1;
-                app.SliceSpinner_Parameter.Enable = 'off';
-                app.SliceSpinner_Parameter.Value = 1;
-                return
-            end
-
+            % Get parameter image data number of dimensions
             parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
-            dims = size(parameter_Image);
-            switch numel(dims)
-                case 5
-                    app.ParameterNDims = 5;
-                    app.Dim5Spinner_Parameter.Enable = 'on';
-                    app.Dim5Spinner_Parameter.Value = 1;
-                    app.Dim5Spinner_Parameter.Limits = [1, dims(5)];
-                    app.Dim4Spinner_Parameter.Enable = 'on';
-                    app.Dim4Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Limits = [1, dims(4)];
-                    app.SliceSpinner_Parameter.Enable = 'on';
-                    app.SliceSpinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Limits = [1, dims(3)];
-                case 4
-                    app.ParameterNDims = 4;
-                    app.Dim5Spinner_Parameter.Enable = 'off';
-                    app.Dim5Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Enable = 'on';
-                    app.Dim4Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Limits = [1, dims(4)];
-                    app.SliceSpinner_Parameter.Enable = 'on';
-                    app.SliceSpinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Limits = [1, dims(3)];
-                case 3
-                    app.ParameterNDims = 3;
-                    app.Dim5Spinner_Parameter.Enable = 'off';
-                    app.Dim5Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Enable = 'off';
-                    app.Dim4Spinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Enable = 'on';
-                    app.SliceSpinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Limits = [1, dims(3)];
-                case 2
-                    app.ParameterNDims = 2;
-                    app.Dim5Spinner_Parameter.Enable = 'off';
-                    app.Dim5Spinner_Parameter.Value = 1;
-                    app.Dim4Spinner_Parameter.Enable = 'off';
-                    app.Dim4Spinner_Parameter.Value = 1;
-                    app.SliceSpinner_Parameter.Enable = 'off';
-                    app.SliceSpinner_Parameter.Value = 1;
-            end
+            app.ParameterNDims = numel(size(parameter_Image));
+
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Button pushed function: AddsliceButton
-        function AddsliceButtonPushed(app, event)
-            
+        % Button pushed function: RegistrationViewerButton
+        function RegistrationViewerButtonPushed(app, event)
+            % Check for valid selections
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
-                uialert(app.BrukKitAlphav081UIFigure, 'Cannot add slice instructions: valid registration data not selected.', 'Instruction Error.')
+                uialert(app.BrukKitAlphav0820UIFigure, 'Cannot open Registration Viewer: please select valid registration data.', 'Registration Viewer Error.')
                 return
             end
-
-            % Create slice registration instructions based on char formula
-            % moving(dim3,dim4,dim5)fixed(dim3,dim4,dim5)parameter(dim3,dim4,dim5)
-            use_parameter_value = app.UsedifferentparametermapCheckBox.Value;
-            if use_parameter_value == 1
-                switch app.MovingNDims
-                    case 5
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',', num2str(app.Dim5Spinner_Moving.Value), ')');
-                    case 4
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',-)');
-                    otherwise
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',-,-)');
-                end
-                switch app.FixedNDims
-                    case 5
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',', num2str(app.Dim5Spinner_Fixed.Value), ')');
-                    case 4
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',-)');
-                    otherwise
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',-,-)');
-                end
-                switch app.ParameterNDims
-                    case 5
-                        parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',', num2str(app.Dim4Spinner_Parameter.Value), ',', num2str(app.Dim5Spinner_Parameter.Value), ') ');
-                    case 4
-                        parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',', num2str(app.Dim4Spinner_Parameter.Value), ',-) ');
-                    otherwise
-                        parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',-,-) ');
-                end
-                slice_instruction = append(moving, fixed, parameter);
-
-                % Add to total registration instructions
-                app.RegistrationInstructionsTextArea.Value = append(app.RegistrationInstructionsTextArea.Value, ' ', slice_instruction);
-            else
-                switch app.MovingNDims
-                    case 5
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',', num2str(app.Dim5Spinner_Moving.Value), ')');
-                    case 4
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',-)');
-                    otherwise
-                        moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',-,-)');
-                end
-                switch app.FixedNDims
-                    case 5
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',', num2str(app.Dim5Spinner_Fixed.Value), ') ');
-                    case 4
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',-) ');
-                    otherwise
-                        fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',-,-) ');
-                end
-                slice_instruction = append(moving, fixed);
-
-                % Add to total registration instructions
-                app.RegistrationInstructionsTextArea.Value = append(app.RegistrationInstructionsTextArea.Value, ' ', slice_instruction);
+            
+            % Open Registration Viewer 
+            if app.UsedifferentparametermapCheckBox.Value == 0
+                moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
+                fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+                app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
+                     'Message', "Viewing Registration Data...", 'Indeterminate','on');
+                drawnow
+                app.RegistrationViewerButton.Enable = 'off';
+                app.RegistrationViewerWindow = RegistrationViewer_Basic(app, moving_Image, fixed_Image);
+            elseif app.UsedifferentparametermapCheckBox.Value == 1
+                moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
+                fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+                parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
+                app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
+                     'Message', "Viewing Registration Data...", 'Indeterminate','on');
+                drawnow
+                app.RegistrationViewerButton.Enable = 'off';
+                app.RegistrationViewerWindow = RegistrationViewer_Parameter(app, moving_Image, fixed_Image, parameter_Image);
             end
         end
 
@@ -3508,14 +3361,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
-                uialert(app.BrukKitAlphav081UIFigure, 'Registration not possible; valid data not selected.', 'Registration Error.')
+                uialert(app.BrukKitAlphav0820UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
                 return
             elseif app.RegistrationInstructionsTextArea.Value == ""
-                uialert(app.BrukKitAlphav081UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
+                uialert(app.BrukKitAlphav0820UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
                 return
             end
             
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
             drawnow
 
             % Get total registration instructions, remove 0x0 char arrays
@@ -3622,18 +3475,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end
 
-            imshow(app.RegisteredImageData(:,:,1), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-
             dims_reg = size(app.RegisteredImageData);
             try
                 dim3_size = dims_reg(3);
-                app.SliceSpinner_Registration.Limits = [1, dim3_size];
+                app.SliceSlider_Registration.Value = 1;
+                app.SliceSlider_Registration.Enable = 'on';
+                app.SliceSlider_Registration.Limits = [1, dim3_size];
                 app.SliceSpinner_Registration.Value = 1;
                 app.SliceSpinner_Registration.Enable = 'on';
+                app.SliceSpinner_Registration.Limits = [1, dim3_size];
             catch
+                app.SliceSlider_Registration.Enable = 'off';
+                app.SliceSlider_Registration.Value = 1;
                 app.SliceSpinner_Registration.Enable = 'off';
                 app.SliceSpinner_Registration.Value = 1;
             end
+            app.TurboButton_Registration.Enable = 'on';
+            app.GreyscaleButton_Registration.Enable = 'on';
+
+            RefreshImageRegistration(app); 
 
             app.SaveRegisteredDataButton.Enable = 'on';
             if isstring(app.ExportFolderPath)
@@ -3644,10 +3504,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress)
         end
 
+        % Value changing function: SliceSlider_Registration
+        function SliceSlider_RegistrationValueChanging(app, event)
+            event.Source.Value = round(event.Value);
+            app.SliceSpinner_Registration.Value = event.Source.Value;
+
+            RefreshImageRegistration(app);
+        end
+
         % Value changed function: SliceSpinner_Registration
         function SliceSpinner_RegistrationValueChanged(app, event)
-            value = app.SliceSpinner_Registration.Value;
-            imshow(app.RegisteredImageData(:,:,value), [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+            app.SliceSlider_Registration.Value = app.SliceSpinner_Registration.Value;
+
+            RefreshImageRegistration(app);
+        end
+
+        % Selection changed function: ColormapButtonGroup_Registration
+        function ColormapButtonGroup_RegistrationSelectionChanged(app, event)
+
+            RefreshImageRegistration(app);
         end
 
         % Button pushed function: ExportDataButton_Registration
@@ -3656,12 +3531,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ExportImageData(app, 'Registration');
             
             % Update last action label
-            uiconfirm(app.BrukKitAlphav081UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: SaveRegisteredDataButton
         function SaveRegisteredDataButtonPushed(app, event)
             SaveData(app, 'Registration');
+        end
+
+        % Menu selected function: ResetViewMenu_Registration
+        function ResetViewMenu_RegistrationSelected(app, event)
+            
+            % Reset zoom
+            app.UIAxes_Registration.XLim = [-inf inf];
+            app.UIAxes_Registration.YLim = [-inf inf];
+        end
+
+        % Menu selected function: ResetInstructionsMenu
+        function ResetInstructionsMenuSelected(app, event)
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Value changed function: SelectPreMapDropDown
@@ -3751,18 +3639,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PreMap.Interactions = [regionZoomInteraction zoomInteraction];       
         end
 
-        % Value changed function: SliceSpinner_PreMap
-        function SliceSpinner_PreMapValueChanged(app, event)
-            event.Source.Value = round(event.Value);
-            app.SliceSlider_PreMap.Value = event.Source.Value;
-
-            RefreshImagePreMap(app);
-
-            % Reset zoom
-            app.UIAxes_PreMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
-        end
-
         % Value changing function: SliceSlider_PreMap
         function SliceSlider_PreMapValueChanging(app, event)
             event.Source.Value = round(event.Value);
@@ -3773,6 +3649,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset zoom
             app.UIAxes_PreMap.XLim = [-inf inf];
             app.UIAxes_PreMap.YLim = [-inf inf];         
+        end
+
+        % Value changed function: SliceSpinner_PreMap
+        function SliceSpinner_PreMapValueChanged(app, event)
+            event.Source.Value = round(event.Value);
+            app.SliceSlider_PreMap.Value = event.Source.Value;
+
+            RefreshImagePreMap(app);
+
+            % Reset zoom
+            app.UIAxes_PreMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
         end
 
         % Value changed function: Dim4Spinner_PreMap
@@ -3898,6 +3786,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: AdvancedSettingsButton
         function AdvancedSettingsButtonPushed(app, event)
+            app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
+                 'Message', "Adjusting DSC Mapping Options...", 'Indeterminate','on');
+            drawnow
             app.AdvancedSettingsButton.Enable = 'off';
             app.DSCSettingsWindow = DSCSettings(app, app.DSCOptions);
         end
@@ -3906,7 +3797,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function CalculateDSCmapsButtonPushed(app, event)
             
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for DSC mapping");
             drawnow
 
@@ -3966,7 +3857,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceSlider_PostMap.Enable = 'on';
                 app.SliceSlider_PostMap.Value = 1;
             else
-                uialert(app.BrukKitAlphav081UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
+                uialert(app.BrukKitAlphav0820UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
             end
             
             % Set interactions on UIAxes
@@ -4020,7 +3911,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             tvalues = str2double(split(app.TEvaluesText.Value, ";")');
 
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
                  'Message', "Calculating T2 Maps", "Indeterminate", "on");
             drawnow
 
@@ -4171,7 +4062,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             ExportImageData(app, 'Map');
 
-            uiconfirm(app.BrukKitAlphav081UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: SaveParameterMapButton
@@ -4179,10 +4070,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             SaveData(app, 'Map');
         end
 
-        % Close request function: BrukKitAlphav081UIFigure
-        function BrukKitAlphav081UIFigureCloseRequest(app, event)
+        % Close request function: BrukKitAlphav0820UIFigure
+        function BrukKitAlphav0820UIFigureCloseRequest(app, event)
             
-            progress = uiprogressdlg(app.BrukKitAlphav081UIFigure,'Title',"Shutting down",...
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Shutting down",...
                              'Message', "Deleting temporary data...","Indeterminate","on");
             drawnow
     
@@ -4194,11 +4085,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
     
             close(progress);
     
-            selection = uiconfirm(app.BrukKitAlphav081UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
+            selection = uiconfirm(app.BrukKitAlphav0820UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
                 "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
     
             switch selection
                 case 'Bye!'
+                    delete(app.RegistrationViewerWindow);       
                     delete(app.DSCSettingsWindow);
                     delete(app);
                 otherwise
@@ -4214,16 +4106,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create BrukKitAlphav081UIFigure and hide until all components are created
-            app.BrukKitAlphav081UIFigure = uifigure('Visible', 'off');
-            app.BrukKitAlphav081UIFigure.Position = [100 100 1280 720];
-            app.BrukKitAlphav081UIFigure.Name = 'BrukKit Alpha v0.8.1';
-            app.BrukKitAlphav081UIFigure.Icon = 'brukkit_icon.jpeg';
-            app.BrukKitAlphav081UIFigure.CloseRequestFcn = createCallbackFcn(app, @BrukKitAlphav081UIFigureCloseRequest, true);
-            app.BrukKitAlphav081UIFigure.KeyPressFcn = createCallbackFcn(app, @BrukKitAlphav081UIFigureKeyPress, true);
+            % Create BrukKitAlphav0820UIFigure and hide until all components are created
+            app.BrukKitAlphav0820UIFigure = uifigure('Visible', 'off');
+            app.BrukKitAlphav0820UIFigure.Position = [100 100 1280 720];
+            app.BrukKitAlphav0820UIFigure.Name = 'BrukKit Alpha v0.8.2.0';
+            app.BrukKitAlphav0820UIFigure.Icon = 'brukkit_icon.jpeg';
+            app.BrukKitAlphav0820UIFigure.CloseRequestFcn = createCallbackFcn(app, @BrukKitAlphav0820UIFigureCloseRequest, true);
+            app.BrukKitAlphav0820UIFigure.KeyPressFcn = createCallbackFcn(app, @BrukKitAlphav0820UIFigureKeyPress, true);
 
             % Create TabGroup
-            app.TabGroup = uitabgroup(app.BrukKitAlphav081UIFigure);
+            app.TabGroup = uitabgroup(app.BrukKitAlphav0820UIFigure);
             app.TabGroup.Position = [1 1 1280 720];
 
             % Create PreviewTab
@@ -4577,7 +4469,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Segmenter.XTick = [];
             app.UIAxes_Segmenter.YTick = [];
             app.UIAxes_Segmenter.Box = 'on';
-            app.UIAxes_Segmenter.Position = [6 69 903 627];
+            app.UIAxes_Segmenter.Position = [5 70 903 627];
 
             % Create SelectExperimentToSegmentLabel
             app.SelectExperimentToSegmentLabel = uilabel(app.SegmenterTab);
@@ -4597,7 +4489,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Segmenter = uispinner(app.SegmenterTab);
             app.SliceSpinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_SegmenterValueChanged, true);
             app.SliceSpinner_Segmenter.Enable = 'off';
-            app.SliceSpinner_Segmenter.Position = [329 24 51 22];
+            app.SliceSpinner_Segmenter.Position = [330 24 51 22];
             app.SliceSpinner_Segmenter.Value = 1;
 
             % Create SaveSegmentedDataButton
@@ -4617,31 +4509,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_SegmenterLabel
             app.Dim4Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim4Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_SegmenterLabel.Position = [401 24 44 22];
+            app.Dim4Spinner_SegmenterLabel.Position = [402 24 44 22];
             app.Dim4Spinner_SegmenterLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Segmenter
             app.Dim4Spinner_Segmenter = uispinner(app.SegmenterTab);
             app.Dim4Spinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_SegmenterValueChanged, true);
             app.Dim4Spinner_Segmenter.Enable = 'off';
-            app.Dim4Spinner_Segmenter.Position = [456 24 51 22];
+            app.Dim4Spinner_Segmenter.Position = [457 24 51 22];
+            app.Dim4Spinner_Segmenter.Value = 1;
 
             % Create Dim5Spinner_SegmenterLabel
             app.Dim5Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim5Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_SegmenterLabel.Position = [521 24 44 22];
+            app.Dim5Spinner_SegmenterLabel.Position = [522 24 44 22];
             app.Dim5Spinner_SegmenterLabel.Text = 'Dim - 5';
 
             % Create Dim5Spinner_Segmenter
             app.Dim5Spinner_Segmenter = uispinner(app.SegmenterTab);
             app.Dim5Spinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_SegmenterValueChanged, true);
             app.Dim5Spinner_Segmenter.Enable = 'off';
-            app.Dim5Spinner_Segmenter.Position = [577 24 51 22];
+            app.Dim5Spinner_Segmenter.Position = [578 24 51 22];
+            app.Dim5Spinner_Segmenter.Value = 1;
 
             % Create SliceSliderLabel
             app.SliceSliderLabel = uilabel(app.SegmenterTab);
             app.SliceSliderLabel.HorizontalAlignment = 'right';
-            app.SliceSliderLabel.Position = [74 25 32 22];
+            app.SliceSliderLabel.Position = [75 25 32 22];
             app.SliceSliderLabel.Text = 'Slice';
 
             % Create SliceSlider_Segmenter
@@ -4652,7 +4546,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Segmenter.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_SegmenterValueChanging, true);
             app.SliceSlider_Segmenter.MinorTicks = [];
             app.SliceSlider_Segmenter.Enable = 'off';
-            app.SliceSlider_Segmenter.Position = [135 33 183 3];
+            app.SliceSlider_Segmenter.Position = [136 33 183 3];
             app.SliceSlider_Segmenter.Value = 1;
 
             % Create BrightnessSliderLabel_Segmenter
@@ -4683,7 +4577,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Segmenter.BorderType = 'none';
             app.ColormapButtonGroup_Segmenter.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Segmenter.Title = 'Colormap';
-            app.ColormapButtonGroup_Segmenter.Position = [672 17 167 38];
+            app.ColormapButtonGroup_Segmenter.Position = [673 17 167 38];
 
             % Create GreyscaleButton_Segmenter
             app.GreyscaleButton_Segmenter = uiradiobutton(app.ColormapButtonGroup_Segmenter);
@@ -4724,47 +4618,47 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.CurrentSegmentationDropDown.Position = [1023 553 202 21];
             app.CurrentSegmentationDropDown.Value = 'Brain';
 
-            % Create ROIPanel
-            app.ROIPanel = uipanel(app.SegmenterTab);
-            app.ROIPanel.BorderType = 'none';
-            app.ROIPanel.TitlePosition = 'centertop';
-            app.ROIPanel.Title = 'ROI';
-            app.ROIPanel.Visible = 'off';
-            app.ROIPanel.Position = [1050 86 149 140];
+            % Create SelectionToolsPanel
+            app.SelectionToolsPanel = uipanel(app.SegmenterTab);
+            app.SelectionToolsPanel.BorderType = 'none';
+            app.SelectionToolsPanel.TitlePosition = 'centertop';
+            app.SelectionToolsPanel.Title = 'Selection Tools';
+            app.SelectionToolsPanel.Visible = 'off';
+            app.SelectionToolsPanel.Position = [1050 86 149 140];
 
             % Create FreeButton_Add
-            app.FreeButton_Add = uibutton(app.ROIPanel, 'push');
+            app.FreeButton_Add = uibutton(app.SelectionToolsPanel, 'push');
             app.FreeButton_Add.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_AddPushed, true);
             app.FreeButton_Add.Position = [20 80 50 22];
             app.FreeButton_Add.Text = {'+ Free'; ''};
 
             % Create PolyButton_Add
-            app.PolyButton_Add = uibutton(app.ROIPanel, 'push');
+            app.PolyButton_Add = uibutton(app.SelectionToolsPanel, 'push');
             app.PolyButton_Add.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_AddPushed, true);
             app.PolyButton_Add.Position = [20 48 50 22];
             app.PolyButton_Add.Text = '+ Poly';
 
             % Create PolyButton_Remove
-            app.PolyButton_Remove = uibutton(app.ROIPanel, 'push');
+            app.PolyButton_Remove = uibutton(app.SelectionToolsPanel, 'push');
             app.PolyButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @PolyButton_RemovePushed, true);
             app.PolyButton_Remove.Position = [79 48 50 22];
             app.PolyButton_Remove.Text = {'- Poly'; ''};
 
             % Create FreeButton_Remove
-            app.FreeButton_Remove = uibutton(app.ROIPanel, 'push');
+            app.FreeButton_Remove = uibutton(app.SelectionToolsPanel, 'push');
             app.FreeButton_Remove.ButtonPushedFcn = createCallbackFcn(app, @FreeButton_RemovePushed, true);
             app.FreeButton_Remove.Position = [79 80 50 22];
             app.FreeButton_Remove.Text = {'- Free'; ''};
 
             % Create ConfirmButton
-            app.ConfirmButton = uibutton(app.ROIPanel, 'push');
+            app.ConfirmButton = uibutton(app.SelectionToolsPanel, 'push');
             app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
             app.ConfirmButton.Icon = 'check icon.png';
             app.ConfirmButton.Position = [44 19 26 22];
             app.ConfirmButton.Text = '';
 
             % Create DeleteButton
-            app.DeleteButton = uibutton(app.ROIPanel, 'push');
+            app.DeleteButton = uibutton(app.SelectionToolsPanel, 'push');
             app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
             app.DeleteButton.Icon = 'x icon.png';
             app.DeleteButton.Position = [79 19 27 22];
@@ -5247,31 +5141,31 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ApplyEdemaCorrectionCheckBox.ValueChangedFcn = createCallbackFcn(app, @ApplyEdemaCorrectionCheckBoxValueChanged, true);
             app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
             app.ApplyEdemaCorrectionCheckBox.Text = 'Apply Edema Correction';
-            app.ApplyEdemaCorrectionCheckBox.Position = [117 202 152 22];
+            app.ApplyEdemaCorrectionCheckBox.Position = [122 202 152 22];
 
             % Create MedianEditFieldLabel_ROI
             app.MedianEditFieldLabel_ROI = uilabel(app.ROIPanel_Volumetry);
             app.MedianEditFieldLabel_ROI.HorizontalAlignment = 'center';
-            app.MedianEditFieldLabel_ROI.Position = [126 303 45 22];
+            app.MedianEditFieldLabel_ROI.Position = [128 303 45 22];
             app.MedianEditFieldLabel_ROI.Text = 'Median';
 
             % Create MedianEditField_ROI
             app.MedianEditField_ROI = uieditfield(app.ROIPanel_Volumetry, 'numeric');
-            app.MedianEditField_ROI.Position = [119 279 59 22];
+            app.MedianEditField_ROI.Position = [121 279 59 22];
 
-            % Create IQREditFieldLabel_Brain_3
-            app.IQREditFieldLabel_Brain_3 = uilabel(app.ROIPanel_Volumetry);
-            app.IQREditFieldLabel_Brain_3.HorizontalAlignment = 'center';
-            app.IQREditFieldLabel_Brain_3.Position = [226 303 27 22];
-            app.IQREditFieldLabel_Brain_3.Text = 'IQR';
+            % Create IQREditFieldLabel_ROI
+            app.IQREditFieldLabel_ROI = uilabel(app.ROIPanel_Volumetry);
+            app.IQREditFieldLabel_ROI.HorizontalAlignment = 'center';
+            app.IQREditFieldLabel_ROI.Position = [228 303 27 22];
+            app.IQREditFieldLabel_ROI.Text = 'IQR';
 
             % Create IQRLowerEditField_ROI
             app.IQRLowerEditField_ROI = uieditfield(app.ROIPanel_Volumetry, 'numeric');
-            app.IQRLowerEditField_ROI.Position = [208 279 27 22];
+            app.IQRLowerEditField_ROI.Position = [210 279 27 22];
 
             % Create IQRUpperEditField_ROI
             app.IQRUpperEditField_ROI = uieditfield(app.ROIPanel_Volumetry, 'numeric');
-            app.IQRUpperEditField_ROI.Position = [240 279 27 22];
+            app.IQRUpperEditField_ROI.Position = [242 279 27 22];
 
             % Create UnitsLabel
             app.UnitsLabel = uilabel(app.VolumetryTab);
@@ -5319,12 +5213,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Registration.XTick = [];
             app.UIAxes_Registration.YTick = [];
             app.UIAxes_Registration.Box = 'on';
-            app.UIAxes_Registration.Position = [6 69 903 627];
+            app.UIAxes_Registration.Position = [5 70 903 627];
 
             % Create SelectfixedLabel
             app.SelectfixedLabel = uilabel(app.RegistrationTab);
             app.SelectfixedLabel.HorizontalAlignment = 'right';
-            app.SelectfixedLabel.Position = [945 509 137 22];
+            app.SelectfixedLabel.Position = [1023 524 137 22];
             app.SelectfixedLabel.Text = 'Select Fixed Image Data';
 
             % Create SelectfixedDropDown
@@ -5332,13 +5226,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Items = {'None'};
             app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
             app.SelectfixedDropDown.Placeholder = 'None';
-            app.SelectfixedDropDown.Position = [934 480 158 21];
+            app.SelectfixedDropDown.Position = [959 490 264 21];
             app.SelectfixedDropDown.Value = 'None';
 
             % Create SelectmovingLabel
             app.SelectmovingLabel = uilabel(app.RegistrationTab);
             app.SelectmovingLabel.HorizontalAlignment = 'right';
-            app.SelectmovingLabel.Position = [940 606 146 22];
+            app.SelectmovingLabel.Position = [1018 599 146 22];
             app.SelectmovingLabel.Text = 'Select Moving Image Data';
 
             % Create SelectmovingDropDown
@@ -5347,7 +5241,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
             app.SelectmovingDropDown.Tooltip = {''};
             app.SelectmovingDropDown.Placeholder = 'None';
-            app.SelectmovingDropDown.Position = [934 577 158 21];
+            app.SelectmovingDropDown.Position = [959 568 264 21];
             app.SelectmovingDropDown.Value = 'None';
 
             % Create RegisterButton
@@ -5360,12 +5254,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
             app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
             app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
-            app.UsedifferentparametermapCheckBox.Position = [1004 404 175 22];
+            app.UsedifferentparametermapCheckBox.Position = [1007 423 175 22];
 
             % Create SelectparameterLabel
             app.SelectparameterLabel = uilabel(app.RegistrationTab);
             app.SelectparameterLabel.HorizontalAlignment = 'center';
-            app.SelectparameterLabel.Position = [931 364 164 22];
+            app.SelectparameterLabel.Position = [1009 389 164 22];
             app.SelectparameterLabel.Text = 'Select Parameter Image Data';
 
             % Create SelectparameterDropDown
@@ -5374,55 +5268,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
             app.SelectparameterDropDown.Enable = 'off';
             app.SelectparameterDropDown.Placeholder = 'None';
-            app.SelectparameterDropDown.Position = [934 335 158 21];
+            app.SelectparameterDropDown.Position = [959 360 264 21];
             app.SelectparameterDropDown.Value = 'None';
-
-            % Create SliceSpinner_ParameterLabel
-            app.SliceSpinner_ParameterLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_ParameterLabel.Position = [1104 364 31 22];
-            app.SliceSpinner_ParameterLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Parameter
-            app.SliceSpinner_Parameter = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Parameter.Enable = 'off';
-            app.SliceSpinner_Parameter.Position = [1101 335 54 22];
-            app.SliceSpinner_Parameter.Value = 1;
 
             % Create RegistrationInstructionsTextAreaLabel
             app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationTab);
-            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'right';
-            app.RegistrationInstructionsTextAreaLabel.Position = [1024 247 134 22];
+            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'center';
+            app.RegistrationInstructionsTextAreaLabel.Position = [1024 280 134 22];
             app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
 
             % Create RegistrationInstructionsTextArea
             app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationTab);
             app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [931 180 320 60];
-
-            % Create AddsliceButton
-            app.AddsliceButton = uibutton(app.RegistrationTab, 'push');
-            app.AddsliceButton.ButtonPushedFcn = createCallbackFcn(app, @AddsliceButtonPushed, true);
-            app.AddsliceButton.Position = [1041 282 100 22];
-            app.AddsliceButton.Text = 'Add slice ';
+            app.RegistrationInstructionsTextArea.Position = [931 181 320 92];
 
             % Create ManualinstructioninputCheckBox
             app.ManualinstructioninputCheckBox = uicheckbox(app.RegistrationTab);
             app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
             app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
             app.ManualinstructioninputCheckBox.Position = [1017 145 149 22];
-
-            % Create SliceSpinner_RegistrationLabel
-            app.SliceSpinner_RegistrationLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_RegistrationLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_RegistrationLabel.Position = [388 24 31 22];
-            app.SliceSpinner_RegistrationLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Registration
-            app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
-            app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [430 24 97 22];
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
@@ -5438,107 +5302,62 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExportDataButton_Registration.Position = [1021 24 140 22];
             app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
-            % Create Dim4Spinner_ParameterLabel
-            app.Dim4Spinner_ParameterLabel = uilabel(app.RegistrationTab);
-            app.Dim4Spinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_ParameterLabel.Position = [1159 364 44 22];
-            app.Dim4Spinner_ParameterLabel.Text = 'Dim - 4';
-
-            % Create Dim4Spinner_Parameter
-            app.Dim4Spinner_Parameter = uispinner(app.RegistrationTab);
-            app.Dim4Spinner_Parameter.Enable = 'off';
-            app.Dim4Spinner_Parameter.Position = [1162 335 54 22];
-            app.Dim4Spinner_Parameter.Value = 1;
-
-            % Create Dim5Spinner_ParameterLabel
-            app.Dim5Spinner_ParameterLabel = uilabel(app.RegistrationTab);
-            app.Dim5Spinner_ParameterLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_ParameterLabel.Position = [1218 364 44 22];
-            app.Dim5Spinner_ParameterLabel.Text = 'Dim - 5';
-
-            % Create Dim5Spinner_Parameter
-            app.Dim5Spinner_Parameter = uispinner(app.RegistrationTab);
-            app.Dim5Spinner_Parameter.Enable = 'off';
-            app.Dim5Spinner_Parameter.Position = [1222 335 54 22];
-            app.Dim5Spinner_Parameter.Value = 1;
-
-            % Create SliceSpinner_FixedLabel
-            app.SliceSpinner_FixedLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_FixedLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_FixedLabel.Position = [1104 509 31 22];
-            app.SliceSpinner_FixedLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Fixed
-            app.SliceSpinner_Fixed = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Fixed.Enable = 'off';
-            app.SliceSpinner_Fixed.Position = [1101 480 54 22];
-            app.SliceSpinner_Fixed.Value = 1;
-
-            % Create Dim4Spinner_FixedLabel
-            app.Dim4Spinner_FixedLabel = uilabel(app.RegistrationTab);
-            app.Dim4Spinner_FixedLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_FixedLabel.Position = [1159 509 44 22];
-            app.Dim4Spinner_FixedLabel.Text = 'Dim - 4';
-
-            % Create Dim4Spinner_Fixed
-            app.Dim4Spinner_Fixed = uispinner(app.RegistrationTab);
-            app.Dim4Spinner_Fixed.Enable = 'off';
-            app.Dim4Spinner_Fixed.Position = [1162 480 54 22];
-            app.Dim4Spinner_Fixed.Value = 1;
-
-            % Create Dim5Spinner_FixedLabel
-            app.Dim5Spinner_FixedLabel = uilabel(app.RegistrationTab);
-            app.Dim5Spinner_FixedLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_FixedLabel.Position = [1218 509 44 22];
-            app.Dim5Spinner_FixedLabel.Text = 'Dim - 5';
-
-            % Create Dim5Spinner_Fixed
-            app.Dim5Spinner_Fixed = uispinner(app.RegistrationTab);
-            app.Dim5Spinner_Fixed.Enable = 'off';
-            app.Dim5Spinner_Fixed.Position = [1222 480 54 22];
-            app.Dim5Spinner_Fixed.Value = 1;
-
-            % Create SliceSpinner_MovingLabel
-            app.SliceSpinner_MovingLabel = uilabel(app.RegistrationTab);
-            app.SliceSpinner_MovingLabel.HorizontalAlignment = 'right';
-            app.SliceSpinner_MovingLabel.Position = [1104 606 31 22];
-            app.SliceSpinner_MovingLabel.Text = 'Slice';
-
-            % Create SliceSpinner_Moving
-            app.SliceSpinner_Moving = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Moving.Enable = 'off';
-            app.SliceSpinner_Moving.Position = [1101 577 54 22];
-            app.SliceSpinner_Moving.Value = 1;
-
-            % Create Dim4Spinner_MovingLabel
-            app.Dim4Spinner_MovingLabel = uilabel(app.RegistrationTab);
-            app.Dim4Spinner_MovingLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_MovingLabel.Position = [1159 606 44 22];
-            app.Dim4Spinner_MovingLabel.Text = 'Dim - 4';
-
-            % Create Dim4Spinner_Moving
-            app.Dim4Spinner_Moving = uispinner(app.RegistrationTab);
-            app.Dim4Spinner_Moving.Enable = 'off';
-            app.Dim4Spinner_Moving.Position = [1162 577 54 22];
-            app.Dim4Spinner_Moving.Value = 1;
-
-            % Create Dim5Spinner_MovingLabel
-            app.Dim5Spinner_MovingLabel = uilabel(app.RegistrationTab);
-            app.Dim5Spinner_MovingLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_MovingLabel.Position = [1218 606 44 22];
-            app.Dim5Spinner_MovingLabel.Text = 'Dim - 5';
-
-            % Create Dim5Spinner_Moving
-            app.Dim5Spinner_Moving = uispinner(app.RegistrationTab);
-            app.Dim5Spinner_Moving.Enable = 'off';
-            app.Dim5Spinner_Moving.Position = [1222 577 54 22];
-            app.Dim5Spinner_Moving.Value = 1;
-
             % Create DataavailableforregistrationonlyaftersegmentationLabel
             app.DataavailableforregistrationonlyaftersegmentationLabel = uilabel(app.RegistrationTab);
             app.DataavailableforregistrationonlyaftersegmentationLabel.HorizontalAlignment = 'center';
             app.DataavailableforregistrationonlyaftersegmentationLabel.Position = [943 639 297 42];
             app.DataavailableforregistrationonlyaftersegmentationLabel.Text = 'Data available for registration only after segmentation!';
+
+            % Create RegistrationViewerButton
+            app.RegistrationViewerButton = uibutton(app.RegistrationTab, 'push');
+            app.RegistrationViewerButton.ButtonPushedFcn = createCallbackFcn(app, @RegistrationViewerButtonPushed, true);
+            app.RegistrationViewerButton.Position = [1021 315 140 22];
+            app.RegistrationViewerButton.Text = 'Registration Viewer';
+
+            % Create ColormapButtonGroup_Registration
+            app.ColormapButtonGroup_Registration = uibuttongroup(app.RegistrationTab);
+            app.ColormapButtonGroup_Registration.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_RegistrationSelectionChanged, true);
+            app.ColormapButtonGroup_Registration.BorderType = 'none';
+            app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
+            app.ColormapButtonGroup_Registration.Title = 'Colormap';
+            app.ColormapButtonGroup_Registration.Position = [538 17 167 38];
+
+            % Create GreyscaleButton_Registration
+            app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
+            app.GreyscaleButton_Registration.Enable = 'off';
+            app.GreyscaleButton_Registration.Text = 'Greyscale';
+            app.GreyscaleButton_Registration.Position = [94 -3 76 22];
+            app.GreyscaleButton_Registration.Value = true;
+
+            % Create TurboButton_Registration
+            app.TurboButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
+            app.TurboButton_Registration.Enable = 'off';
+            app.TurboButton_Registration.Text = 'Turbo';
+            app.TurboButton_Registration.Position = [2 -3 65 22];
+
+            % Create SliceSpinner_Registration
+            app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
+            app.SliceSpinner_Registration.Enable = 'off';
+            app.SliceSpinner_Registration.Position = [463 24 51 22];
+            app.SliceSpinner_Registration.Value = 1;
+
+            % Create SliceSliderLabel_Registration
+            app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
+            app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
+            app.SliceSliderLabel_Registration.Position = [208 25 32 22];
+            app.SliceSliderLabel_Registration.Text = 'Slice';
+
+            % Create SliceSlider_Registration
+            app.SliceSlider_Registration = uislider(app.RegistrationTab);
+            app.SliceSlider_Registration.Limits = [1 100];
+            app.SliceSlider_Registration.MajorTicks = [];
+            app.SliceSlider_Registration.MajorTickLabels = {};
+            app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
+            app.SliceSlider_Registration.MinorTicks = [];
+            app.SliceSlider_Registration.Enable = 'off';
+            app.SliceSlider_Registration.Position = [269 33 183 3];
+            app.SliceSlider_Registration.Value = 1;
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -5554,7 +5373,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PreMap.YTick = [];
             app.UIAxes_PreMap.YTickLabel = '';
             app.UIAxes_PreMap.Box = 'on';
-            app.UIAxes_PreMap.Position = [68 120 467 425];
+            app.UIAxes_PreMap.Position = [70 120 467 425];
 
             % Create UIAxes_PostMap
             app.UIAxes_PostMap = uiaxes(app.ParameterMapsTab);
@@ -5572,26 +5391,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PreMap = uispinner(app.ParameterMapsTab);
             app.SliceSpinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreMapValueChanged, true);
             app.SliceSpinner_PreMap.Enable = 'off';
-            app.SliceSpinner_PreMap.Position = [425 83 57 22];
+            app.SliceSpinner_PreMap.Position = [421 83 57 22];
+            app.SliceSpinner_PreMap.Value = 1;
 
             % Create SelectDSCvolumetricdataformapcalculationLabel
             app.SelectDSCvolumetricdataformapcalculationLabel = uilabel(app.ParameterMapsTab);
             app.SelectDSCvolumetricdataformapcalculationLabel.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [188 588 216 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [190 588 216 22];
             app.SelectDSCvolumetricdataformapcalculationLabel.Text = 'Select Image Data For Map Calculation';
 
             % Create SelectPreMapDropDown
             app.SelectPreMapDropDown = uidropdown(app.ParameterMapsTab);
-            app.SelectPreMapDropDown.Items = {};
+            app.SelectPreMapDropDown.Items = {'None'};
             app.SelectPreMapDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectPreMapDropDownValueChanged, true);
             app.SelectPreMapDropDown.Placeholder = 'None';
-            app.SelectPreMapDropDown.Position = [159 560 284 21];
-            app.SelectPreMapDropDown.Value = {};
+            app.SelectPreMapDropDown.Position = [161 560 284 21];
+            app.SelectPreMapDropDown.Value = 'None';
 
             % Create SliceLabel_ParameterMaps
             app.SliceLabel_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.SliceLabel_ParameterMaps.HorizontalAlignment = 'right';
-            app.SliceLabel_ParameterMaps.Position = [132 83 31 22];
+            app.SliceLabel_ParameterMaps.Position = [128 83 31 22];
             app.SliceLabel_ParameterMaps.Text = 'Slice';
 
             % Create SliceSlider_PreMap
@@ -5602,37 +5422,39 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PreMap.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreMapValueChanging, true);
             app.SliceSlider_PreMap.MinorTicks = [];
             app.SliceSlider_PreMap.Enable = 'off';
-            app.SliceSlider_PreMap.Position = [184 92 221 3];
+            app.SliceSlider_PreMap.Position = [180 92 221 3];
             app.SliceSlider_PreMap.Value = 1;
 
             % Create Dim4Spinner_Label_ParameterMaps
             app.Dim4Spinner_Label_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.Dim4Spinner_Label_ParameterMaps.HorizontalAlignment = 'right';
-            app.Dim4Spinner_Label_ParameterMaps.Position = [189 35 44 22];
+            app.Dim4Spinner_Label_ParameterMaps.Position = [185 35 44 22];
             app.Dim4Spinner_Label_ParameterMaps.Text = 'Dim - 4';
 
             % Create Dim4Spinner_PreMap
             app.Dim4Spinner_PreMap = uispinner(app.ParameterMapsTab);
             app.Dim4Spinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_PreMapValueChanged, true);
             app.Dim4Spinner_PreMap.Enable = 'off';
-            app.Dim4Spinner_PreMap.Position = [244 35 50 22];
+            app.Dim4Spinner_PreMap.Position = [240 35 50 22];
+            app.Dim4Spinner_PreMap.Value = 1;
 
             % Create Dim5Spinner_Label_ParameterMaps
             app.Dim5Spinner_Label_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.Dim5Spinner_Label_ParameterMaps.HorizontalAlignment = 'right';
-            app.Dim5Spinner_Label_ParameterMaps.Position = [318 35 44 22];
+            app.Dim5Spinner_Label_ParameterMaps.Position = [314 35 44 22];
             app.Dim5Spinner_Label_ParameterMaps.Text = 'Dim - 5';
 
             % Create Dim5Spinner_PreMap
             app.Dim5Spinner_PreMap = uispinner(app.ParameterMapsTab);
             app.Dim5Spinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_PreMapValueChanged, true);
             app.Dim5Spinner_PreMap.Enable = 'off';
-            app.Dim5Spinner_PreMap.Position = [374 35 51 22];
+            app.Dim5Spinner_PreMap.Position = [370 35 51 22];
+            app.Dim5Spinner_PreMap.Value = 1;
 
             % Create ChooseMapTypeDropDownLabel
             app.ChooseMapTypeDropDownLabel = uilabel(app.ParameterMapsTab);
             app.ChooseMapTypeDropDownLabel.HorizontalAlignment = 'right';
-            app.ChooseMapTypeDropDownLabel.Position = [585 647 102 22];
+            app.ChooseMapTypeDropDownLabel.Position = [586 647 102 22];
             app.ChooseMapTypeDropDownLabel.Text = 'Choose Map Type';
 
             % Create ChooseMapTypeDropDown
@@ -5640,7 +5462,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ChooseMapTypeDropDown.Items = {'DSC Mapping', 'T1/T2 Mapping', 'pASL Mapping', 'cASL Mapping'};
             app.ChooseMapTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ChooseMapTypeDropDownValueChanged, true);
             app.ChooseMapTypeDropDown.Tooltip = {''};
-            app.ChooseMapTypeDropDown.Position = [493 618 292 22];
+            app.ChooseMapTypeDropDown.Position = [494 618 292 22];
             app.ChooseMapTypeDropDown.Value = 'DSC Mapping';
 
             % Create BrightnessSliderLabel_ParameterMaps
@@ -5701,7 +5523,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DSCMappingOptionsPanel.BorderType = 'none';
             app.DSCMappingOptionsPanel.TitlePosition = 'centertop';
             app.DSCMappingOptionsPanel.Title = 'DSC Mapping Options';
-            app.DSCMappingOptionsPanel.Position = [539 134 199 378];
+            app.DSCMappingOptionsPanel.Position = [540 134 200 378];
 
             % Create CalculateDSCmapsButton
             app.CalculateDSCmapsButton = uibutton(app.DSCMappingOptionsPanel, 'push');
@@ -5768,6 +5590,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PostMapValueChanged, true);
             app.SliceSpinner_PostMap.Enable = 'off';
             app.SliceSpinner_PostMap.Position = [1104 83 57 22];
+            app.SliceSpinner_PostMap.Value = 1;
 
             % Create SliceLabel_ParameterMaps_2
             app.SliceLabel_ParameterMaps_2 = uilabel(app.ParameterMapsTab);
@@ -5825,7 +5648,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExportDataButton_Map.Text = 'Export Parameter Map';
 
             % Create ContextMenu_Preview
-            app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav081UIFigure);
+            app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0820UIFigure);
 
             % Create RotateMenu_Preview
             app.RotateMenu_Preview = uimenu(app.ContextMenu_Preview);
@@ -5848,7 +5671,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_Preview.Text = 'Reset View';
 
             % Create ContextMenu_Segmenter
-            app.ContextMenu_Segmenter = uicontextmenu(app.BrukKitAlphav081UIFigure);
+            app.ContextMenu_Segmenter = uicontextmenu(app.BrukKitAlphav0820UIFigure);
 
             % Create RotateMenu_Segmenter
             app.RotateMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
@@ -5890,7 +5713,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PermuteMenu_4_5.Text = '4-5';
 
             % Create ContextMenu_PreMap
-            app.ContextMenu_PreMap = uicontextmenu(app.BrukKitAlphav081UIFigure);
+            app.ContextMenu_PreMap = uicontextmenu(app.BrukKitAlphav0820UIFigure);
 
             % Create RotateMenu_PreMap
             app.RotateMenu_PreMap = uimenu(app.ContextMenu_PreMap);
@@ -5932,7 +5755,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PermuteMenu_4_5_PreMap.Text = '4-5';
 
             % Create ContextMenuEdema
-            app.ContextMenuEdema = uicontextmenu(app.BrukKitAlphav081UIFigure);
+            app.ContextMenuEdema = uicontextmenu(app.BrukKitAlphav0820UIFigure);
 
             % Create HemisphereScalingFactorMenu
             app.HemisphereScalingFactorMenu = uimenu(app.ContextMenuEdema);
@@ -5957,7 +5780,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ApplyEdemaCorrectionCheckBox.ContextMenu = app.ContextMenuEdema;
 
             % Create ContextMenu_PostMap
-            app.ContextMenu_PostMap = uicontextmenu(app.BrukKitAlphav081UIFigure);
+            app.ContextMenu_PostMap = uicontextmenu(app.BrukKitAlphav0820UIFigure);
 
             % Create RotateMenu_PostMap
             app.RotateMenu_PostMap = uimenu(app.ContextMenu_PostMap);
@@ -5979,8 +5802,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_PostMap.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_PostMapSelected, true);
             app.ResetViewMenu_PostMap.Text = 'Reset View';
 
+            % Create ContextMenu_Registration
+            app.ContextMenu_Registration = uicontextmenu(app.BrukKitAlphav0820UIFigure);
+
+            % Create ResetViewMenu_Registration
+            app.ResetViewMenu_Registration = uimenu(app.ContextMenu_Registration);
+            app.ResetViewMenu_Registration.MenuSelectedFcn = createCallbackFcn(app, @ResetViewMenu_RegistrationSelected, true);
+            app.ResetViewMenu_Registration.Text = 'Reset View';
+
+            % Create ContextMenu_RegistrationInstructions
+            app.ContextMenu_RegistrationInstructions = uicontextmenu(app.BrukKitAlphav0820UIFigure);
+
+            % Create ResetInstructionsMenu
+            app.ResetInstructionsMenu = uimenu(app.ContextMenu_RegistrationInstructions);
+            app.ResetInstructionsMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetInstructionsMenuSelected, true);
+            app.ResetInstructionsMenu.Text = 'Reset Instructions';
+            
+            % Assign app.ContextMenu_RegistrationInstructions
+            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
+
             % Show the figure after all components are created
-            app.BrukKitAlphav081UIFigure.Visible = 'on';
+            app.BrukKitAlphav0820UIFigure.Visible = 'on';
         end
     end
 
@@ -5999,14 +5841,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 createComponents(app)
 
                 % Register the app with App Designer
-                registerApp(app, app.BrukKitAlphav081UIFigure)
+                registerApp(app, app.BrukKitAlphav0820UIFigure)
 
                 % Execute the startup function
                 runStartupFcn(app, @StartUpFcn)
             else
 
                 % Focus the running singleton app
-                figure(runningApp.BrukKitAlphav081UIFigure)
+                figure(runningApp.BrukKitAlphav0820UIFigure)
 
                 app = runningApp;
             end
@@ -6020,7 +5862,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.BrukKitAlphav081UIFigure)
+            delete(app.BrukKitAlphav0820UIFigure)
         end
     end
 end
