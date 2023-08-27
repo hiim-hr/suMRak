@@ -61,7 +61,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ResetSliceButton                matlab.ui.control.Button
         ImageshownSwitch_Brain          matlab.ui.control.Switch
         ImageshownSwitchLabel           matlab.ui.control.Label
-        LoadexternalmaskButton          matlab.ui.control.Button
+        LoadExternalBrainMaskButton     matlab.ui.control.Button
         AutoClusterButton               matlab.ui.control.Button
         InitialSelectionButton          matlab.ui.control.Button
         MorphologyLabel                 matlab.ui.control.Label
@@ -69,7 +69,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         OpenMaskButton                  matlab.ui.control.Button
         DiskradiusSpinner               matlab.ui.control.Spinner
         DiskradiusSpinnerLabel          matlab.ui.control.Label
+        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
+        LoadExternalHemisphereMaskButton  matlab.ui.control.Button
+        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
+        RightredButton                  matlab.ui.control.RadioButton
+        LeftblueButton                  matlab.ui.control.RadioButton
+        ResetHemispheresButton          matlab.ui.control.Button
         ROISegmentationToolsPanel       matlab.ui.container.Panel
+        LoadExternalROIPackButton       matlab.ui.control.Button
         ImageshownSwitch_ROI            matlab.ui.control.Switch
         ImageshownSwitchLabel_ROI       matlab.ui.control.Label
         ResetROISliceButton             matlab.ui.control.Button
@@ -77,11 +84,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         AddROIButton                    matlab.ui.control.Button
         ROIListListBox                  matlab.ui.control.ListBox
         ROIListListBoxLabel             matlab.ui.control.Label
-        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
-        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
-        RightredButton                  matlab.ui.control.RadioButton
-        LeftblueButton                  matlab.ui.control.RadioButton
-        ResetHemispheresButton          matlab.ui.control.Button
         SelectionToolsPanel             matlab.ui.container.Panel
         DeleteButton                    matlab.ui.control.Button
         ConfirmButton                   matlab.ui.control.Button
@@ -674,7 +676,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'Map'
                     exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
                     image_Data = app.PostMapImageData;
-                    saved_BrainMask = false(size(image_Data));
+                    try
+                        saved_BrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectPreMapDropDown.Value));
+                    catch
+                        saved_BrainMask = false(size(image_Data));
+                    end
                     hemi_Mask = false(1);
                     roi.Mask = false(1);
                     roi.ID = {'None'};                 
@@ -965,6 +971,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         end
         
         function ExportImageData(app, tab)
+            % Draw progress box
+            progress = uiprogressdlg(app.BrukKitAlphav0820UIFigure,'Title',"Please wait",...
+                 'Message', "Retrieving data for export");
+            drawnow    
             switch tab
                 case 'Preview'
                     ImageData = app.PreviewImageData;
@@ -983,7 +993,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     DropDownValue = app.SelectPreMapDropDown.Value;
                     Suffix = "_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
             end
-
+            progress.Value = 0.2;
+            progress.Message = "Writing NIfTI data information...";
+            pause(0.5);
             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
             info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
             info.Description = 'Image file generated in Brukkit 0.8';
@@ -1020,18 +1032,31 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case "m"
                     info.SpaceUnits = 'Meter';
             end
-           
+            progress.Value = 0.6;
+            progress.Message = "Exporting image data";
+            pause(0.5);
             info.Transform.T(1:3,1:3) = rotm;
             info.TransformName = 'Qform';
             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
             if  strcmp(tab, 'Segmenter')
                 try
+                progress.Value = 0.8;
+                progress.Message = "Exporting segmenter mask data";
+                pause(0.5);
                 niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
                 niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
                 niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
+                roi_id = app.ROIIdentifiers;
+                save(app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_identifiers_ROI.mat", "roi_id")
                 catch
                 end
             end
+
+            % close the dialog box
+            progress.Value = 1;
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
         end
 
         function ResetEnvironment(app)
@@ -2006,8 +2031,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             try
                 app.OriginalSegmenterImageData = cell2mat(app.SavedTable.Image(value));
                 app.SavedBrainMask = cell2mat(app.SavedTable.BrainMask(value));
-                reset_indicator = 0;
-                
+                reset_indicator = 0;         
             catch
                 try
                     app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
@@ -2129,7 +2153,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectionToolsPanel.Visible = 'on';
             brainPosition = app.BrainSegmentationToolsPanel.Position;
             roiPosition = app.SelectionToolsPanel.Position;
-            roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+            roiPosition(2) = brainPosition(2)-roiPosition(4);
             app.SelectionToolsPanel.Position = roiPosition;
             app.SaveSegmentedDataButton.Enable = 'on';
             if isstring(app.ExportFolderPath)
@@ -2182,7 +2206,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'};
@@ -2213,7 +2237,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
                 end
                 app.CurrentSegmentationDropDown.Items = {'Brain', 'ROI'}; 
@@ -2248,7 +2272,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changing function: ContrastSlider_Segmenter
         function ContrastSlider_SegmenterValueChanging(app, event)
-            app.ContrastSlider_Segmenter.Value = event.Value;
+            app.ContrastSlider_Segmenter.Value = event.Value;      
             RefreshImageSegmenter(app);
         end
 
@@ -2356,7 +2380,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_limits = app.SliceSpinner_Segmenter.Limits;
@@ -2402,7 +2426,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_value_slice = app.SliceSpinner_Segmenter.Value;
@@ -2447,7 +2471,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
 
                     temp_limits = app.Dim5Spinner_Segmenter.Limits;
@@ -2480,7 +2504,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     brainPosition = app.BrainSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = brainPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = brainPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
                 case 'Hemisphere'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
@@ -2488,7 +2512,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'off';
                     hemiPosition = app.HemisphereSegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = hemiPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = hemiPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
                 case 'ROI'
                     app.BrainSegmentationToolsPanel.Visible = 'off';
@@ -2496,7 +2520,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROISegmentationToolsPanel.Visible = 'on';
                     roitoolsPosition = app.ROISegmentationToolsPanel.Position;
                     roiPosition = app.SelectionToolsPanel.Position;
-                    roiPosition(2) = roitoolsPosition(2)-10-roiPosition(4);
+                    roiPosition(2) = roitoolsPosition(2)-roiPosition(4);
                     app.SelectionToolsPanel.Position = roiPosition;
                 otherwise
             end
@@ -2508,17 +2532,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageSegmenter(app);
         end
 
-        % Button pushed function: LoadexternalmaskButton
-        function LoadexternalmaskButtonPushed(app, event)
+        % Button pushed function: LoadExternalBrainMaskButton
+        function LoadExternalBrainMaskButtonPushed(app, event)
             
-            % Get external mask data
+            % Get external brain mask data
             [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.BrukKitAlphav0820UIFigure)
-            temp_Mask = niftiread(cat(2, temp_dir, temp_file));
-            app.BrainMask = pagetranspose(temp_Mask);
+            temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
+            dims_loaded = size(temp_Mask);
+            if ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded brain mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
+                return
+            elseif numel(dims_loaded)>=3 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded brain mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
+                return
+            end
+            app.BrainMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitAlphav0820UIFigure, "External mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "External brain mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: InitialSelectionButton
@@ -2658,6 +2690,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
+        % Button pushed function: LoadExternalHemisphereMaskButton
+        function LoadExternalHemisphereMaskButtonPushed(app, event)
+            
+            % Get external hemisphere mask data
+            [temp_file, temp_dir] = uigetfile('.nii');
+            figure(app.BrukKitAlphav0820UIFigure)
+            temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
+            dims_loaded = size(temp_Mask);
+            if ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded hemisphere mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
+                return
+            elseif numel(dims_loaded)>=4 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded hemisphere mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
+                return
+            end
+            app.HemisphereMask = temp_Mask;
+            
+            RefreshImageSegmenter(app);
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "External hemisphere mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+        end
+
         % Button pushed function: ResetHemispheresButton
         function ResetHemispheresButtonPushed(app, event)
             if numel(app.ExpDimsSegmenter) ~= 2
@@ -2668,6 +2721,34 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.HemisphereMask(:,:,2) = false(app.ExpDimsSegmenter(1:2));
             end
             RefreshImageSegmenter(app);
+        end
+
+        % Button pushed function: LoadExternalROIPackButton
+        function LoadExternalROIPackButtonPushed(app, event)
+            
+            % Get external ROI pack data
+            [temp_file, temp_dir] = uigetfile('.nii');
+            figure(app.BrukKitAlphav0820UIFigure)
+            temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
+            id_path = string(temp_dir)+string(temp_file(1:end-13))+"_identifiers_ROI.mat";   
+            dims_loaded = size(temp_Mask);
+            if ~exist(id_path, 'file')
+                uialert(app.BrukKitAlphav0820UIFigure, 'No valid ROI identifier file found on selected ROI pack path.', 'Loaded ROI Pack ID Error')
+                return
+            elseif ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded ROI pack x and y dimensions must be equal to those of data being segmented.', 'Loaded ROI Pack Dimension Error')
+                return
+            elseif numel(dims_loaded)>=4 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
+                uialert(app.BrukKitAlphav0820UIFigure, 'Loaded ROI pack must have the same amount of slices as data being segmented', 'Loaded ROI Pack Dimension Error')
+                return
+            end
+            temp_identifiers = load(id_path);
+            app.ROIIdentifiers = temp_identifiers.roi_id;
+            app.ROIListListBox.Items = app.ROIIdentifiers;
+            app.ROIMask = temp_Mask;
+            
+            RefreshImageSegmenter(app);
+            uiconfirm(app.BrukKitAlphav0820UIFigure, "External ROI pack loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: ROIListListBox
@@ -3268,7 +3349,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     try
                         writing_table = table(Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val, 'VariableNames', table_Vars);
                     catch
-                        writing_table = table(0, 0, 0, 0, 0, 0, 0, 0, 'VariableNames', table_Vars)
+                        writing_table = table(0, 0, 0, 0, 0, 0, 0, 0, 'VariableNames', table_Vars);
                     end
                     writetable(writing_table, target_Path, 'Sheet', string(i))
                         writetable(sliceTable, target_Path, 'Sheet', string(i), 'Range', 'A4')
@@ -3278,7 +3359,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
-            
+            if app.SelectfixedDropDown.Value == "None"
+                app.RegistrationInstructionsTextArea.Value = '';
+                return
+            end
             % Get fixed image data number of dimensions
             fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
             app.FixedNDims = numel(size(fixed_Image));
@@ -3288,7 +3372,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
-            
+            if app.SelectmovingDropDown.Value == "None"
+                app.RegistrationInstructionsTextArea.Value = '';
+                return
+            end
             % Get moving image data number of dimensions
             moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
             app.MovingNDims = numel(size(moving_Image));
@@ -3310,7 +3397,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
-            
+            if app.SelectparameterDropDown.Value == "None"
+                app.RegistrationInstructionsTextArea.Value = '';
+                return
+            end
             % Get parameter image data number of dimensions
             parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
             app.ParameterNDims = numel(size(parameter_Image));
@@ -4605,7 +4695,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create CurrentsegmentationLabel
             app.CurrentsegmentationLabel = uilabel(app.SegmenterTab);
             app.CurrentsegmentationLabel.HorizontalAlignment = 'right';
-            app.CurrentsegmentationLabel.Enable = 'off';
             app.CurrentsegmentationLabel.Position = [1058 583 123 22];
             app.CurrentsegmentationLabel.Text = 'Current Segmentation';
 
@@ -4664,18 +4753,76 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DeleteButton.Position = [79 19 27 22];
             app.DeleteButton.Text = '';
 
+            % Create ROISegmentationToolsPanel
+            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.ROISegmentationToolsPanel.BorderType = 'none';
+            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
+            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
+            app.ROISegmentationToolsPanel.Visible = 'off';
+            app.ROISegmentationToolsPanel.Position = [998 231 253 309];
+
+            % Create ROIListListBoxLabel
+            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
+            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
+            app.ROIListListBoxLabel.Position = [103 228 49 22];
+            app.ROIListListBoxLabel.Text = 'ROI List';
+
+            % Create ROIListListBox
+            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
+            app.ROIListListBox.Items = {};
+            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
+            app.ROIListListBox.Position = [35 140 188 86];
+            app.ROIListListBox.Value = {};
+
+            % Create AddROIButton
+            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
+            app.AddROIButton.Position = [24 51 100 22];
+            app.AddROIButton.Text = 'Add ROI';
+
+            % Create DeleteROIButton
+            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
+            app.DeleteROIButton.Position = [134 51 100 22];
+            app.DeleteROIButton.Text = 'Delete ROI';
+
+            % Create ResetROISliceButton
+            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
+            app.ResetROISliceButton.Position = [79 17 101 22];
+            app.ResetROISliceButton.Text = 'Reset ROI Slice';
+
+            % Create ImageshownSwitchLabel_ROI
+            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
+            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
+            app.ImageshownSwitchLabel_ROI.Position = [90 80 77 22];
+            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
+
+            % Create ImageshownSwitch_ROI
+            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
+            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
+            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
+            app.ImageshownSwitch_ROI.Position = [105 109 45 20];
+            app.ImageshownSwitch_ROI.Value = 'Overlay';
+
+            % Create LoadExternalROIPackButton
+            app.LoadExternalROIPackButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.LoadExternalROIPackButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalROIPackButtonPushed, true);
+            app.LoadExternalROIPackButton.Position = [52 258 154 22];
+            app.LoadExternalROIPackButton.Text = 'Load External ROI Pack';
+
             % Create HemisphereSegmentationToolsPanel
             app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
             app.HemisphereSegmentationToolsPanel.BorderType = 'none';
             app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
             app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
             app.HemisphereSegmentationToolsPanel.Visible = 'off';
-            app.HemisphereSegmentationToolsPanel.Position = [998 385 253 155];
+            app.HemisphereSegmentationToolsPanel.Position = [998 354 253 186];
 
             % Create ResetHemispheresButton
             app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
             app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
-            app.ResetHemispheresButton.Position = [67 12 121 22];
+            app.ResetHemispheresButton.Position = [67 14 121 22];
             app.ResetHemispheresButton.Text = 'Reset Hemispheres';
 
             % Create HemisphereButtonGroup
@@ -4684,7 +4831,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereButtonGroup.TitlePosition = 'centertop';
             app.HemisphereButtonGroup.Title = 'Hemisphere ';
             app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.HemisphereButtonGroup.Position = [78 47 100 74];
+            app.HemisphereButtonGroup.Position = [78 49 100 74];
 
             % Create LeftblueButton
             app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
@@ -4697,57 +4844,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RightredButton.Text = 'Right - red';
             app.RightredButton.Position = [11 7 78 22];
 
-            % Create ROISegmentationToolsPanel
-            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
-            app.ROISegmentationToolsPanel.BorderType = 'none';
-            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
-            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
-            app.ROISegmentationToolsPanel.Visible = 'off';
-            app.ROISegmentationToolsPanel.Position = [998 242 253 298];
-
-            % Create ROIListListBoxLabel
-            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
-            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
-            app.ROIListListBoxLabel.Position = [103 251 49 22];
-            app.ROIListListBoxLabel.Text = 'ROI List';
-
-            % Create ROIListListBox
-            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
-            app.ROIListListBox.Items = {};
-            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
-            app.ROIListListBox.Position = [34 136 188 113];
-            app.ROIListListBox.Value = {};
-
-            % Create AddROIButton
-            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
-            app.AddROIButton.Position = [23 46 100 22];
-            app.AddROIButton.Text = 'Add ROI';
-
-            % Create DeleteROIButton
-            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
-            app.DeleteROIButton.Position = [133 46 100 22];
-            app.DeleteROIButton.Text = 'Delete ROI';
-
-            % Create ResetROISliceButton
-            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
-            app.ResetROISliceButton.Position = [78 12 101 22];
-            app.ResetROISliceButton.Text = 'Reset ROI Slice';
-
-            % Create ImageshownSwitchLabel_ROI
-            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
-            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel_ROI.Position = [89 75 77 22];
-            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
-
-            % Create ImageshownSwitch_ROI
-            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
-            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
-            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
-            app.ImageshownSwitch_ROI.Position = [104 104 45 20];
-            app.ImageshownSwitch_ROI.Value = 'Overlay';
+            % Create LoadExternalHemisphereMaskButton
+            app.LoadExternalHemisphereMaskButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.LoadExternalHemisphereMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalHemisphereMaskButtonPushed, true);
+            app.LoadExternalHemisphereMaskButton.Position = [32 136 191 22];
+            app.LoadExternalHemisphereMaskButton.Text = 'Load External Hemisphere Mask';
 
             % Create BrainSegmentationToolsPanel
             app.BrainSegmentationToolsPanel = uipanel(app.SegmenterTab);
@@ -4760,74 +4861,74 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create DiskradiusSpinnerLabel
             app.DiskradiusSpinnerLabel = uilabel(app.BrainSegmentationToolsPanel);
             app.DiskradiusSpinnerLabel.HorizontalAlignment = 'right';
-            app.DiskradiusSpinnerLabel.Position = [145 87 65 22];
+            app.DiskradiusSpinnerLabel.Position = [146 87 65 22];
             app.DiskradiusSpinnerLabel.Text = {'Disk radius'; ''};
 
             % Create DiskradiusSpinner
             app.DiskradiusSpinner = uispinner(app.BrainSegmentationToolsPanel);
             app.DiskradiusSpinner.Limits = [1 100];
-            app.DiskradiusSpinner.Position = [149 54 58 22];
+            app.DiskradiusSpinner.Position = [150 54 58 22];
             app.DiskradiusSpinner.Value = 3;
 
             % Create OpenMaskButton
             app.OpenMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.OpenMaskButton.ButtonPushedFcn = createCallbackFcn(app, @OpenMaskButtonPushed, true);
-            app.OpenMaskButton.Position = [47 87 75 22];
+            app.OpenMaskButton.Position = [48 87 75 22];
             app.OpenMaskButton.Text = {'Open Mask'; ''};
 
             % Create CloseMaskButton
             app.CloseMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.CloseMaskButton.ButtonPushedFcn = createCallbackFcn(app, @CloseMaskButtonPushed, true);
-            app.CloseMaskButton.Position = [46 54 76 22];
+            app.CloseMaskButton.Position = [47 54 76 22];
             app.CloseMaskButton.Text = {'Close Mask'; ''};
 
             % Create MorphologyLabel
             app.MorphologyLabel = uilabel(app.BrainSegmentationToolsPanel);
-            app.MorphologyLabel.Position = [97 117 68 15];
+            app.MorphologyLabel.Position = [98 117 68 15];
             app.MorphologyLabel.Text = {'Morphology'; ''};
 
             % Create InitialSelectionButton
             app.InitialSelectionButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.InitialSelectionButton.ButtonPushedFcn = createCallbackFcn(app, @InitialSelectionButtonPushed, true);
-            app.InitialSelectionButton.Position = [22 145 100 22];
+            app.InitialSelectionButton.Position = [24 145 100 22];
             app.InitialSelectionButton.Text = {'Initial Selection'; ''};
 
             % Create AutoClusterButton
             app.AutoClusterButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.AutoClusterButton.ButtonPushedFcn = createCallbackFcn(app, @AutoClusterButtonPushed, true);
             app.AutoClusterButton.Enable = 'off';
-            app.AutoClusterButton.Position = [132 145 100 22];
+            app.AutoClusterButton.Position = [134 145 100 22];
             app.AutoClusterButton.Text = 'Auto Cluster';
 
-            % Create LoadexternalmaskButton
-            app.LoadexternalmaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
-            app.LoadexternalmaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadexternalmaskButtonPushed, true);
-            app.LoadexternalmaskButton.Position = [71 259 120 22];
-            app.LoadexternalmaskButton.Text = 'Load external mask';
+            % Create LoadExternalBrainMaskButton
+            app.LoadExternalBrainMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
+            app.LoadExternalBrainMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalBrainMaskButtonPushed, true);
+            app.LoadExternalBrainMaskButton.Position = [52 259 154 22];
+            app.LoadExternalBrainMaskButton.Text = 'Load External Brain Mask';
 
             % Create ImageshownSwitchLabel
             app.ImageshownSwitchLabel = uilabel(app.BrainSegmentationToolsPanel);
             app.ImageshownSwitchLabel.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel.Position = [93 188 77 22];
+            app.ImageshownSwitchLabel.Position = [90 188 77 22];
             app.ImageshownSwitchLabel.Text = {'Image shown'; ''};
 
             % Create ImageshownSwitch_Brain
             app.ImageshownSwitch_Brain = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
             app.ImageshownSwitch_Brain.Items = {'Overlay', 'Masked'};
             app.ImageshownSwitch_Brain.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_BrainValueChanged, true);
-            app.ImageshownSwitch_Brain.Position = [109 217 45 20];
+            app.ImageshownSwitch_Brain.Position = [106 217 45 20];
             app.ImageshownSwitch_Brain.Value = 'Overlay';
 
             % Create ResetSliceButton
             app.ResetSliceButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.ResetSliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetSliceButtonPushed, true);
-            app.ResetSliceButton.Position = [22 21 100 22];
+            app.ResetSliceButton.Position = [24 21 100 22];
             app.ResetSliceButton.Text = 'Reset Slice';
 
             % Create ApplyMaskButton
             app.ApplyMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.ApplyMaskButton.ButtonPushedFcn = createCallbackFcn(app, @ApplyMaskButtonPushed, true);
-            app.ApplyMaskButton.Position = [132 21 100 22];
+            app.ApplyMaskButton.Position = [134 21 100 22];
             app.ApplyMaskButton.Text = 'Apply Mask';
 
             % Create VolumetryTab
