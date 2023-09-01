@@ -411,8 +411,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(2 * app.ContrastSlider_Preview.Value) +  255 * app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Preview.Value) +  app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
             switch app.TurboButton_Preview.Value
                 case true
                     app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview, Colormap = turbo);
@@ -437,8 +437,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
             switch app.CurrentSegmentationDropDown.Value
                 % Brain segmentation image updating
                 case 'Brain'
@@ -597,8 +597,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-            app.CurrentSlice = uint8(double(app.CurrentSlice) * exp(app.ContrastSlider_PostMap.Value) +  255 * app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_PostMap.Value) + app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
             switch app.TurboButton_PostMap.Value
                 case true
                      app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
@@ -4475,6 +4475,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PostMap.XLim = [-inf inf];
             app.UIAxes_PostMap.YLim = [-inf inf];
 
+            % Reset contrast and brightness then refresh
+            app.BrightnessSlider_PostMap.Value = 0;
+            app.ContrastSlider_PostMap.Value = 0;
             RefreshImagePostMap(app);
         end
 
@@ -4509,11 +4512,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Value changing function: ContrastSlider_PostMap
         function ContrastSlider_PostMapValueChanging(app, event)
+            app.ContrastSlider_PostMap.Value = event.Value;
             RefreshImagePostMap(app);
         end
 
         % Value changing function: BrightnessSlider_PostMap
         function BrightnessSlider_PostMapValueChanging(app, event)
+            app.BrightnessSlider_PostMap.Value = event.Value;
             RefreshImagePostMap(app);
         end
 
@@ -4679,6 +4684,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Preview.Orientation = 'vertical';
             app.BrightnessSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @BrightnessSlider_PreviewValueChanging, true);
             app.BrightnessSlider_Preview.MinorTicks = [];
+            app.BrightnessSlider_Preview.BusyAction = 'cancel';
             app.BrightnessSlider_Preview.Enable = 'off';
             app.BrightnessSlider_Preview.Position = [1200 297 3 113];
 
@@ -4695,6 +4701,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Preview.Orientation = 'vertical';
             app.ContrastSlider_Preview.ValueChangingFcn = createCallbackFcn(app, @ContrastSlider_PreviewValueChanging, true);
             app.ContrastSlider_Preview.MinorTicks = [];
+            app.ContrastSlider_Preview.BusyAction = 'cancel';
             app.ContrastSlider_Preview.Enable = 'off';
             app.ContrastSlider_Preview.Position = [1200 137 3 113];
 
@@ -5024,6 +5031,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_Segmenter.Orientation = 'vertical';
             app.BrightnessSlider_Segmenter.ValueChangingFcn = createCallbackFcn(app, @BrightnessSlider_SegmenterValueChanging, true);
             app.BrightnessSlider_Segmenter.MinorTicks = [];
+            app.BrightnessSlider_Segmenter.BusyAction = 'cancel';
             app.BrightnessSlider_Segmenter.Enable = 'off';
             app.BrightnessSlider_Segmenter.Position = [947 431 3 186];
 
@@ -5061,6 +5069,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_Segmenter.Orientation = 'vertical';
             app.ContrastSlider_Segmenter.ValueChangingFcn = createCallbackFcn(app, @ContrastSlider_SegmenterValueChanging, true);
             app.ContrastSlider_Segmenter.MinorTicks = [];
+            app.ContrastSlider_Segmenter.BusyAction = 'cancel';
             app.ContrastSlider_Segmenter.Enable = 'off';
             app.ContrastSlider_Segmenter.Position = [946 169 3 186];
 
@@ -5952,6 +5961,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrightnessSlider_PostMap.Orientation = 'vertical';
             app.BrightnessSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @BrightnessSlider_PostMapValueChanging, true);
             app.BrightnessSlider_PostMap.MinorTicks = [];
+            app.BrightnessSlider_PostMap.BusyAction = 'cancel';
             app.BrightnessSlider_PostMap.Enable = 'off';
             app.BrightnessSlider_PostMap.Position = [1225 382 3 150];
 
@@ -5968,6 +5978,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ContrastSlider_PostMap.Orientation = 'vertical';
             app.ContrastSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @ContrastSlider_PostMapValueChanging, true);
             app.ContrastSlider_PostMap.MinorTicks = [];
+            app.ContrastSlider_PostMap.BusyAction = 'cancel';
             app.ContrastSlider_PostMap.Enable = 'off';
             app.ContrastSlider_PostMap.Position = [1224 184 3 150];
 
