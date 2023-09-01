@@ -213,10 +213,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BloodT1sEditFieldLabel          matlab.ui.control.Label
         T1OptionsPanel                  matlab.ui.container.Panel
         TIvaluesText                    matlab.ui.control.TextArea
-        TEvaluesLabel_3                 matlab.ui.control.Label
+        TIvaluesLabel                   matlab.ui.control.Label
         CalculateT1mapButton            matlab.ui.control.Button
         TRvaluesText                    matlab.ui.control.TextArea
-        TEvaluesLabel_2                 matlab.ui.control.Label
+        TRvaluesLabel                   matlab.ui.control.Label
         T2OptionsPanel                  matlab.ui.container.Panel
         CalculateT2mapButton            matlab.ui.control.Button
         TEvaluesText                    matlab.ui.control.TextArea
@@ -271,6 +271,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SliceSpinner_PreMap             matlab.ui.control.Spinner
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
+        DViewerTab                      matlab.ui.container.Tab
         ContextMenu_Preview             matlab.ui.container.ContextMenu
         RotateMenu_Preview              matlab.ui.container.Menu
         FlipVerticallyMenu_Preview      matlab.ui.container.Menu
@@ -3975,18 +3976,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.T2OptionsPanel.Visible = 'on';
                     app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
+                    t2Position = app.T2OptionsPanel.Position;
+                    optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    optimizationPosition(2) = t2Position(2)-optimizationPosition(4);
+                    app.OptimizationOptionsPanel.Position = optimizationPosition;
                 case "T1"
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'on';
                     app.T2OptionsPanel.Visible = 'off';
                     app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                case "FAIR pASL"
+                    t1Position = app.T1OptionsPanel.Position;
+                    optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    optimizationPosition(2) = t1Position(2)-optimizationPosition(4);
+                    app.OptimizationOptionsPanel.Position = optimizationPosition;
+                case "pASL"
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'off';
                     app.T2OptionsPanel.Visible = 'off';
                     app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'on';
+                    aslPosition = app.FAIRpASLMappingoptionsPanel.Position;
+                    optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    optimizationPosition(2) = aslPosition(2)-optimizationPosition(4);
+                    app.OptimizationOptionsPanel.Position = optimizationPosition;
             end
         end
 
@@ -4112,200 +4125,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PreMap.YLim = [-inf inf];
         end
 
-        % Button pushed function: CalculateT2mapButton
-        function CalculateT2mapButtonPushed(app, event)
-
-            tvalues = str2double(split(app.TEvaluesText.Value, ";")');
-
-            if size(tvalues) ~= size(app.PreMapImageData, 4)
-                uialert(app.BrukKitAlphav0823UIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
-                    'Dimension error');
-                return
-            end
-
-            progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Please wait",...
-                 'Message', "Starting parallel workers...", "Indeterminate", "on");
-            drawnow
-
-            T2raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
-            [z, x, y, ~] = size(T2raw_reordered);
-            T2raw_reordered_reshaped = reshape(T2raw_reordered,[],size(T2raw_reordered,4));
-            tmax = max(tvalues);
-         
-            fun = @(coeffs,tvalues)coeffs(1)*exp(-tvalues/coeffs(2)); 
-            coeffs0 = [1,0.03];
-            coeffs = zeros(length(T2raw_reordered_reshaped),2);
-
-            try
-                opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
-                    'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
-                    'StepTolerance',app.StepToleranceEditField.Value, ...
-                    'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
-                    'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
-                    'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
-            catch
-                uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
-                    'Optimization settings error');
-                return
-            end
-
-            % use parallel processing for faster fitting
-            delete(gcp('nocreate'));
-            parpool("local");
-            progress.Message = "Calculating T2 maps... This might take awhile.";
-
-            parfor br = 1:length(T2raw_reordered_reshaped)
-                if max(T2raw_reordered_reshaped(br,:)) ~= 0
-                    T2raw_reordered_reshaped(br,:) = T2raw_reordered_reshaped(br,:) / max(T2raw_reordered_reshaped(br,:));
-                    coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T2raw_reordered_reshaped(br,:), [0 0], ...
-                    [1 2*tmax], opts);
-                end
-            end
-            
-            delete(gcp('nocreate'));
-
-            T2map_calculated_stack = reshape(squeeze(coeffs(:,2)), z, x, y);
-            app.PostMapImageData = permute(T2map_calculated_stack,[2 3 1]);
-
-            data_dims = size(app.PostMapImageData);
-            app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];              
-            app.SliceSpinner_PostMap.Enable = 'on';
-            app.SliceSpinner_PostMap.Value = 1;
-            app.SliceSlider_PostMap.Limits = [1, data_dims(3)];              
-            app.SliceSlider_PostMap.Enable = 'on';
-            app.SliceSlider_PostMap.Value = 1;
-
-            app.TurboButton_PostMap.Enable = 'on';
-            app.GreyscaleButton_PostMap.Enable = 'on';
-            app.ContrastSlider_PostMap.Enable = 'on';
-            app.BrightnessSlider_PostMap.Enable = 'on';
-
-            app.SaveDataButton_Map.Enable = 'on';
-            if isstring(app.ExportFolderPath)
-                app.ExportDataButton_Map.Enable = 'on';
-            end
-
-            progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
-            
-            RefreshImagePostMap(app);
-        end
-
-        % Menu selected function: RotateMenu_PostMap
-        function RotateMenu_PostMapSelected(app, event)
-            % Rotate image data, show image
-            app.PostMapImageData = rot90(app.PostMapImageData, -1);
-            
-            RefreshImagePostMap(app);
-        end
-
-        % Menu selected function: FlipVerticallyMenu_PostMap
-        function FlipVerticallyMenu_PostMapSelected(app, event)
-            % Flip image data, show image
-            app.PostMapImageData = flipud(app.PostMapImageData);
-            
-            RefreshImagePostMap(app);
-        end
-
-        % Menu selected function: FlipHorizontallyMenu_PostMap
-        function FlipHorizontallyMenu_PostMapSelected(app, event)
-            % Flip image data, show image
-            app.PostMapImageData = fliplr(app.PostMapImageData);
-            
-            RefreshImagePostMap(app);
-        end
-
-        % Menu selected function: ResetViewMenu_PostMap
-        function ResetViewMenu_PostMapSelected(app, event)
-            % Reset zoom
-            app.UIAxes_PostMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
-
-            RefreshImagePostMap(app);
-        end
-
-        % Value changed function: SliceSpinner_PostMap
-        function SliceSpinner_PostMapValueChanged(app, event)
-            event.Source.Value = round(event.Value);
-            app.SliceSlider_PostMap.Value = event.Source.Value;
-            
-            RefreshImagePostMap(app);
-            
-            % Reset zoom
-            app.UIAxes_PostMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
-        end
-
-        % Value changing function: SliceSlider_PostMap
-        function SliceSlider_PostMapValueChanging(app, event)
-            event.Source.Value = round(event.Value);
-            app.SliceSpinner_PostMap.Value = event.Source.Value;
-
-            RefreshImagePostMap(app);
-
-            % Reset zoom
-            app.UIAxes_PostMap.XLim = [-inf inf];
-            app.UIAxes_PostMap.YLim = [-inf inf];
-        end
-
-        % Selection changed function: ColormapButtonGroup_PostMap
-        function ColormapButtonGroup_PostMapSelectionChanged(app, event)
-            RefreshImagePostMap(app);
-        end
-
-        % Value changing function: ContrastSlider_PostMap
-        function ContrastSlider_PostMapValueChanging(app, event)
-            RefreshImagePostMap(app);
-        end
-
-        % Value changing function: BrightnessSlider_PostMap
-        function BrightnessSlider_PostMapValueChanging(app, event)
-            RefreshImagePostMap(app);
-        end
-
-        % Button pushed function: ExportDataButton_Map
-        function ExportDataButton_MapPushed(app, event)
-
-            ExportImageData(app, 'Map');
-
-            uiconfirm(app.BrukKitAlphav0823UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
-        end
-
-        % Button pushed function: SaveDataButton_Map
-        function SaveDataButton_MapPushed(app, event)
-            SaveData(app, 'Map');
-        end
-
-        % Close request function: BrukKitAlphav0823UIFigure
-        function BrukKitAlphav0823UIFigureCloseRequest(app, event)
-            
-            progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Shutting down",...
-                             'Message', "Deleting temporary data...","Indeterminate","on");
-            drawnow
-    
-            % Purge old temporary data
-            try
-                rmdir(app.WorkingFolder, "s");
-            catch
-            end
-    
-            close(progress);
-    
-            selection = uiconfirm(app.BrukKitAlphav0823UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
-                "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
-    
-            switch selection
-                case 'Bye!'
-                    delete(app.RegistrationViewerWindow);       
-                    delete(app.DSCSettingsWindow);
-                    delete(app);
-                otherwise
-                    return
-            end
-            
-        end
-
         % Button pushed function: ResettodefaultsButton
         function ResettodefaultsButtonPushed(app, event)
             app.fxToleranceEditField.Value = 1.0e-3;
@@ -4390,6 +4209,86 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             T1map_calculated_stack = reshape(squeeze(coeffs(:,2)), z, x, y);
             app.PostMapImageData = permute(T1map_calculated_stack,[2 3 1]);
+
+            data_dims = size(app.PostMapImageData);
+            app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];              
+            app.SliceSpinner_PostMap.Enable = 'on';
+            app.SliceSpinner_PostMap.Value = 1;
+            app.SliceSlider_PostMap.Limits = [1, data_dims(3)];              
+            app.SliceSlider_PostMap.Enable = 'on';
+            app.SliceSlider_PostMap.Value = 1;
+
+            app.TurboButton_PostMap.Enable = 'on';
+            app.GreyscaleButton_PostMap.Enable = 'on';
+            app.ContrastSlider_PostMap.Enable = 'on';
+            app.BrightnessSlider_PostMap.Enable = 'on';
+
+            app.SaveDataButton_Map.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportDataButton_Map.Enable = 'on';
+            end
+
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Button pushed function: CalculateT2mapButton
+        function CalculateT2mapButtonPushed(app, event)
+
+            tvalues = str2double(split(app.TEvaluesText.Value, ";")');
+
+            if size(tvalues) ~= size(app.PreMapImageData, 4)
+                uialert(app.BrukKitAlphav0823UIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                    'Dimension error');
+                return
+            end
+
+            progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Please wait",...
+                 'Message', "Starting parallel workers...", "Indeterminate", "on");
+            drawnow
+
+            T2raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
+            [z, x, y, ~] = size(T2raw_reordered);
+            T2raw_reordered_reshaped = reshape(T2raw_reordered,[],size(T2raw_reordered,4));
+            tmax = max(tvalues);
+         
+            fun = @(coeffs,tvalues)coeffs(1)*exp(-tvalues/coeffs(2)); 
+            coeffs0 = [1,0.03];
+            coeffs = zeros(length(T2raw_reordered_reshaped),2);
+
+            try
+                opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
+                    'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
+                    'StepTolerance',app.StepToleranceEditField.Value, ...
+                    'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
+                    'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
+                    'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
+            catch
+                uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+                    'Optimization settings error');
+                return
+            end
+
+            % use parallel processing for faster fitting
+            delete(gcp('nocreate'));
+            parpool("local");
+            progress.Message = "Calculating T2 maps... This might take awhile.";
+
+            parfor br = 1:length(T2raw_reordered_reshaped)
+                if max(T2raw_reordered_reshaped(br,:)) ~= 0
+                    T2raw_reordered_reshaped(br,:) = T2raw_reordered_reshaped(br,:) / max(T2raw_reordered_reshaped(br,:));
+                    coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T2raw_reordered_reshaped(br,:), [0 0], ...
+                    [1 2*tmax], opts);
+                end
+            end
+            
+            delete(gcp('nocreate'));
+
+            T2map_calculated_stack = reshape(squeeze(coeffs(:,2)), z, x, y);
+            app.PostMapImageData = permute(T2map_calculated_stack,[2 3 1]);
 
             data_dims = size(app.PostMapImageData);
             app.SliceSpinner_PostMap.Limits = [1, data_dims(3)];              
@@ -4544,6 +4443,120 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
             
             RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: RotateMenu_PostMap
+        function RotateMenu_PostMapSelected(app, event)
+            % Rotate image data, show image
+            app.PostMapImageData = rot90(app.PostMapImageData, -1);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: FlipVerticallyMenu_PostMap
+        function FlipVerticallyMenu_PostMapSelected(app, event)
+            % Flip image data, show image
+            app.PostMapImageData = flipud(app.PostMapImageData);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: FlipHorizontallyMenu_PostMap
+        function FlipHorizontallyMenu_PostMapSelected(app, event)
+            % Flip image data, show image
+            app.PostMapImageData = fliplr(app.PostMapImageData);
+            
+            RefreshImagePostMap(app);
+        end
+
+        % Menu selected function: ResetViewMenu_PostMap
+        function ResetViewMenu_PostMapSelected(app, event)
+            % Reset zoom
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
+
+            RefreshImagePostMap(app);
+        end
+
+        % Value changed function: SliceSpinner_PostMap
+        function SliceSpinner_PostMapValueChanged(app, event)
+            event.Source.Value = round(event.Value);
+            app.SliceSlider_PostMap.Value = event.Source.Value;
+            
+            RefreshImagePostMap(app);
+            
+            % Reset zoom
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
+        end
+
+        % Value changing function: SliceSlider_PostMap
+        function SliceSlider_PostMapValueChanging(app, event)
+            event.Source.Value = round(event.Value);
+            app.SliceSpinner_PostMap.Value = event.Source.Value;
+
+            RefreshImagePostMap(app);
+
+            % Reset zoom
+            app.UIAxes_PostMap.XLim = [-inf inf];
+            app.UIAxes_PostMap.YLim = [-inf inf];
+        end
+
+        % Selection changed function: ColormapButtonGroup_PostMap
+        function ColormapButtonGroup_PostMapSelectionChanged(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Value changing function: ContrastSlider_PostMap
+        function ContrastSlider_PostMapValueChanging(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Value changing function: BrightnessSlider_PostMap
+        function BrightnessSlider_PostMapValueChanging(app, event)
+            RefreshImagePostMap(app);
+        end
+
+        % Button pushed function: ExportDataButton_Map
+        function ExportDataButton_MapPushed(app, event)
+
+            ExportImageData(app, 'Map');
+
+            uiconfirm(app.BrukKitAlphav0823UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+        end
+
+        % Button pushed function: SaveDataButton_Map
+        function SaveDataButton_MapPushed(app, event)
+            SaveData(app, 'Map');
+        end
+
+        % Close request function: BrukKitAlphav0823UIFigure
+        function BrukKitAlphav0823UIFigureCloseRequest(app, event)
+            
+            progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Shutting down",...
+                             'Message', "Deleting temporary data...","Indeterminate","on");
+            drawnow
+    
+            % Purge old temporary data
+            try
+                rmdir(app.WorkingFolder, "s");
+            catch
+            end
+    
+            close(progress);
+    
+            selection = uiconfirm(app.BrukKitAlphav0823UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
+                "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
+    
+            switch selection
+                case 'Bye!'
+                    delete(app.RegistrationViewerWindow);       
+                    delete(app.DSCSettingsWindow);
+                    delete(app);
+                otherwise
+                    return
+            end
+            
         end
     end
 
@@ -5834,7 +5847,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_PreMap.YTick = [];
             app.UIAxes_PreMap.YTickLabel = '';
             app.UIAxes_PreMap.Box = 'on';
-            app.UIAxes_PreMap.Position = [32 134 467 425];
+            app.UIAxes_PreMap.Position = [41 134 467 425];
 
             % Create UIAxes_PostMap
             app.UIAxes_PostMap = uiaxes(app.ParameterMapsTab);
@@ -5852,13 +5865,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PreMap = uispinner(app.ParameterMapsTab);
             app.SliceSpinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PreMapValueChanged, true);
             app.SliceSpinner_PreMap.Enable = 'off';
-            app.SliceSpinner_PreMap.Position = [383 97 57 22];
+            app.SliceSpinner_PreMap.Position = [393 97 57 22];
             app.SliceSpinner_PreMap.Value = 1;
 
             % Create SelectDSCvolumetricdataformapcalculationLabel
             app.SelectDSCvolumetricdataformapcalculationLabel = uilabel(app.ParameterMapsTab);
             app.SelectDSCvolumetricdataformapcalculationLabel.HorizontalAlignment = 'right';
-            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [152 598 216 22];
+            app.SelectDSCvolumetricdataformapcalculationLabel.Position = [162 598 216 22];
             app.SelectDSCvolumetricdataformapcalculationLabel.Text = 'Select Image Data For Map Calculation';
 
             % Create SelectPreMapDropDown
@@ -5866,13 +5879,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectPreMapDropDown.Items = {'None'};
             app.SelectPreMapDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectPreMapDropDownValueChanged, true);
             app.SelectPreMapDropDown.Placeholder = 'None';
-            app.SelectPreMapDropDown.Position = [123 574 284 21];
+            app.SelectPreMapDropDown.Position = [133 574 284 21];
             app.SelectPreMapDropDown.Value = 'None';
 
             % Create SliceLabel_ParameterMaps
             app.SliceLabel_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.SliceLabel_ParameterMaps.HorizontalAlignment = 'right';
-            app.SliceLabel_ParameterMaps.Position = [90 97 31 22];
+            app.SliceLabel_ParameterMaps.Position = [100 97 31 22];
             app.SliceLabel_ParameterMaps.Text = 'Slice';
 
             % Create SliceSlider_PreMap
@@ -5883,33 +5896,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PreMap.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PreMapValueChanging, true);
             app.SliceSlider_PreMap.MinorTicks = [];
             app.SliceSlider_PreMap.Enable = 'off';
-            app.SliceSlider_PreMap.Position = [142 106 221 3];
+            app.SliceSlider_PreMap.Position = [152 106 221 3];
             app.SliceSlider_PreMap.Value = 1;
 
             % Create Dim4Spinner_Label_ParameterMaps
             app.Dim4Spinner_Label_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.Dim4Spinner_Label_ParameterMaps.HorizontalAlignment = 'right';
-            app.Dim4Spinner_Label_ParameterMaps.Position = [147 49 44 22];
+            app.Dim4Spinner_Label_ParameterMaps.Position = [157 49 44 22];
             app.Dim4Spinner_Label_ParameterMaps.Text = 'Dim - 4';
 
             % Create Dim4Spinner_PreMap
             app.Dim4Spinner_PreMap = uispinner(app.ParameterMapsTab);
             app.Dim4Spinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_PreMapValueChanged, true);
             app.Dim4Spinner_PreMap.Enable = 'off';
-            app.Dim4Spinner_PreMap.Position = [202 49 50 22];
+            app.Dim4Spinner_PreMap.Position = [212 49 50 22];
             app.Dim4Spinner_PreMap.Value = 1;
 
             % Create Dim5Spinner_Label_ParameterMaps
             app.Dim5Spinner_Label_ParameterMaps = uilabel(app.ParameterMapsTab);
             app.Dim5Spinner_Label_ParameterMaps.HorizontalAlignment = 'right';
-            app.Dim5Spinner_Label_ParameterMaps.Position = [276 49 44 22];
+            app.Dim5Spinner_Label_ParameterMaps.Position = [286 49 44 22];
             app.Dim5Spinner_Label_ParameterMaps.Text = 'Dim - 5';
 
             % Create Dim5Spinner_PreMap
             app.Dim5Spinner_PreMap = uispinner(app.ParameterMapsTab);
             app.Dim5Spinner_PreMap.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_PreMapValueChanged, true);
             app.Dim5Spinner_PreMap.Enable = 'off';
-            app.Dim5Spinner_PreMap.Position = [332 49 51 22];
+            app.Dim5Spinner_PreMap.Position = [342 49 51 22];
             app.Dim5Spinner_PreMap.Value = 1;
 
             % Create ChooseMapTypeDropDownLabel
@@ -5964,7 +5977,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_PostMap.BorderType = 'none';
             app.ColormapButtonGroup_PostMap.TitlePosition = 'centertop';
             app.ColormapButtonGroup_PostMap.Title = 'Colormap';
-            app.ColormapButtonGroup_PostMap.Position = [887 45 168 38];
+            app.ColormapButtonGroup_PostMap.Position = [878 45 168 38];
 
             % Create GreyscaleButton_PostMap
             app.GreyscaleButton_PostMap = uiradiobutton(app.ColormapButtonGroup_PostMap);
@@ -5984,7 +5997,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DSCMappingOptionsPanel.BorderType = 'none';
             app.DSCMappingOptionsPanel.TitlePosition = 'centertop';
             app.DSCMappingOptionsPanel.Title = 'DSC Mapping Options';
-            app.DSCMappingOptionsPanel.Position = [524 170 200 378];
+            app.DSCMappingOptionsPanel.Position = [518 170 200 378];
 
             % Create CalculateDSCmapsButton
             app.CalculateDSCmapsButton = uibutton(app.DSCMappingOptionsPanel, 'push');
@@ -6052,13 +6065,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PostMap.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_PostMapValueChanged, true);
             app.SliceSpinner_PostMap.HorizontalAlignment = 'center';
             app.SliceSpinner_PostMap.Enable = 'off';
-            app.SliceSpinner_PostMap.Position = [1089 97 57 22];
+            app.SliceSpinner_PostMap.Position = [1080 97 57 22];
             app.SliceSpinner_PostMap.Value = 1;
 
             % Create SliceLabel_ParameterMaps_2
             app.SliceLabel_ParameterMaps_2 = uilabel(app.ParameterMapsTab);
             app.SliceLabel_ParameterMaps_2.HorizontalAlignment = 'right';
-            app.SliceLabel_ParameterMaps_2.Position = [796 97 31 22];
+            app.SliceLabel_ParameterMaps_2.Position = [787 97 31 22];
             app.SliceLabel_ParameterMaps_2.Text = 'Slice';
 
             % Create SliceSlider_PostMap
@@ -6069,21 +6082,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_PostMap.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_PostMapValueChanging, true);
             app.SliceSlider_PostMap.MinorTicks = [];
             app.SliceSlider_PostMap.Enable = 'off';
-            app.SliceSlider_PostMap.Position = [848 106 221 3];
+            app.SliceSlider_PostMap.Position = [839 106 221 3];
             app.SliceSlider_PostMap.Value = 1;
 
             % Create SaveDataButton_Map
             app.SaveDataButton_Map = uibutton(app.ParameterMapsTab, 'push');
             app.SaveDataButton_Map.ButtonPushedFcn = createCallbackFcn(app, @SaveDataButton_MapPushed, true);
             app.SaveDataButton_Map.Enable = 'off';
-            app.SaveDataButton_Map.Position = [1063 582 129 22];
+            app.SaveDataButton_Map.Position = [975 582 129 22];
             app.SaveDataButton_Map.Text = 'Save Parameter Map';
 
             % Create ExportDataButton_Map
             app.ExportDataButton_Map = uibutton(app.ParameterMapsTab, 'push');
             app.ExportDataButton_Map.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_MapPushed, true);
             app.ExportDataButton_Map.Enable = 'off';
-            app.ExportDataButton_Map.Position = [908 582 136 22];
+            app.ExportDataButton_Map.Position = [820 582 136 22];
             app.ExportDataButton_Map.Text = 'Export Parameter Map';
 
             % Create OptimizationOptionsPanel
@@ -6092,84 +6105,84 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.OptimizationOptionsPanel.TitlePosition = 'centertop';
             app.OptimizationOptionsPanel.Title = 'Optimization Options';
             app.OptimizationOptionsPanel.Visible = 'off';
-            app.OptimizationOptionsPanel.Position = [523 36 200 230];
+            app.OptimizationOptionsPanel.Position = [518 24 200 242];
 
             % Create fxToleranceEditFieldLabel
             app.fxToleranceEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.fxToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.fxToleranceEditFieldLabel.Position = [7 182 125 22];
+            app.fxToleranceEditFieldLabel.Position = [7 194 125 22];
             app.fxToleranceEditFieldLabel.Text = 'f(x) Tolerance';
 
             % Create fxToleranceEditField
             app.fxToleranceEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.fxToleranceEditField.ValueDisplayFormat = '%1.1e';
-            app.fxToleranceEditField.Position = [138 182 56 22];
+            app.fxToleranceEditField.Position = [138 194 56 22];
             app.fxToleranceEditField.Value = 0.001;
 
             % Create OptimalityToleranceEditFieldLabel
             app.OptimalityToleranceEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.OptimalityToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.OptimalityToleranceEditFieldLabel.Position = [7 152 125 22];
+            app.OptimalityToleranceEditFieldLabel.Position = [7 164 125 22];
             app.OptimalityToleranceEditFieldLabel.Text = 'Optimality Tolerance';
 
             % Create OptimalityToleranceEditField
             app.OptimalityToleranceEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.OptimalityToleranceEditField.ValueDisplayFormat = '%1.1e';
-            app.OptimalityToleranceEditField.Position = [138 153 56 22];
+            app.OptimalityToleranceEditField.Position = [138 165 56 22];
             app.OptimalityToleranceEditField.Value = 0.001;
 
             % Create StepToleranceEditFieldLabel
             app.StepToleranceEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.StepToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepToleranceEditFieldLabel.Position = [7 120 125 22];
+            app.StepToleranceEditFieldLabel.Position = [7 132 125 22];
             app.StepToleranceEditFieldLabel.Text = 'Step Tolerance';
 
             % Create StepToleranceEditField
             app.StepToleranceEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.StepToleranceEditField.ValueDisplayFormat = '%1.1e';
-            app.StepToleranceEditField.Position = [138 122 56 22];
+            app.StepToleranceEditField.Position = [138 134 56 22];
             app.StepToleranceEditField.Value = 0.001;
 
             % Create dfStepSizeEditFieldLabel
             app.dfStepSizeEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.dfStepSizeEditFieldLabel.HorizontalAlignment = 'right';
-            app.dfStepSizeEditFieldLabel.Position = [7 89 125 22];
+            app.dfStepSizeEditFieldLabel.Position = [7 101 125 22];
             app.dfStepSizeEditFieldLabel.Text = 'd(f) Step Size';
 
             % Create dfStepSizeEditField
             app.dfStepSizeEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.dfStepSizeEditField.ValueDisplayFormat = '%1.1e';
-            app.dfStepSizeEditField.Position = [138 90 56 22];
+            app.dfStepSizeEditField.Position = [138 102 56 22];
             app.dfStepSizeEditField.Value = 0.0001;
 
             % Create MaxNrofEvaluationsEditFieldLabel
             app.MaxNrofEvaluationsEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.MaxNrofEvaluationsEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaxNrofEvaluationsEditFieldLabel.Position = [6 59 126 22];
+            app.MaxNrofEvaluationsEditFieldLabel.Position = [6 71 126 22];
             app.MaxNrofEvaluationsEditFieldLabel.Text = 'Max Nr. of Evaluations';
 
             % Create MaxNrofEvaluationsEditField
             app.MaxNrofEvaluationsEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.MaxNrofEvaluationsEditField.ValueDisplayFormat = '%1.1e';
-            app.MaxNrofEvaluationsEditField.Position = [138 60 56 22];
+            app.MaxNrofEvaluationsEditField.Position = [138 72 56 22];
             app.MaxNrofEvaluationsEditField.Value = 10;
 
             % Create MaxNrofIterationsEditFieldLabel
             app.MaxNrofIterationsEditFieldLabel = uilabel(app.OptimizationOptionsPanel);
             app.MaxNrofIterationsEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaxNrofIterationsEditFieldLabel.Position = [8 29 123 22];
+            app.MaxNrofIterationsEditFieldLabel.Position = [8 41 123 22];
             app.MaxNrofIterationsEditFieldLabel.Text = 'Max Nr. of Iterations';
 
             % Create MaxNrofIterationsEditField
             app.MaxNrofIterationsEditField = uieditfield(app.OptimizationOptionsPanel, 'numeric');
             app.MaxNrofIterationsEditField.ValueDisplayFormat = '%1.1e';
-            app.MaxNrofIterationsEditField.Position = [138 29 56 22];
+            app.MaxNrofIterationsEditField.Position = [138 41 56 22];
             app.MaxNrofIterationsEditField.Value = 10;
 
             % Create ResettodefaultsButton
             app.ResettodefaultsButton = uibutton(app.OptimizationOptionsPanel, 'push');
             app.ResettodefaultsButton.ButtonPushedFcn = createCallbackFcn(app, @ResettodefaultsButtonPushed, true);
-            app.ResettodefaultsButton.Position = [48 3 106 22];
+            app.ResettodefaultsButton.Position = [48 9 106 22];
             app.ResettodefaultsButton.Text = 'Reset to defaults';
 
             % Create T2OptionsPanel
@@ -6178,22 +6191,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.T2OptionsPanel.TitlePosition = 'centertop';
             app.T2OptionsPanel.Title = 'T2 Mapping Options';
             app.T2OptionsPanel.Visible = 'off';
-            app.T2OptionsPanel.Position = [524 372 199 176];
+            app.T2OptionsPanel.Position = [518 375 200 173];
 
             % Create TEvaluesLabel
             app.TEvaluesLabel = uilabel(app.T2OptionsPanel);
             app.TEvaluesLabel.HorizontalAlignment = 'center';
-            app.TEvaluesLabel.Position = [71 124 59 22];
+            app.TEvaluesLabel.Position = [71 121 59 22];
             app.TEvaluesLabel.Text = 'TE values';
 
             % Create TEvaluesText
             app.TEvaluesText = uitextarea(app.T2OptionsPanel);
-            app.TEvaluesText.Position = [26 56 150 60];
+            app.TEvaluesText.Position = [26 53 150 60];
 
             % Create CalculateT2mapButton
             app.CalculateT2mapButton = uibutton(app.T2OptionsPanel, 'push');
             app.CalculateT2mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2mapButtonPushed, true);
-            app.CalculateT2mapButton.Position = [46 18 109 22];
+            app.CalculateT2mapButton.Position = [46 15 109 22];
             app.CalculateT2mapButton.Text = 'Calculate T2 map';
 
             % Create T1OptionsPanel
@@ -6202,33 +6215,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.T1OptionsPanel.TitlePosition = 'centertop';
             app.T1OptionsPanel.Title = 'T1 Mapping Options';
             app.T1OptionsPanel.Visible = 'off';
-            app.T1OptionsPanel.Position = [523 290 199 258];
+            app.T1OptionsPanel.Position = [518 280 200 268];
 
-            % Create TEvaluesLabel_2
-            app.TEvaluesLabel_2 = uilabel(app.T1OptionsPanel);
-            app.TEvaluesLabel_2.HorizontalAlignment = 'center';
-            app.TEvaluesLabel_2.Position = [71 206 60 22];
-            app.TEvaluesLabel_2.Text = 'TR values';
+            % Create TRvaluesLabel
+            app.TRvaluesLabel = uilabel(app.T1OptionsPanel);
+            app.TRvaluesLabel.HorizontalAlignment = 'center';
+            app.TRvaluesLabel.Position = [71 216 60 22];
+            app.TRvaluesLabel.Text = 'TR values';
 
             % Create TRvaluesText
             app.TRvaluesText = uitextarea(app.T1OptionsPanel);
-            app.TRvaluesText.Position = [26 138 150 60];
+            app.TRvaluesText.Position = [26 148 150 60];
 
             % Create CalculateT1mapButton
             app.CalculateT1mapButton = uibutton(app.T1OptionsPanel, 'push');
             app.CalculateT1mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT1mapButtonPushed, true);
-            app.CalculateT1mapButton.Position = [48 8 109 22];
+            app.CalculateT1mapButton.Position = [48 14 109 22];
             app.CalculateT1mapButton.Text = 'Calculate T1 map';
 
-            % Create TEvaluesLabel_3
-            app.TEvaluesLabel_3 = uilabel(app.T1OptionsPanel);
-            app.TEvaluesLabel_3.HorizontalAlignment = 'center';
-            app.TEvaluesLabel_3.Position = [74 107 54 22];
-            app.TEvaluesLabel_3.Text = 'TI values';
+            % Create TIvaluesLabel
+            app.TIvaluesLabel = uilabel(app.T1OptionsPanel);
+            app.TIvaluesLabel.HorizontalAlignment = 'center';
+            app.TIvaluesLabel.Position = [74 117 54 22];
+            app.TIvaluesLabel.Text = 'TI values';
 
             % Create TIvaluesText
             app.TIvaluesText = uitextarea(app.T1OptionsPanel);
-            app.TIvaluesText.Position = [26 39 150 60];
+            app.TIvaluesText.Position = [26 49 150 60];
 
             % Create FAIRpASLMappingoptionsPanel
             app.FAIRpASLMappingoptionsPanel = uipanel(app.ParameterMapsTab);
@@ -6236,17 +6249,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.FAIRpASLMappingoptionsPanel.TitlePosition = 'centertop';
             app.FAIRpASLMappingoptionsPanel.Title = 'FAIR pASL Mapping options';
             app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-            app.FAIRpASLMappingoptionsPanel.Position = [523 327 199 221];
+            app.FAIRpASLMappingoptionsPanel.Position = [518 370 200 178];
 
             % Create BloodT1sEditFieldLabel
             app.BloodT1sEditFieldLabel = uilabel(app.FAIRpASLMappingoptionsPanel);
             app.BloodT1sEditFieldLabel.HorizontalAlignment = 'right';
-            app.BloodT1sEditFieldLabel.Position = [24 61 71 22];
+            app.BloodT1sEditFieldLabel.Position = [28 47 71 22];
             app.BloodT1sEditFieldLabel.Text = 'Blood T1 (s)';
 
             % Create BloodT1sEditField
             app.BloodT1sEditField = uieditfield(app.FAIRpASLMappingoptionsPanel, 'numeric');
-            app.BloodT1sEditField.Position = [107 61 60 22];
+            app.BloodT1sEditField.Position = [111 47 60 22];
             app.BloodT1sEditField.Value = 2.4;
 
             % Create ExperimentorderButtonGroup
@@ -6254,24 +6267,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExperimentorderButtonGroup.BorderType = 'none';
             app.ExperimentorderButtonGroup.TitlePosition = 'centertop';
             app.ExperimentorderButtonGroup.Title = 'Experiment order';
-            app.ExperimentorderButtonGroup.Position = [30 91 143 106];
+            app.ExperimentorderButtonGroup.Position = [28 75 143 79];
 
             % Create SliceselectivefirstButton
             app.SliceselectivefirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
             app.SliceselectivefirstButton.Text = {'Slice selective first'; ''};
-            app.SliceselectivefirstButton.Position = [11 61 121 22];
+            app.SliceselectivefirstButton.Position = [11 34 121 22];
             app.SliceselectivefirstButton.Value = true;
 
             % Create NonselectivefirstButton
             app.NonselectivefirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
             app.NonselectivefirstButton.Text = 'Non-selective first';
-            app.NonselectivefirstButton.Position = [11 39 117 22];
+            app.NonselectivefirstButton.Position = [11 12 117 22];
 
             % Create CalculatepASLmapButton
             app.CalculatepASLmapButton = uibutton(app.FAIRpASLMappingoptionsPanel, 'push');
             app.CalculatepASLmapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculatepASLmapButtonPushed, true);
-            app.CalculatepASLmapButton.Position = [38 28 124 22];
+            app.CalculatepASLmapButton.Position = [38 14 124 22];
             app.CalculatepASLmapButton.Text = 'Calculate pASL map';
+
+            % Create DViewerTab
+            app.DViewerTab = uitab(app.TabGroup);
+            app.DViewerTab.Title = '3D Viewer';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
