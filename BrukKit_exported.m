@@ -395,6 +395,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % 3D Viewer Tab
         ViewerParentObject % Property for storing viewer3d object
         ViewerImageData % Property for storing currently matrix of currently selected experiment in 3D Viewer
+        ViewerDimTriplet % Property for storing dimension triplet for 
 
     end
     
@@ -614,187 +615,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             app.PostMapImage.ContextMenu = app.ContextMenu_PostMap;
         end
-        
-        % Saving temporary experiment data to permanent tables
-        function SaveData(app, tab)
-            switch tab
-                case 'Preview'
-                    OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.PreviewDropDown.Value));
-                    exp_ID = append(app.PreviewDropDown.Value, '_Preview');
-                    image_Data = app.PreviewImageData;
-                    saved_BrainMask = false(size(image_Data));
-                    hemi_Mask = false(1);
-                    roi.Mask = false(1);
-                    roi.ID = {'None'};
-                    TE = app.ExperimentPropertyTable.(3)(app.PreviewDropDown.Value);
-                    TR = app.ExperimentPropertyTable.(4)(app.PreviewDropDown.Value);
-                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.PreviewDropDown.Value); 
-                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.PreviewDropDown.Value);
-                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.PreviewDropDown.Value);
-                    slice_Gap = app.ExperimentPropertyTable.(8)(app.PreviewDropDown.Value);
-                    units = app.ExperimentPropertyTable.(9)(app.PreviewDropDown.Value);
-                    RotMat = app.ExperimentPropertyTable.(10)(app.PreviewDropDown.Value);
-                case 'Segmenter'
-                    exp_ID = append(app.SegmentDropDown.Value, '_Segmented');
-                    image_Data = app.WorkingSegmenterImageData;
-                    saved_BrainMask = app.SavedBrainMask;
-                    switch numel(app.ExpDimsSegmenter)
-                        case 2
-                            if ~isequal(app.HemisphereMask, false(cat(2, app.ExpDimsSegmenter, 2)))
-                                hemi_Mask = app.HemisphereMask;
-                            else
-                                hemi_Mask = false(1);
-                            end
-                        otherwise
-                            if ~isequal(app.HemisphereMask, false(cat(2, app.ExpDimsSegmenter(1:3), 2)))
-                                hemi_Mask = app.HemisphereMask;
-                            else
-                                hemi_Mask = false(1);
-                            end
-                    end
-                    if ~isequal(app.ROIMask, [])
-                        roi.Mask = app.ROIMask;
-                    else
-                        roi.Mask = false(1);
-                    end
-                    if ~isequal(app.ROIIdentifiers, {})
-                        roi.ID = app.ROIIdentifiers;
-                    else
-                        roi.ID = {'None'};
-                    end
-                    try
-                        OrigIndex = app.SavedTable.OrigIndex(app.SegmentDropDown.Value);
-                        TE = app.SavedTable.TE(app.SegmentDropDown.Value);
-                        TR = app.SavedTable.TR(app.SegmentDropDown.Value);
-                        vox_dim_X = app.SavedTable.VoxDimX(app.SegmentDropDown.Value); 
-                        vox_dim_Y = app.SavedTable.VoxDimY(app.SegmentDropDown.Value);
-                        slice_Thickness = app.SavedTable.SliceThickness(app.SegmentDropDown.Value);
-                        slice_Gap = app.SavedTable.SliceGap(app.SegmentDropDown.Value);
-                        units = app.SavedTable.Units(app.SegmentDropDown.Value);
-                        RotMat = app.SavedTable.RotMat(app.SegmentDropDown.Value);
-                    catch
-                        try
-                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SegmentDropDown.Value));
-                            TE = app.ExperimentPropertyTable.(3)(app.SegmentDropDown.Value);
-                            TR = app.ExperimentPropertyTable.(4)(app.SegmentDropDown.Value);
-                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
-                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
-                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
-                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
-                            units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
-                            RotMat = app.ExperimentPropertyTable.(10)(app.SegmentDropDown.Value);
-                        catch
-                        end
-                    end
-                case 'Registration'
-                    OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
-                    exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
-                    image_Data = app.RegisteredImageData;
-                    selection = uiconfirm(app.BrukKitAlphav0823UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
-                        ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
-                    switch selection
-                        case 'Save Mask'
-                            saved_BrainMask = app.RegisteredMask;
-                        case 'Save without Mask'
-                            saved_BrainMask = false(size(image_Data));
-                    end
-                    hemi_Mask = false(1);
-                    roi.Mask = false(1);
-                    roi.ID = {'None'};
-                    TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
-                    TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
-                    vox_dim_X = app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value); 
-                    vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
-                    slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
-                    slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
-                    units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
-                    RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
-                case 'Map'
-                    exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
-                    image_Data = app.PostMapImageData;
-                    try
-                        saved_BrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectPreMapDropDown.Value));
-                    catch
-                        saved_BrainMask = false(size(image_Data));
-                    end
-                    hemi_Mask = false(1);
-                    roi.Mask = false(1);
-                    roi.ID = {'None'};                 
-                    try
-                        OrigIndex = app.SavedTable.OrigIndex(app.SelectPreMapDropDown.Value);
-                        TE = app.SavedTable.TE(app.SelectPreMapDropDown.Value);
-                        TR = app.SavedTable.TR(app.SelectPreMapDropDown.Value);
-                        vox_dim_X = app.SavedTable.VoxDimX(app.SelectPreMapDropDown.Value); 
-                        vox_dim_Y = app.SavedTable.VoxDimY(app.SelectPreMapDropDown.Value);
-                        slice_Thickness = app.SavedTable.SliceThickness(app.SelectPreMapDropDown.Value);
-                        slice_Gap = app.SavedTable.SliceGap(app.SelectPreMapDropDown.Value);
-                        units = app.SavedTable.Units(app.SelectPreMapDropDown.Value);
-                        RotMat = app.SavedTable.RotMat(app.SelectPreMapDropDown.Value);
-                    catch
-                        try
-                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectPreMapDropDown.Value));
-                            TE = app.ExperimentPropertyTable.(3)(app.SelectPreMapDropDown.Value);
-                            TR = app.ExperimentPropertyTable.(4)(app.SelectPreMapDropDown.Value);
-                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectPreMapDropDown.Value); 
-                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectPreMapDropDown.Value);
-                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectPreMapDropDown.Value);
-                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectPreMapDropDown.Value);
-                            units = app.ExperimentPropertyTable.(9)(app.SelectPreMapDropDown.Value);
-                            RotMat = app.ExperimentPropertyTable.(10)(app.SelectPreMapDropDown.Value);
-                        catch
-                        end
-                    end
-            end
 
-            % Construct temporary table of saved data
-            temp_Table = table(OrigIndex, {image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, TE, TR, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, units, RotMat,'RowNames', {exp_ID}, 'VariableNames', {'OrigIndex' 'Image' 'BrainMask' 'HemiMask' 'ROI' 'TE' 'TR' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap' 'Units' 'RotMat'});
-            try
-                % Move temporarily saved data to permanent app table
-                app.SavedTable = [app.SavedTable; temp_Table];
-                
-                % Update Combined drop down
-                app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
-                app.SegmentDropDown.Items = app.DropDownItemsCombined;
-                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
-
-                % Update DSC and Registration tab drop down menus
-                app.DropDownItemsSavedOnly = cat(1, app.DropDownItemsSavedOnly, exp_ID);
-                app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
-                app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
-                app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
-                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
-                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
-
-                % Display confirmation figure
-                uiconfirm(app.BrukKitAlphav0823UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-            catch ME
-                switch ME.identifier
-                    case 'MATLAB:table:DuplicateRowNames'
-                        selection = uiconfirm(app.BrukKitAlphav0823UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
-                        switch selection
-                            case 'OK'
-                                % Overwrite data of currently saved experiment under same identifier
-                                app.SavedTable.Image(exp_ID) = {image_Data};
-                                app.SavedTable.BrainMask(exp_ID) = {saved_BrainMask};
-                                app.SavedTable.HemiMask(exp_ID) = {hemi_Mask};
-                                app.SavedTable.ROI(exp_ID) = {roi};
-                                app.SavedTable.TE(exp_ID) = TE;
-                                app.SavedTable.TR(exp_ID) = TR;
-                                app.SavedTable.VoxDimX(exp_ID) = vox_dim_X;
-                                app.SavedTable.VoxDimY(exp_ID) = vox_dim_Y;
-                                app.SavedTable.SliceThickness(exp_ID) = slice_Thickness;
-                                app.SavedTable.SliceGap(exp_ID) = slice_Gap;
-                                app.SavedTable.Units(exp_ID) = units;
-                                app.SavedTable.RotMat(exp_ID) = RotMat;
-                                
-                                % Display confirmation figure
-                                uiconfirm(app.BrukKitAlphav0823UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-                            case 'Cancel'
-                                return
-                        end
-                    otherwise
-                end
-            end 
+        % Function updates 3D Viewer
+        function Refresh3DViewer(app, image_data)
+            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+            % Create transformation matrix
+            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
+            tform = affinetform3d(T);
+            volshow(image_data, 'Parent', app.ViewerParentObject, 'Transformation', tform);
         end
         
         % Function returns edema adjusted slice area
@@ -1005,6 +833,188 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.MinEditField_ROI.Value = 0;
                 app.MaxEditField_ROI.Value = 0;
             end
+        end
+
+        % Saving temporary experiment data to permanent tables
+        function SaveData(app, tab)
+            switch tab
+                case 'Preview'
+                    OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.PreviewDropDown.Value));
+                    exp_ID = append(app.PreviewDropDown.Value, '_Preview');
+                    image_Data = app.PreviewImageData;
+                    saved_BrainMask = false(size(image_Data));
+                    hemi_Mask = false(1);
+                    roi.Mask = false(1);
+                    roi.ID = {'None'};
+                    TE = app.ExperimentPropertyTable.(3)(app.PreviewDropDown.Value);
+                    TR = app.ExperimentPropertyTable.(4)(app.PreviewDropDown.Value);
+                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.PreviewDropDown.Value); 
+                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.PreviewDropDown.Value);
+                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.PreviewDropDown.Value);
+                    slice_Gap = app.ExperimentPropertyTable.(8)(app.PreviewDropDown.Value);
+                    units = app.ExperimentPropertyTable.(9)(app.PreviewDropDown.Value);
+                    RotMat = app.ExperimentPropertyTable.(10)(app.PreviewDropDown.Value);
+                case 'Segmenter'
+                    exp_ID = append(app.SegmentDropDown.Value, '_Segmented');
+                    image_Data = app.WorkingSegmenterImageData;
+                    saved_BrainMask = app.SavedBrainMask;
+                    switch numel(app.ExpDimsSegmenter)
+                        case 2
+                            if ~isequal(app.HemisphereMask, false(cat(2, app.ExpDimsSegmenter, 2)))
+                                hemi_Mask = app.HemisphereMask;
+                            else
+                                hemi_Mask = false(1);
+                            end
+                        otherwise
+                            if ~isequal(app.HemisphereMask, false(cat(2, app.ExpDimsSegmenter(1:3), 2)))
+                                hemi_Mask = app.HemisphereMask;
+                            else
+                                hemi_Mask = false(1);
+                            end
+                    end
+                    if ~isequal(app.ROIMask, [])
+                        roi.Mask = app.ROIMask;
+                    else
+                        roi.Mask = false(1);
+                    end
+                    if ~isequal(app.ROIIdentifiers, {})
+                        roi.ID = app.ROIIdentifiers;
+                    else
+                        roi.ID = {'None'};
+                    end
+                    try
+                        OrigIndex = app.SavedTable.OrigIndex(app.SegmentDropDown.Value);
+                        TE = app.SavedTable.TE(app.SegmentDropDown.Value);
+                        TR = app.SavedTable.TR(app.SegmentDropDown.Value);
+                        vox_dim_X = app.SavedTable.VoxDimX(app.SegmentDropDown.Value); 
+                        vox_dim_Y = app.SavedTable.VoxDimY(app.SegmentDropDown.Value);
+                        slice_Thickness = app.SavedTable.SliceThickness(app.SegmentDropDown.Value);
+                        slice_Gap = app.SavedTable.SliceGap(app.SegmentDropDown.Value);
+                        units = app.SavedTable.Units(app.SegmentDropDown.Value);
+                        RotMat = app.SavedTable.RotMat(app.SegmentDropDown.Value);
+                    catch
+                        try
+                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SegmentDropDown.Value));
+                            TE = app.ExperimentPropertyTable.(3)(app.SegmentDropDown.Value);
+                            TR = app.ExperimentPropertyTable.(4)(app.SegmentDropDown.Value);
+                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
+                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
+                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
+                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
+                            units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
+                            RotMat = app.ExperimentPropertyTable.(10)(app.SegmentDropDown.Value);
+                        catch
+                        end
+                    end
+                case 'Registration'
+                    OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
+                    exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
+                    image_Data = app.RegisteredImageData;
+                    selection = uiconfirm(app.BrukKitAlphav0823UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                        ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
+                    switch selection
+                        case 'Save Mask'
+                            saved_BrainMask = app.RegisteredMask;
+                        case 'Save without Mask'
+                            saved_BrainMask = false(size(image_Data));
+                    end
+                    hemi_Mask = false(1);
+                    roi.Mask = false(1);
+                    roi.ID = {'None'};
+                    TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
+                    TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
+                    vox_dim_X = app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value); 
+                    vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
+                    slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
+                    slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
+                    units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
+                    RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
+                case 'Map'
+                    exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
+                    image_Data = app.PostMapImageData;
+                    try
+                        saved_BrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectPreMapDropDown.Value));
+                    catch
+                        saved_BrainMask = false(size(image_Data));
+                    end
+                    hemi_Mask = false(1);
+                    roi.Mask = false(1);
+                    roi.ID = {'None'};                 
+                    try
+                        OrigIndex = app.SavedTable.OrigIndex(app.SelectPreMapDropDown.Value);
+                        TE = app.SavedTable.TE(app.SelectPreMapDropDown.Value);
+                        TR = app.SavedTable.TR(app.SelectPreMapDropDown.Value);
+                        vox_dim_X = app.SavedTable.VoxDimX(app.SelectPreMapDropDown.Value); 
+                        vox_dim_Y = app.SavedTable.VoxDimY(app.SelectPreMapDropDown.Value);
+                        slice_Thickness = app.SavedTable.SliceThickness(app.SelectPreMapDropDown.Value);
+                        slice_Gap = app.SavedTable.SliceGap(app.SelectPreMapDropDown.Value);
+                        units = app.SavedTable.Units(app.SelectPreMapDropDown.Value);
+                        RotMat = app.SavedTable.RotMat(app.SelectPreMapDropDown.Value);
+                    catch
+                        try
+                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectPreMapDropDown.Value));
+                            TE = app.ExperimentPropertyTable.(3)(app.SelectPreMapDropDown.Value);
+                            TR = app.ExperimentPropertyTable.(4)(app.SelectPreMapDropDown.Value);
+                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectPreMapDropDown.Value); 
+                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectPreMapDropDown.Value);
+                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectPreMapDropDown.Value);
+                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectPreMapDropDown.Value);
+                            units = app.ExperimentPropertyTable.(9)(app.SelectPreMapDropDown.Value);
+                            RotMat = app.ExperimentPropertyTable.(10)(app.SelectPreMapDropDown.Value);
+                        catch
+                        end
+                    end
+            end
+
+            % Construct temporary table of saved data
+            temp_Table = table(OrigIndex, {image_Data}, {saved_BrainMask}, {hemi_Mask}, {roi}, TE, TR, vox_dim_X, vox_dim_Y, slice_Thickness, slice_Gap, units, RotMat,'RowNames', {exp_ID}, 'VariableNames', {'OrigIndex' 'Image' 'BrainMask' 'HemiMask' 'ROI' 'TE' 'TR' 'VoxDimX' 'VoxDimY' 'SliceThickness' 'SliceGap' 'Units' 'RotMat'});
+            try
+                % Move temporarily saved data to permanent app table
+                app.SavedTable = [app.SavedTable; temp_Table];
+                
+                % Update Combined drop down
+                app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
+                app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+
+                % Update DSC and Registration tab drop down menus
+                app.DropDownItemsSavedOnly = cat(1, app.DropDownItemsSavedOnly, exp_ID);
+                app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
+                app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
+
+                % Display confirmation figure
+                uiconfirm(app.BrukKitAlphav0823UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            catch ME
+                switch ME.identifier
+                    case 'MATLAB:table:DuplicateRowNames'
+                        selection = uiconfirm(app.BrukKitAlphav0823UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
+                        switch selection
+                            case 'OK'
+                                % Overwrite data of currently saved experiment under same identifier
+                                app.SavedTable.Image(exp_ID) = {image_Data};
+                                app.SavedTable.BrainMask(exp_ID) = {saved_BrainMask};
+                                app.SavedTable.HemiMask(exp_ID) = {hemi_Mask};
+                                app.SavedTable.ROI(exp_ID) = {roi};
+                                app.SavedTable.TE(exp_ID) = TE;
+                                app.SavedTable.TR(exp_ID) = TR;
+                                app.SavedTable.VoxDimX(exp_ID) = vox_dim_X;
+                                app.SavedTable.VoxDimY(exp_ID) = vox_dim_Y;
+                                app.SavedTable.SliceThickness(exp_ID) = slice_Thickness;
+                                app.SavedTable.SliceGap(exp_ID) = slice_Gap;
+                                app.SavedTable.Units(exp_ID) = units;
+                                app.SavedTable.RotMat(exp_ID) = RotMat;
+                                
+                                % Display confirmation figure
+                                uiconfirm(app.BrukKitAlphav0823UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+                            case 'Cancel'
+                                return
+                        end
+                    otherwise
+                end
+            end 
         end
         
         function ExportImageData(app, tab)
@@ -4551,17 +4561,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Value changed function: Select3DViewerDropDown
         function Select3DViewerDropDownValueChanged(app, event)
             delete(app.ViewerParentObject)
-            if app.Select3DViewerDropDown.Value == "None"
+            value = app.Select3DViewerDropDown.Value;
+            if value == "None"
                 return
             end
             
-            app.ViewerImageData = cell2mat(app.SavedTable.Image(app.Select3DViewerDropDown.Value));
+            app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
+            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)];
             if numel(size(app.ViewerImageData))~=3
                 uialert(app.BrukKitAlphav0823UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
                 return
             end
-            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
-            volshow(app.ViewerImageData, 'Parent', app.ViewerParentObject);
+            
+            Refresh3DViewer(app, app.ViewerImageData);
         end
 
         % Close request function: BrukKitAlphav0823UIFigure
