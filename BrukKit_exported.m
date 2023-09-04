@@ -272,6 +272,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        RenderingStyleDropDown          matlab.ui.control.DropDown
+        RenderingStyleDropDownLabel     matlab.ui.control.Label
+        DisplayedSliceRangeLabel        matlab.ui.control.Label
+        Label                           matlab.ui.control.Label
+        SliceRangeLowSpinner_Viewer     matlab.ui.control.Spinner
+        SliceRangeHighSpinner_Viewer    matlab.ui.control.Spinner
         Select3DViewerDropDown          matlab.ui.control.DropDown
         Select3DViewerLabel             matlab.ui.control.Label
         ViewerPanel                     matlab.ui.container.Panel
@@ -618,11 +624,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Function updates 3D Viewer
         function Refresh3DViewer(app, image_data)
-            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+            clear(app.ViewerParentObject)
+
+            % Get selected options
+            switch app.RenderingStyleDropDown.Value
+                case "Volume Rendering"
+                    renderingStyle = 'VolumeRendering';
+                case "Maximum Intensity Projection"
+                    renderingStyle = 'MaximumIntensityProjection';
+                case "Minimum Intensity Projection"
+                    renderingStyle = 'MinimumIntensityProjection';
+                case "Slice Planes"
+                    renderingStyle = 'SlicePlanes';
+            end
+
             % Create transformation matrix
             T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
             tform = affinetform3d(T);
-            volshow(image_data, 'Parent', app.ViewerParentObject, 'Transformation', tform);
+            volshow(image_data, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', renderingStyle);
         end
         
         % Function returns edema adjusted slice area
@@ -4565,7 +4584,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if value == "None"
                 return
             end
-            
+
+            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
             app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
             app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)];
             if numel(size(app.ViewerImageData))~=3
@@ -4573,6 +4593,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 return
             end
             
+            Refresh3DViewer(app, app.ViewerImageData);
+        end
+
+        % Value changed function: RenderingStyleDropDown
+        function RenderingStyleDropDownValueChanged(app, event)
+            if app.Select3DViewerDropDown.Value == "None"
+                return
+            end
             Refresh3DViewer(app, app.ViewerImageData);
         end
 
@@ -6363,6 +6391,45 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Placeholder = 'None';
             app.Select3DViewerDropDown.Position = [461 624 360 21];
             app.Select3DViewerDropDown.Value = 'None';
+
+            % Create SliceRangeHighSpinner_Viewer
+            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+            app.SliceRangeHighSpinner_Viewer.Position = [573 24 51 22];
+            app.SliceRangeHighSpinner_Viewer.Value = 1;
+
+            % Create SliceRangeLowSpinner_Viewer
+            app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+            app.SliceRangeLowSpinner_Viewer.Position = [659 24 51 22];
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
+
+            % Create Label
+            app.Label = uilabel(app.DViewerTab);
+            app.Label.HorizontalAlignment = 'center';
+            app.Label.FontWeight = 'bold';
+            app.Label.Position = [630 23 19 25];
+            app.Label.Text = '-';
+
+            % Create DisplayedSliceRangeLabel
+            app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
+            app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
+            app.DisplayedSliceRangeLabel.Position = [578 58 126 22];
+            app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
+
+            % Create RenderingStyleDropDownLabel
+            app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
+            app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
+            app.RenderingStyleDropDownLabel.Position = [110 527 90 22];
+            app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
+
+            % Create RenderingStyleDropDown
+            app.RenderingStyleDropDown = uidropdown(app.DViewerTab);
+            app.RenderingStyleDropDown.Items = {'Volume Rendering', 'Maximum Intensity Projection', 'Minimum Intensity Projection', 'Slice Planes'};
+            app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
+            app.RenderingStyleDropDown.Tooltip = {''};
+            app.RenderingStyleDropDown.Position = [44 499 222 22];
+            app.RenderingStyleDropDown.Value = 'Volume Rendering';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
