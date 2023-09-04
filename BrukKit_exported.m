@@ -272,6 +272,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        Select3DViewerDropDown          matlab.ui.control.DropDown
+        Select3DViewerLabel             matlab.ui.control.Label
+        ViewerPanel                     matlab.ui.container.Panel
         ContextMenu_Preview             matlab.ui.container.ContextMenu
         RotateMenu_Preview              matlab.ui.container.Menu
         FlipVerticallyMenu_Preview      matlab.ui.container.Menu
@@ -389,6 +392,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPreMap % Dimensions of currently displayed sequence for mapping
         ExpDimsPostMap % Dimensions of currently displayed parameter map
 
+        % 3D Viewer Tab
+        ViewerParentObject % Property for storing viewer3d object
+        ViewerImageData % Property for storing currently matrix of currently selected experiment in 3D Viewer
+
     end
     
     properties (Access = public)
@@ -438,7 +445,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     %error alert missing
             end
             app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  255 * app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
             switch app.CurrentSegmentationDropDown.Value
                 % Brain segmentation image updating
                 case 'Brain'
@@ -756,6 +763,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
                 uiconfirm(app.BrukKitAlphav0823UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -1134,10 +1142,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectmovingDropDown.Items = {'None'};
             app.SelectparameterDropDown.Items = {'None'};
             app.SelectPreMapDropDown.Items = {'None'};
+            app.Select3DViewerDropDown.Items = {'None'};
     
             % Disable and reset components in different tabs
     
-            % Preview
+            % Main
             app.ExportEnvironmentButton.Enable = 'off';
             app.CreateExportFolderButton.Enable = 'off';
             % Reset UIAxes
@@ -1278,6 +1287,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TIvaluesText.Value = "";
             app.TEvaluesText.Value = "";
             app.ResettodefaultsButtonPushed;
+
+            % 3D Viewer
+            delete(app.ViewerParentObject);
         end
     end   
 
@@ -1547,11 +1559,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Update app drop down menus
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
-                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
@@ -4535,6 +4548,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             SaveData(app, 'Map');
         end
 
+        % Value changed function: Select3DViewerDropDown
+        function Select3DViewerDropDownValueChanged(app, event)
+            delete(app.ViewerParentObject)
+            if app.Select3DViewerDropDown.Value == "None"
+                return
+            end
+            
+            app.ViewerImageData = cell2mat(app.SavedTable.Image(app.Select3DViewerDropDown.Value));
+            if numel(size(app.ViewerImageData))~=3
+                uialert(app.BrukKitAlphav0823UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
+                return
+            end
+            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+            volshow(app.ViewerImageData, 'Parent', app.ViewerParentObject);
+        end
+
         % Close request function: BrukKitAlphav0823UIFigure
         function BrukKitAlphav0823UIFigureCloseRequest(app, event)
             
@@ -5347,83 +5376,83 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create VolumeEditFieldLabel_Brain
             app.VolumeEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.VolumeEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.VolumeEditFieldLabel_Brain.Position = [166 414 46 22];
+            app.VolumeEditFieldLabel_Brain.Position = [169 414 46 22];
             app.VolumeEditFieldLabel_Brain.Text = 'Volume';
 
             % Create VolumeEditField_Brain
             app.VolumeEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.VolumeEditField_Brain.Position = [145 390 88 22];
+            app.VolumeEditField_Brain.Position = [148 390 88 22];
 
             % Create SDEditFieldLabel_Brain
             app.SDEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.SDEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.SDEditFieldLabel_Brain.Position = [226 354 18 22];
+            app.SDEditFieldLabel_Brain.Position = [229 354 18 22];
             app.SDEditFieldLabel_Brain.Text = 'SD';
 
             % Create SDEditField_Brain
             app.SDEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.SDEditField_Brain.Position = [206 330 59 22];
+            app.SDEditField_Brain.Position = [209 330 59 22];
 
             % Create MeanEditFieldLabel_Brain
             app.MeanEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.MeanEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.MeanEditFieldLabel_Brain.Position = [127 354 36 22];
+            app.MeanEditFieldLabel_Brain.Position = [130 354 36 22];
             app.MeanEditFieldLabel_Brain.Text = 'Mean';
 
             % Create MeanEditField_Brain
             app.MeanEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.MeanEditField_Brain.Position = [115 330 59 22];
+            app.MeanEditField_Brain.Position = [118 330 59 22];
 
             % Create LabelPlusMinus_Brain
             app.LabelPlusMinus_Brain = uilabel(app.BrainPanel);
             app.LabelPlusMinus_Brain.Interpreter = 'latex';
             app.LabelPlusMinus_Brain.HorizontalAlignment = 'center';
-            app.LabelPlusMinus_Brain.Position = [175 328 29 24];
+            app.LabelPlusMinus_Brain.Position = [178 328 29 24];
             app.LabelPlusMinus_Brain.Text = '±';
 
             % Create IQREditFieldLabel_Brain
             app.IQREditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.IQREditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.IQREditFieldLabel_Brain.Position = [223 307 27 22];
+            app.IQREditFieldLabel_Brain.Position = [226 307 27 22];
             app.IQREditFieldLabel_Brain.Text = 'IQR';
 
             % Create IQRLowerEditField_Brain
             app.IQRLowerEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.IQRLowerEditField_Brain.Position = [205 283 27 22];
+            app.IQRLowerEditField_Brain.Position = [208 283 27 22];
 
             % Create MedianEditFieldLabel_Brain
             app.MedianEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.MedianEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.MedianEditFieldLabel_Brain.Position = [123 307 45 22];
+            app.MedianEditFieldLabel_Brain.Position = [126 307 45 22];
             app.MedianEditFieldLabel_Brain.Text = 'Median';
 
             % Create MedianEditField_Brain
             app.MedianEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.MedianEditField_Brain.Position = [116 283 59 22];
+            app.MedianEditField_Brain.Position = [119 283 59 22];
 
             % Create MaxEditFieldLabel_Brain
             app.MaxEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.MaxEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.MaxEditFieldLabel_Brain.Position = [222 260 28 22];
+            app.MaxEditFieldLabel_Brain.Position = [225 260 28 22];
             app.MaxEditFieldLabel_Brain.Text = 'Max';
 
             % Create MaxEditField_Brain
             app.MaxEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.MaxEditField_Brain.Position = [204 236 59 22];
+            app.MaxEditField_Brain.Position = [207 236 59 22];
 
             % Create MinEditFieldLabel_Brain
             app.MinEditFieldLabel_Brain = uilabel(app.BrainPanel);
             app.MinEditFieldLabel_Brain.HorizontalAlignment = 'center';
-            app.MinEditFieldLabel_Brain.Position = [134 260 25 22];
+            app.MinEditFieldLabel_Brain.Position = [137 260 25 22];
             app.MinEditFieldLabel_Brain.Text = 'Min';
 
             % Create MinEditField_Brain
             app.MinEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.MinEditField_Brain.Position = [117 236 59 22];
+            app.MinEditField_Brain.Position = [120 236 59 22];
 
             % Create IQRUpperEditField_Brain
             app.IQRUpperEditField_Brain = uieditfield(app.BrainPanel, 'numeric');
-            app.IQRUpperEditField_Brain.Position = [237 283 27 22];
+            app.IQRUpperEditField_Brain.Position = [240 283 27 22];
 
             % Create HemispherePanel
             app.HemispherePanel = uipanel(app.VolumetryTab);
@@ -5507,7 +5536,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectHemisphereDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectHemisphereDropDownValueChanged, true);
             app.SelectHemisphereDropDown.Enable = 'off';
             app.SelectHemisphereDropDown.Placeholder = 'None';
-            app.SelectHemisphereDropDown.Position = [102 435 182 21];
+            app.SelectHemisphereDropDown.Position = [101 435 182 21];
             app.SelectHemisphereDropDown.Value = 'Left';
 
             % Create MedianEditFieldLabel_Hemisphere
@@ -6301,6 +6330,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DViewerTab = uitab(app.TabGroup);
             app.DViewerTab.Title = '3D Viewer';
 
+            % Create ViewerPanel
+            app.ViewerPanel = uipanel(app.DViewerTab);
+            app.ViewerPanel.BorderType = 'none';
+            app.ViewerPanel.TitlePosition = 'centertop';
+            app.ViewerPanel.Title = 'Viewer';
+            app.ViewerPanel.BackgroundColor = [1 1 1];
+            app.ViewerPanel.Position = [306 102 669 486];
+
+            % Create Select3DViewerLabel
+            app.Select3DViewerLabel = uilabel(app.DViewerTab);
+            app.Select3DViewerLabel.HorizontalAlignment = 'right';
+            app.Select3DViewerLabel.Position = [568 654 147 22];
+            app.Select3DViewerLabel.Text = 'Select Experiment To View';
+
+            % Create Select3DViewerDropDown
+            app.Select3DViewerDropDown = uidropdown(app.DViewerTab);
+            app.Select3DViewerDropDown.Items = {'None'};
+            app.Select3DViewerDropDown.ValueChangedFcn = createCallbackFcn(app, @Select3DViewerDropDownValueChanged, true);
+            app.Select3DViewerDropDown.Placeholder = 'None';
+            app.Select3DViewerDropDown.Position = [461 624 360 21];
+            app.Select3DViewerDropDown.Value = 'None';
+
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
 
@@ -6486,14 +6537,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Construct app
         function app = BrukKit_exported
 
-            % Create UIFigure and components
-            createComponents(app)
+            runningApp = getRunningApp(app);
 
-            % Register the app with App Designer
-            registerApp(app, app.BrukKitAlphav0823UIFigure)
+            % Check for running singleton app
+            if isempty(runningApp)
 
-            % Execute the startup function
-            runStartupFcn(app, @StartUpFcn)
+                % Create UIFigure and components
+                createComponents(app)
+
+                % Register the app with App Designer
+                registerApp(app, app.BrukKitAlphav0823UIFigure)
+
+                % Execute the startup function
+                runStartupFcn(app, @StartUpFcn)
+            else
+
+                % Focus the running singleton app
+                figure(runningApp.BrukKitAlphav0823UIFigure)
+
+                app = runningApp;
+            end
 
             if nargout == 0
                 clear app
