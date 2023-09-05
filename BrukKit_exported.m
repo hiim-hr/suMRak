@@ -272,12 +272,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        ZEditField_Viewer               matlab.ui.control.NumericEditField
+        ZEditFieldLabel_Viewer          matlab.ui.control.Label
+        XEditField_Viewer               matlab.ui.control.NumericEditField
+        XEditFieldLabel_Viewer          matlab.ui.control.Label
+        YEditField_Viewer               matlab.ui.control.NumericEditField
+        YEditFieldLabel_Viewer          matlab.ui.control.Label
         RenderingStyleDropDown          matlab.ui.control.DropDown
         RenderingStyleDropDownLabel     matlab.ui.control.Label
         DisplayedSliceRangeLabel        matlab.ui.control.Label
         Label                           matlab.ui.control.Label
-        SliceRangeLowSpinner_Viewer     matlab.ui.control.Spinner
         SliceRangeHighSpinner_Viewer    matlab.ui.control.Spinner
+        SliceRangeLowSpinner_Viewer     matlab.ui.control.Spinner
         Select3DViewerDropDown          matlab.ui.control.DropDown
         Select3DViewerLabel             matlab.ui.control.Label
         ViewerPanel                     matlab.ui.container.Panel
@@ -624,7 +630,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Function updates 3D Viewer
         function Refresh3DViewer(app, image_data)
-            clear(app.ViewerParentObject)
 
             % Get selected options
             switch app.RenderingStyleDropDown.Value
@@ -1343,7 +1348,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             switch app.TabGroup.SelectedTab.Title
-                case 'Preview'
+                case 'Main'
                     try
                         app.SliceSpinner_Preview.Value = app.SliceSpinner_Preview.Value+key;
                         app.SliceSlider_Preview.Value = app.SliceSpinner_Preview.Value;
@@ -4584,15 +4589,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if value == "None"
                 return
             end
-
+            
+            % Initialize viewer3d parent object, get image data
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
             app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
-            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)];
-            if numel(size(app.ViewerImageData))~=3
+            imdata_size = size(app.ViewerImageData);
+            if numel(imdata_size)~=3
                 uialert(app.BrukKitAlphav0823UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
                 return
             end
-            
+            % Get dimension scales, create triplet and update edit fields
+            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)];
+            app.XEditField_Viewer.Value = app.ViewerDimTriplet(1);
+            app.YEditField_Viewer.Value = app.ViewerDimTriplet(2);
+            app.ZEditField_Viewer.Value = app.ViewerDimTriplet(3);
+
+            % Set slice slider limits
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
+            app.SliceRangeLowSpinner_Viewer.Limits = [1, imdata_size(3)-1];
+            app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);
+            app.SliceRangeHighSpinner_Viewer.Limits = [2, imdata_size(3)];
+
+            % Refresh 3d viewer
             Refresh3DViewer(app, app.ViewerImageData);
         end
 
@@ -4601,7 +4619,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if app.Select3DViewerDropDown.Value == "None"
                 return
             end
-            Refresh3DViewer(app, app.ViewerImageData);
+            switch app.RenderingStyleDropDown.Value
+                case "Volume Rendering"
+                    renderingStyle = 'VolumeRendering';
+                case "Maximum Intensity Projection"
+                    renderingStyle = 'MaximumIntensityProjection';
+                case "Minimum Intensity Projection"
+                    renderingStyle = 'MinimumIntensityProjection';
+                case "Slice Planes"
+                    renderingStyle = 'SlicePlanes';
+            end
+            app.ViewerParentObject.Children.RenderingStyle = renderingStyle;
         end
 
         % Close request function: BrukKitAlphav0823UIFigure
@@ -6376,7 +6404,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerPanel.TitlePosition = 'centertop';
             app.ViewerPanel.Title = 'Viewer';
             app.ViewerPanel.BackgroundColor = [1 1 1];
-            app.ViewerPanel.Position = [306 102 669 486];
+            app.ViewerPanel.Position = [306 94 669 510];
 
             % Create Select3DViewerLabel
             app.Select3DViewerLabel = uilabel(app.DViewerTab);
@@ -6392,17 +6420,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Position = [461 624 360 21];
             app.Select3DViewerDropDown.Value = 'None';
 
-            % Create SliceRangeHighSpinner_Viewer
-            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
-            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
-            app.SliceRangeHighSpinner_Viewer.Position = [573 24 51 22];
-            app.SliceRangeHighSpinner_Viewer.Value = 1;
-
             % Create SliceRangeLowSpinner_Viewer
             app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
             app.SliceRangeLowSpinner_Viewer.Enable = 'off';
-            app.SliceRangeLowSpinner_Viewer.Position = [659 24 51 22];
+            app.SliceRangeLowSpinner_Viewer.Position = [573 24 51 22];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
+
+            % Create SliceRangeHighSpinner_Viewer
+            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+            app.SliceRangeHighSpinner_Viewer.Position = [659 24 51 22];
+            app.SliceRangeHighSpinner_Viewer.Value = 1;
 
             % Create Label
             app.Label = uilabel(app.DViewerTab);
@@ -6420,7 +6448,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [110 527 90 22];
+            app.RenderingStyleDropDownLabel.Position = [111 527 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
@@ -6428,8 +6456,38 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.Items = {'Volume Rendering', 'Maximum Intensity Projection', 'Minimum Intensity Projection', 'Slice Planes'};
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [44 499 222 22];
+            app.RenderingStyleDropDown.Position = [58 499 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
+
+            % Create YEditFieldLabel_Viewer
+            app.YEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.YEditFieldLabel_Viewer.HorizontalAlignment = 'center';
+            app.YEditFieldLabel_Viewer.Position = [144 342 25 22];
+            app.YEditFieldLabel_Viewer.Text = 'Y';
+
+            % Create YEditField_Viewer
+            app.YEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
+            app.YEditField_Viewer.Position = [126 318 59 22];
+
+            % Create XEditFieldLabel_Viewer
+            app.XEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.XEditFieldLabel_Viewer.HorizontalAlignment = 'center';
+            app.XEditFieldLabel_Viewer.Position = [144 399 25 22];
+            app.XEditFieldLabel_Viewer.Text = 'X';
+
+            % Create XEditField_Viewer
+            app.XEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
+            app.XEditField_Viewer.Position = [126 375 59 22];
+
+            % Create ZEditFieldLabel_Viewer
+            app.ZEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.ZEditFieldLabel_Viewer.HorizontalAlignment = 'center';
+            app.ZEditFieldLabel_Viewer.Position = [144 285 25 22];
+            app.ZEditFieldLabel_Viewer.Text = 'Z';
+
+            % Create ZEditField_Viewer
+            app.ZEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
+            app.ZEditField_Viewer.Position = [126 261 59 22];
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
