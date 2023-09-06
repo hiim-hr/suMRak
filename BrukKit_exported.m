@@ -4015,38 +4015,44 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.DSCMappingOptionsPanel.Visible = 'on';
                     app.T1OptionsPanel.Visible = 'off';
                     app.T2OptionsPanel.Visible = 'off';
-                    app.OptimizationOptionsPanel.Visible = 'off';
+                    % app.OptimizationOptionsPanel.Visible = 'off';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
                 case "T2"
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'off';
                     app.T2OptionsPanel.Visible = 'on';
-                    app.OptimizationOptionsPanel.Visible = 'on';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                    t2Position = app.T2OptionsPanel.Position;
-                    optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    optimizationPosition(2) = t2Position(2)-optimizationPosition(4);
-                    app.OptimizationOptionsPanel.Position = optimizationPosition;
+                    % t2Position = app.T2OptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = t2Position(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
                 case "T1"
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'on';
                     app.T2OptionsPanel.Visible = 'off';
-                    app.OptimizationOptionsPanel.Visible = 'on';
+                    app.CalculateT1mapButton.Visible = 'on';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                    t1Position = app.T1OptionsPanel.Position;
-                    optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    optimizationPosition(2) = t1Position(2)-optimizationPosition(4);
-                    app.OptimizationOptionsPanel.Position = optimizationPosition;
+                    % t1Position = app.T1OptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = t1Position(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
                 case "pASL"
                     app.DSCMappingOptionsPanel.Visible = 'off';
-                    app.T1OptionsPanel.Visible = 'off';
+                    app.T1OptionsPanel.Visible = 'on';
                     app.T2OptionsPanel.Visible = 'off';
-                    app.OptimizationOptionsPanel.Visible = 'on';
+                    app.CalculateT1mapButton.Visible = 'off';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
+                    t1Position = app.T1OptionsPanel.Position;
+                    pASLPosition = app.OptimizationOptionsPanel.Position;
+                    pASLPosition(2) = t1Position(2)-pASLPosition(4);
+                    app.FAIRpASLMappingoptionsPanel.Position = pASLPosition;
                     app.FAIRpASLMappingoptionsPanel.Visible = 'on';
-                    aslPosition = app.FAIRpASLMappingoptionsPanel.Position;
-                    optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    optimizationPosition(2) = aslPosition(2)-optimizationPosition(4);
-                    app.OptimizationOptionsPanel.Position = optimizationPosition;
+                    % aslPosition = app.FAIRpASLMappingoptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = aslPosition(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
             end
         end
 
@@ -4206,53 +4212,55 @@ classdef BrukKit_exported < matlab.apps.AppBase
             T1raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
             [z, x, y, ~] = size(T1raw_reordered);
             T1raw_reordered_reshaped = reshape(T1raw_reordered,[],size(T1raw_reordered,4));
-            tmax = max(tvalues);
+            % tmax = max(tvalues);
 
-            try
-                opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
-                    'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
-                    'StepTolerance',app.StepToleranceEditField.Value, ...
-                    'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
-                    'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
-                    'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
-            catch
-                uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
-                    'Optimization settings error');
-                return
-            end
+            % try
+            %     opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
+            %         'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
+            %         'StepTolerance',app.StepToleranceEditField.Value, ...
+            %         'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
+            %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
+            %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
+            % catch
+            %     uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %         'Optimization settings error');
+            %     return
+            % end
 
             % use parallel processing for faster fitting
-            delete(gcp('nocreate'));
-            parpool("local");
+            % delete(gcp('nocreate'));
+            % parpool("local");
             progress.Message = "Calculating T1 maps... This might take awhile.";
             
-            if isnan(ivalues(1))
-                fun = @(coeffs,tvalues)coeffs(1)*(1-exp(-tvalues/coeffs(2))); 
-                coeffs0 = [1,1];
-                coeffs = zeros(length(T1raw_reordered_reshaped),2);
-    
-                parfor br = 1:length(T1raw_reordered_reshaped)
-                    if max(T1raw_reordered_reshaped(br,:)) ~= 0
-                        T1raw_reordered_reshaped(br,:) = T1raw_reordered_reshaped(br,:) / max(T1raw_reordered_reshaped(br,:));
-                        coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T1raw_reordered_reshaped(br,:), [0 0], ...
-                        [1 2*tmax], opts);
-                    end
-                end
-            else
-                fun = @(coeffs,ivalues)coeffs(1)*abs((1-2*exp(-ivalues/coeffs(2)))); 
-                coeffs0 = [1,1];
-                coeffs = zeros(length(T1raw_reordered_reshaped),2);
-    
-                parfor br = 1:length(T1raw_reordered_reshaped)
-                    if max(T1raw_reordered_reshaped(br,:)) ~= 0
-                        T1raw_reordered_reshaped(br,:) = T1raw_reordered_reshaped(br,:) / max(T1raw_reordered_reshaped(br,:));
-                        coeffs(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1raw_reordered_reshaped(br,:), [0 0], ...
-                        [1 2*tmax], opts);
-                    end
-                end
-            end
+            coeffs = CalculateT1Map_mex(T1raw_reordered_reshaped,tvalues,ivalues);             
 
-            delete(gcp('nocreate'));
+            % if isnan(ivalues(1))
+            %     fun = @(coeffs,tvalues)coeffs(1)*(1-exp(-tvalues/coeffs(2))); 
+            %     coeffs0 = [1,1];
+            %     coeffs = zeros(length(T1raw_reordered_reshaped),2);
+            % 
+            %     parfor br = 1:length(T1raw_reordered_reshaped)
+            %         if max(T1raw_reordered_reshaped(br,:)) ~= 0
+            %             T1raw_reordered_reshaped(br,:) = T1raw_reordered_reshaped(br,:) / max(T1raw_reordered_reshaped(br,:));
+            %             coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T1raw_reordered_reshaped(br,:), [0 0], ...
+            %             [1 2*tmax], opts);
+            %         end
+            %     end
+            % else
+            %     fun = @(coeffs,ivalues)coeffs(1)*abs((1-2*exp(-ivalues/coeffs(2)))); 
+            %     coeffs0 = [1,1];
+            %     coeffs = zeros(length(T1raw_reordered_reshaped),2);
+            % 
+            %     parfor br = 1:length(T1raw_reordered_reshaped)
+            %         if max(T1raw_reordered_reshaped(br,:)) ~= 0
+            %             T1raw_reordered_reshaped(br,:) = T1raw_reordered_reshaped(br,:) / max(T1raw_reordered_reshaped(br,:));
+            %             coeffs(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1raw_reordered_reshaped(br,:), [0 0], ...
+            %             [1 2*tmax], opts);
+            %         end
+            %     end
+            % end
+
+            % delete(gcp('nocreate'));
 
             T1map_calculated_stack = reshape(squeeze(coeffs(:,2)), z, x, y);
             app.PostMapImageData = permute(T1map_calculated_stack,[2 3 1]);
@@ -4300,39 +4308,40 @@ classdef BrukKit_exported < matlab.apps.AppBase
             T2raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
             [z, x, y, ~] = size(T2raw_reordered);
             T2raw_reordered_reshaped = reshape(T2raw_reordered,[],size(T2raw_reordered,4));
-            tmax = max(tvalues);
+            % tmax = max(tvalues);
          
-            fun = @(coeffs,tvalues)coeffs(1)*exp(-tvalues/coeffs(2)); 
-            coeffs0 = [1,0.03];
-            coeffs = zeros(length(T2raw_reordered_reshaped),2);
+            % fun = @(coeffs,tvalues)coeffs(1)*exp(-tvalues/coeffs(2)); 
+            % coeffs0 = [1,0.03];
+            % coeffs = zeros(length(T2raw_reordered_reshaped),2);
 
-            try
-                opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
-                    'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
-                    'StepTolerance',app.StepToleranceEditField.Value, ...
-                    'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
-                    'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
-                    'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
-            catch
-                uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
-                    'Optimization settings error');
-                return
-            end
+            % try
+            %     opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
+            %         'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
+            %         'StepTolerance',app.StepToleranceEditField.Value, ...
+            %         'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
+            %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
+            %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
+            % catch
+            %     uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %         'Optimization settings error');
+            %     return
+            % end
 
+            coeffs = CalculateT2Map_mex(T2raw_reordered_reshaped,tvalues);
             % use parallel processing for faster fitting
-            delete(gcp('nocreate'));
-            parpool("local");
-            progress.Message = "Calculating T2 maps... This might take awhile.";
-
-            parfor br = 1:length(T2raw_reordered_reshaped)
-                if max(T2raw_reordered_reshaped(br,:)) ~= 0
-                    T2raw_reordered_reshaped(br,:) = T2raw_reordered_reshaped(br,:) / max(T2raw_reordered_reshaped(br,:));
-                    coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T2raw_reordered_reshaped(br,:), [0 0], ...
-                    [1 2*tmax], opts);
-                end
-            end
-            
-            delete(gcp('nocreate'));
+            % delete(gcp('nocreate'));
+            % parpool("local");
+            % progress.Message = "Calculating T2 maps... This might take awhile.";
+            % 
+            % parfor br = 1:length(T2raw_reordered_reshaped)
+            %     if max(T2raw_reordered_reshaped(br,:)) ~= 0
+            %         T2raw_reordered_reshaped(br,:) = T2raw_reordered_reshaped(br,:) / max(T2raw_reordered_reshaped(br,:));
+            %         coeffs(br,:) = lsqcurvefit(fun,coeffs0,tvalues,T2raw_reordered_reshaped(br,:), [0 0], ...
+            %         [1 2*tmax], opts);
+            %     end
+            % end
+            % 
+            % delete(gcp('nocreate'));
 
             T2map_calculated_stack = reshape(squeeze(coeffs(:,2)), z, x, y);
             app.PostMapImageData = permute(T2map_calculated_stack,[2 3 1]);
@@ -4406,58 +4415,60 @@ classdef BrukKit_exported < matlab.apps.AppBase
             [z, x, y, ~] = size(T1rawSS_reordered);
             T1rawSS_reordered_reshaped = reshape(T1rawSS_reordered,[],size(T1rawSS_reordered,4));
             T1rawNS_reordered_reshaped = reshape(T1rawNS_reordered,[],size(T1rawNS_reordered,4));
-
-            try
-                opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
-                    'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
-                    'StepTolerance',app.StepToleranceEditField.Value, ...
-                    'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
-                    'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
-                    'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
-            catch
-                uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
-                    'Optimization settings error');
-                return
-            end
-
-            tmax = max(tvalues);
-            % use parallel processing for faster fitting
-            delete(gcp('nocreate'));
-            parpool("local");
-            progress.Message = "Calculating T1 maps for slice selective experiment... This might take awhile.";
-            
-            fun = @(coeffs,ivalues)coeffs(1)*abs((1-2*exp(-ivalues/coeffs(2)))); 
-            coeffs0 = [1,1];
-            coeffsSS = zeros(length(T1rawSS_reordered_reshaped),2);
-            coeffsNS = zeros(length(T1rawNS_reordered_reshaped),2);
-            perf = zeros(length(T1rawNS_reordered_reshaped),1);
             T1blood = app.BloodT1sEditField.Value;
 
-            parfor br = 1:length(T1rawSS_reordered_reshaped)
-                if max(T1rawSS_reordered_reshaped(br,:)) ~= 0
-                    T1rawSS_reordered_reshaped(br,:) = T1rawSS_reordered_reshaped(br,:) / max(T1rawSS_reordered_reshaped(br,:));
-                    coeffsSS(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1rawSS_reordered_reshaped(br,:), [0 0], ...
-                    [1 2*tmax], opts);
-                end
-            end
-            
-            progress.Message = "Calculating T1 maps for non-selective experiment... This might take awhile.";
+            % try
+            %     opts = optimoptions(@lsqcurvefit,'FunctionTolerance',app.fxToleranceEditField.Value, ...
+            %         'OptimalityTolerance',app.OptimalityToleranceEditField.Value, ...
+            %         'StepTolerance',app.StepToleranceEditField.Value, ...
+            %         'FiniteDifferenceStepSize',app.dfStepSizeEditField.Value, ...
+            %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
+            %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
+            % catch
+            %     uialert(app.BrukKitAlphav0823UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %         'Optimization settings error');
+            %     return
+            % end
 
-            parfor br = 1:length(T1rawNS_reordered_reshaped)
-                if max(T1rawNS_reordered_reshaped(br,:)) ~= 0
-                    T1rawNS_reordered_reshaped(br,:) = T1rawNS_reordered_reshaped(br,:) / max(T1rawNS_reordered_reshaped(br,:));
-                    coeffsNS(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1rawNS_reordered_reshaped(br,:), [0 0], ...
-                    [1 2*tmax], opts);
-                end
-            end
-
-            progress.Message = "Calculating CBF maps... Almost there.";
-
-            parfor br = 1:length(T1rawSS_reordered_reshaped)
-                perf(br) = abs(4980 * coeffsNS(br,2) / T1blood * (1 / coeffsSS(br,2) - 1 / coeffsNS(br,2)));
-            end
-
-            delete(gcp('nocreate'));
+            perf = CalculateASLMap_mex(T1rawSS_reordered_reshaped,T1rawNS_reordered_reshaped,tvalues,ivalues,T1blood);
+            % tmax = max(tvalues);
+            % use parallel processing for faster fitting
+            % delete(gcp('nocreate'));
+            % parpool("local");
+            % progress.Message = "Calculating T1 maps for slice selective experiment... This might take awhile.";
+            % 
+            % fun = @(coeffs,ivalues)coeffs(1)*abs((1-2*exp(-ivalues/coeffs(2)))); 
+            % coeffs0 = [1,1];
+            % coeffsSS = zeros(length(T1rawSS_reordered_reshaped),2);
+            % coeffsNS = zeros(length(T1rawNS_reordered_reshaped),2);
+            % perf = zeros(length(T1rawNS_reordered_reshaped),1);
+            % 
+            % 
+            % parfor br = 1:length(T1rawSS_reordered_reshaped)
+            %     if max(T1rawSS_reordered_reshaped(br,:)) ~= 0
+            %         T1rawSS_reordered_reshaped(br,:) = T1rawSS_reordered_reshaped(br,:) / max(T1rawSS_reordered_reshaped(br,:));
+            %         coeffsSS(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1rawSS_reordered_reshaped(br,:), [0 0], ...
+            %         [1 2*tmax], opts);
+            %     end
+            % end
+            % 
+            % progress.Message = "Calculating T1 maps for non-selective experiment... This might take awhile.";
+            % 
+            % parfor br = 1:length(T1rawNS_reordered_reshaped)
+            %     if max(T1rawNS_reordered_reshaped(br,:)) ~= 0
+            %         T1rawNS_reordered_reshaped(br,:) = T1rawNS_reordered_reshaped(br,:) / max(T1rawNS_reordered_reshaped(br,:));
+            %         coeffsNS(br,:) = lsqcurvefit(fun,coeffs0,ivalues,T1rawNS_reordered_reshaped(br,:), [0 0], ...
+            %         [1 2*tmax], opts);
+            %     end
+            % end
+            % 
+            % progress.Message = "Calculating CBF maps... Almost there.";
+            % 
+            % parfor br = 1:length(T1rawSS_reordered_reshaped)
+            %     perf(br) = abs(4980 * coeffsNS(br,2) / T1blood * (1 / coeffsSS(br,2) - 1 / coeffsNS(br,2)));
+            % end
+            % 
+            % delete(gcp('nocreate'));
 
             perf(isnan(perf))=0;
             perf(isinf(perf))=0;
