@@ -272,6 +272,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        AlphamapDropDown_Viewer         matlab.ui.control.DropDown
+        AlphamapDropDownLabel_Viewer    matlab.ui.control.Label
+        ColormapDropDown_Viewer         matlab.ui.control.DropDown
+        ColormapDropDownLabel_Viewer    matlab.ui.control.Label
+        DataDimensionsPanel             matlab.ui.container.Panel
         ZEditField_Viewer               matlab.ui.control.NumericEditField
         ZEditFieldLabel_Viewer          matlab.ui.control.Label
         XEditField_Viewer               matlab.ui.control.NumericEditField
@@ -626,27 +631,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                      app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap);
             end
             app.PostMapImage.ContextMenu = app.ContextMenu_PostMap;
-        end
-
-        % Function updates 3D Viewer
-        function Refresh3DViewer(app, image_data)
-
-            % Get selected options
-            switch app.RenderingStyleDropDown.Value
-                case "Volume Rendering"
-                    renderingStyle = 'VolumeRendering';
-                case "Maximum Intensity Projection"
-                    renderingStyle = 'MaximumIntensityProjection';
-                case "Minimum Intensity Projection"
-                    renderingStyle = 'MinimumIntensityProjection';
-                case "Slice Planes"
-                    renderingStyle = 'SlicePlanes';
-            end
-
-            % Create transformation matrix
-            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
-            tform = affinetform3d(T);
-            volshow(image_data, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', renderingStyle);
         end
         
         % Function returns edema adjusted slice area
@@ -1324,6 +1308,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % 3D Viewer
             delete(app.ViewerParentObject);
+            app.RenderingStyleDropDown.Enable = 'off';
+            app.RenderingStyleDropDown.Value = "Volume Rendering";
+            app.XEditField_Viewer.Value = 0;
+            app.YEditField_Viewer.Value = 0;
+            app.ZEditField_Viewer.Value = 0;
         end
     end   
 
@@ -4598,38 +4587,65 @@ classdef BrukKit_exported < matlab.apps.AppBase
             delete(app.ViewerParentObject)
             value = app.Select3DViewerDropDown.Value;
             if value == "None"
+                app.RenderingStyleDropDown.Enable = 'off';
+                app.RenderingStyleDropDown.Value = "Volume Rendering";
+                app.ColormapDropDown_Viewer.Enable = 'off';
+                app.ColormapDropDown_Viewer.Value = "Greyscale";
+                app.AlphamapDropDown_Viewer.Enable = 'off';
+                app.AlphamapDropDown_Viewer.Value = "Linear"; 
+                app.XEditField_Viewer.Value = 0;
+                app.YEditField_Viewer.Value = 0;
+                app.ZEditField_Viewer.Value = 0;
                 return
             end
             
-            % Initialize viewer3d parent object, get image data
-            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+            % Get image data, check dims, initialize viewer3d parent object 
             app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
             imdata_size = size(app.ViewerImageData);
             if numel(imdata_size)~=3
+                app.RenderingStyleDropDown.Enable = 'off';
+                app.RenderingStyleDropDown.Value = "Volume Rendering";
+                app.ColormapDropDown_Viewer.Enable = 'off';
+                app.ColormapDropDown_Viewer.Value = "Greyscale";
+                app.AlphamapDropDown_Viewer.Enable = 'off';
+                app.AlphamapDropDown_Viewer.Value = "Linear";   
+                app.XEditField_Viewer.Value = 0;
+                app.YEditField_Viewer.Value = 0;
+                app.ZEditField_Viewer.Value = 0;
                 uialert(app.BrukKitAlphav0823UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
                 return
             end
+            app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+
             % Get dimension scales, create triplet and update edit fields
-            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)];
+            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
             app.XEditField_Viewer.Value = app.ViewerDimTriplet(1);
             app.YEditField_Viewer.Value = app.ViewerDimTriplet(2);
             app.ZEditField_Viewer.Value = app.ViewerDimTriplet(3);
-
-            % Set slice slider limits
-            app.SliceRangeLowSpinner_Viewer.Value = 1;
+            
+            % Enable/Disable Components
+            app.RenderingStyleDropDown.Enable = 'on';
+            app.RenderingStyleDropDown.Value = "Volume Rendering";
+            app.ColormapDropDown_Viewer.Enable = 'on';
+            app.ColormapDropDown_Viewer.Value = "Greyscale";
+            app.AlphamapDropDown_Viewer.Enable = 'on';
+            app.AlphamapDropDown_Viewer.Value = "Linear";
+            % Set slice slider limits and values
             app.SliceRangeLowSpinner_Viewer.Limits = [1, imdata_size(3)-1];
-            app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
             app.SliceRangeHighSpinner_Viewer.Limits = [2, imdata_size(3)];
+            app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);       
 
             % Refresh 3d viewer
-            Refresh3DViewer(app, app.ViewerImageData);
+            % Create transformation matrix
+            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
+            tform = affinetform3d(T);
+            volshow(app.ViewerImageData, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
         end
 
         % Value changed function: RenderingStyleDropDown
         function RenderingStyleDropDownValueChanged(app, event)
-            if app.Select3DViewerDropDown.Value == "None"
-                return
-            end
+
             switch app.RenderingStyleDropDown.Value
                 case "Volume Rendering"
                     renderingStyle = 'VolumeRendering';
@@ -4641,6 +4657,46 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     renderingStyle = 'SlicePlanes';
             end
             app.ViewerParentObject.Children.RenderingStyle = renderingStyle;
+        end
+
+        % Value changed function: ColormapDropDown_Viewer
+        function ColormapDropDown_ViewerValueChanged(app, event)
+            
+            switch app.ColormapDropDown_Viewer.Value
+                case "Greyscale"
+                    colormapChoice = gray;
+                case "Turbo"
+                    colormapChoice = turbo;
+                case "Hot"
+                    colormapChoice = hot;
+                case "Jet"
+                    colormapChoice = jet;
+                case "Parula"
+                    colormapChoice = parula;
+                case "Sky"
+                    colormapChoice = sky;
+                case "Cool"
+                    colormapChoice = cool;
+                case "Copper"
+                    colormapChoice = copper;
+                case "Bone"
+                    colormapChoice = bone;
+            end
+            app.ViewerParentObject.Children.Colormap = colormapChoice;
+        end
+
+        % Value changed function: AlphamapDropDown_Viewer
+        function AlphamapDropDown_ViewerValueChanged(app, event)
+            
+            switch app.AlphamapDropDown_Viewer.Value
+                case "Linear"
+                    alphamapChoice = linspace(0,1,256);
+                case "MRI"
+                    alphamapChoice = [0;0;0;0;0;0.000588235294117645;0.0307058823529412;0.0608235294117647;0.0909411764705882;0.121058823529412;0.150294117647059;0.157823529411765;0.165352941176471;0.172882352941176;0.180411764705882;0.187941176470588;0.195470588235294;0.203000000000000;0.210529411764706;0.218058823529412;0.225588235294118;0.233117647058824;0.240647058823529;0.248176470588235;0.255705882352941;0.263235294117647;0.270764705882353;0.278294117647059;0.285823529411765;0.293352941176471;0.300376470588235;0.303589019607843;0.306801568627451;0.310014117647059;0.313226666666667;0.316439215686275;0.319651764705882;0.322864313725490;0.326076862745098;0.329289411764706;0.332501960784314;0.335714509803922;0.338927058823529;0.342139607843137;0.345352156862745;0.348564705882353;0.351777254901961;0.354989803921569;0.358202352941176;0.361414901960784;0.364627450980392;0.367840000000000;0.371052549019608;0.374265098039216;0.377477647058824;0.380128767925081;0.380728124085455;0.381327480245830;0.381926836406204;0.382526192566579;0.383125548726954;0.383724904887328;0.384324261047703;0.384923617208077;0.385522973368452;0.386122329528826;0.386721685689201;0.387321041849576;0.387920398009950;0.388519754170325;0.389119110330699;0.389718466491074;0.390317822651449;0.390917178811823;0.391516534972198;0.392115891132572;0.392715247292947;0.393314603453322;0.393913959613696;0.394513315774071;0.395112671934445;0.395712028094820;0.396311384255195;0.396910740415569;0.397510096575944;0.398109452736318;0.398708808896693;0.399308165057068;0.399907521217442;0.400506877377817;0.401106233538191;0.401705589698566;0.402304945858941;0.402904302019315;0.403503658179690;0.404103014340064;0.404702370500439;0.405301726660814;0.405901082821188;0.406500438981563;0.407099795141937;0.407699151302312;0.408298507462687;0.408897863623061;0.409497219783436;0.410096575943810;0.410695932104185;0.411295288264560;0.411894644424934;0.412494000585309;0.413093356745683;0.413692712906058;0.414292069066433;0.414891425226807;0.415490781387182;0.416090137547556;0.416689493707931;0.417288849868306;0.417888206028680;0.418487562189055;0.419086918349429;0.419686274509804;0.420285630670179;0.420884986830553;0.421484342990928;0.422083699151302;0.422683055311677;0.423282411472052;0.423881767632426;0.424481123792801;0.425080479953175;0.425679836113550;0.426279192273925;0.426878548434299;0.427477904594674;0.428077260755048;0.428676616915423;0.429275973075797;0.429875329236172;0.430474685396547;0.431074041556921;0.431673397717296;0.432272753877671;0.432872110038045;0.433471466198420;0.434070822358794;0.434670178519169;0.435269534679543;0.435868890839918;0.436468247000293;0.437067603160667;0.437666959321042;0.438266315481417;0.438865671641791;0.439465027802166;0.440064383962540;0.440663740122915;0.441263096283289;0.441862452443664;0.442461808604039;0.443061164764413;0.443660520924788;0.444259877085162;0.444859233245537;0.445458589405912;0.446057945566286;0.446657301726661;0.447256657887035;0.447856014047410;0.448455370207785;0.449054726368159;0.449654082528534;0.450253438688908;0.450852794849283;0.451452151009658;0.452051507170032;0.452650863330407;0.453250219490781;0.453849575651156;0.454448931811531;0.455048287971905;0.455647644132280;0.456247000292654;0.456846356453029;0.457445712613404;0.458045068773778;0.458644424934153;0.459243781094527;0.459843137254902;0.460442493415277;0.461041849575651;0.461641205736026;0.462240561896400;0.462839918056775;0.463439274217150;0.464038630377524;0.464637986537899;0.465237342698273;0.465836698858648;0.466436055019023;0.467035411179397;0.467634767339772;0.468234123500146;0.468833479660521;0.469432835820896;0.470032191981270;0.470631548141645;0.471230904302019;0.471830260462394;0.472429616622769;0.473028972783143;0.473628328943518;0.474227685103892;0.474827041264267;0.475426397424642;0.476025753585016;0.476625109745391;0.477224465905765;0.477823822066140;0.478423178226515;0.479022534386889;0.479621890547264;0.480221246707638;0.480820602868013;0.481419959028387;0.482019315188762;0.482618671349137;0.483218027509511;0.483817383669886;0.484416739830260;0.485016095990635;0.485615452151010;0.486214808311384;0.486814164471759;0.487413520632133;0.488012876792508;0.488612232952883;0.489211589113257;0.489810945273632;0.490410301434006;0.491009657594381;0.491609013754756;0.492208369915130;0.492807726075505;0.493407082235879;0.494006438396254;0.494605794556629;0.495205150717003;0.495804506877378;0.496403863037752;0.497003219198127;0.497602575358502;0.498201931518876;0.498801287679251;0.499400643839625;0.500000000000000];
+                case "MRI-mip"
+                    alphamapChoice = [0;0;0;0;0;0;0;0;0;0.000712491613668749;0.0179626128265740;0.0352127340394794;0.0524628552523847;0.0697129764652900;0.0869630976781953;0.104213218891101;0.121463340104006;0.138713461316911;0.155963582529817;0.173213703742722;0.190463824955627;0.207713946168532;0.224964067381438;0.242214188594343;0.259464309807248;0.276714431020154;0.293964552233059;0.311214673445964;0.328464794658870;0.345714915871775;0.362965037084680;0.380215158297586;0.397465279510491;0.414715400723396;0.431965521936301;0.449215643149207;0.466465764362112;0.483715885575017;0.500128998968008;0.502432551968156;0.504736104968303;0.507039657968451;0.509343210968598;0.511646763968745;0.513950316968893;0.516253869969040;0.518557422969188;0.520860975969335;0.523164528969483;0.525468081969630;0.527771634969777;0.530075187969925;0.532378740970072;0.534682293970220;0.536985846970367;0.539289399970515;0.541592952970662;0.543896505970809;0.546200058970957;0.548503611971104;0.550807164971252;0.553110717971399;0.555414270971547;0.557717823971694;0.560021376971841;0.562324929971989;0.564628482972136;0.566932035972284;0.569235588972431;0.571539141972579;0.573842694972726;0.576146247972873;0.578449800973021;0.580753353973168;0.583056906973316;0.585360459973463;0.587664012973611;0.589967565973758;0.592271118973905;0.594574671974053;0.596878224974200;0.599181777974348;0.601485330974495;0.603788883974643;0.606092436974790;0.608395989974937;0.610699542975085;0.613003095975232;0.615306648975380;0.617610201975527;0.619913754975675;0.622217307975822;0.624520860975969;0.626824413976117;0.629127966976264;0.631431519976412;0.633735072976559;0.636038625976707;0.638342178976854;0.640645731977001;0.642949284977149;0.645252837977296;0.647556390977444;0.649859943977591;0.652163496977739;0.654467049977886;0.656770602978033;0.659074155978181;0.661377708978328;0.663681261978476;0.665984814978623;0.668288367978770;0.670591920978918;0.672895473979065;0.675199026979213;0.677502579979360;0.679806132979508;0.682109685979655;0.684413238979802;0.686716791979950;0.689020344980097;0.691323897980245;0.693627450980392;0.695931003980540;0.698234556980687;0.700538109980834;0.702841662980982;0.705145215981129;0.707448768981277;0.709752321981424;0.712055874981572;0.714359427981719;0.716662980981867;0.718966533982014;0.721270086982161;0.723573639982309;0.725877192982456;0.728180745982604;0.730484298982751;0.732787851982898;0.735091404983046;0.737394957983193;0.739698510983341;0.742002063983488;0.744305616983636;0.746609169983783;0.748912722983930;0.751216275984078;0.753519828984225;0.755823381984373;0.758126934984520;0.760430487984668;0.762734040984815;0.765037593984962;0.767341146985110;0.769644699985257;0.771948252985405;0.774251805985552;0.776555358985700;0.778858911985847;0.781162464985994;0.783466017986142;0.785769570986289;0.788073123986437;0.790376676986584;0.792680229986732;0.794983782986879;0.797287335987026;0.799590888987174;0.801894441987321;0.804197994987469;0.806501547987616;0.808805100987764;0.811108653987911;0.813412206988058;0.815715759988206;0.818019312988353;0.820322865988501;0.822626418988648;0.824929971988796;0.827233524988943;0.829537077989090;0.831840630989238;0.834144183989385;0.836447736989533;0.838751289989680;0.841054842989828;0.843358395989975;0.845661948990123;0.847965501990270;0.850269054990417;0.852572607990565;0.854876160990712;0.857179713990860;0.859483266991007;0.861786819991154;0.864090372991302;0.866393925991449;0.868697478991597;0.871001031991744;0.873304584991892;0.875608137992039;0.877911690992186;0.880215243992334;0.882518796992481;0.884822349992629;0.887125902992776;0.889429455992923;0.891733008993071;0.894036561993218;0.896340114993366;0.898643667993513;0.900947220993661;0.903250773993808;0.905554326993955;0.907857879994103;0.910161432994251;0.912464985994398;0.914768538994545;0.917072091994693;0.919375644994840;0.921679197994987;0.923982750995135;0.926286303995282;0.928589856995430;0.930893409995577;0.933196962995725;0.935500515995872;0.937804068996019;0.940107621996167;0.942411174996314;0.944714727996462;0.947018280996609;0.949321833996757;0.951625386996904;0.953928939997051;0.956232492997199;0.958536045997346;0.960839598997494;0.963143151997641;0.965446704997789;0.967750257997936;0.970053810998083;0.972357363998231;0.974660916998378;0.976964469998526;0.979268022998673;0.981571575998821;0.983875128998968;0.986178681999115;0.988482234999263;0.990785787999410;0.993089340999558;0.995392893999705;0.997696446999853;1];
+            end
+            app.ViewerParentObject.Children.Alphamap = alphamapChoice;
         end
 
         % Close request function: BrukKitAlphav0823UIFigure
@@ -5046,7 +5102,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Segmenter.XTick = [];
             app.UIAxes_Segmenter.YTick = [];
             app.UIAxes_Segmenter.Box = 'on';
-            app.UIAxes_Segmenter.Position = [5 70 903 627];
+            app.UIAxes_Segmenter.Position = [5 66 903 627];
 
             % Create SelectExperimentToSegmentLabel
             app.SelectExperimentToSegmentLabel = uilabel(app.SegmenterTab);
@@ -5804,7 +5860,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Registration.XTick = [];
             app.UIAxes_Registration.YTick = [];
             app.UIAxes_Registration.Box = 'on';
-            app.UIAxes_Registration.Position = [5 70 903 627];
+            app.UIAxes_Registration.Position = [5 66 903 627];
 
             % Create SelectfixedLabel
             app.SelectfixedLabel = uilabel(app.RegistrationTab);
@@ -6459,46 +6515,84 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [111 527 90 22];
+            app.RenderingStyleDropDownLabel.Position = [111 463 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
             app.RenderingStyleDropDown = uidropdown(app.DViewerTab);
             app.RenderingStyleDropDown.Items = {'Volume Rendering', 'Maximum Intensity Projection', 'Minimum Intensity Projection', 'Slice Planes'};
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
+            app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [58 499 196 22];
+            app.RenderingStyleDropDown.Position = [58 435 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
 
+            % Create DataDimensionsPanel
+            app.DataDimensionsPanel = uipanel(app.DViewerTab);
+            app.DataDimensionsPanel.BorderType = 'none';
+            app.DataDimensionsPanel.TitlePosition = 'centertop';
+            app.DataDimensionsPanel.Title = 'Data Dimensions';
+            app.DataDimensionsPanel.Position = [72 214 169 186];
+
             % Create YEditFieldLabel_Viewer
-            app.YEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.YEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
             app.YEditFieldLabel_Viewer.HorizontalAlignment = 'center';
-            app.YEditFieldLabel_Viewer.Position = [144 342 25 22];
+            app.YEditFieldLabel_Viewer.Position = [74 84 25 22];
             app.YEditFieldLabel_Viewer.Text = 'Y';
 
             % Create YEditField_Viewer
-            app.YEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
-            app.YEditField_Viewer.Position = [126 318 59 22];
+            app.YEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.YEditField_Viewer.Position = [56 60 59 22];
 
             % Create XEditFieldLabel_Viewer
-            app.XEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.XEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
             app.XEditFieldLabel_Viewer.HorizontalAlignment = 'center';
-            app.XEditFieldLabel_Viewer.Position = [144 399 25 22];
+            app.XEditFieldLabel_Viewer.Position = [74 139 25 22];
             app.XEditFieldLabel_Viewer.Text = 'X';
 
             % Create XEditField_Viewer
-            app.XEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
-            app.XEditField_Viewer.Position = [126 375 59 22];
+            app.XEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.XEditField_Viewer.Position = [56 115 59 22];
 
             % Create ZEditFieldLabel_Viewer
-            app.ZEditFieldLabel_Viewer = uilabel(app.DViewerTab);
+            app.ZEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
             app.ZEditFieldLabel_Viewer.HorizontalAlignment = 'center';
-            app.ZEditFieldLabel_Viewer.Position = [144 285 25 22];
+            app.ZEditFieldLabel_Viewer.Position = [74 30 25 22];
             app.ZEditFieldLabel_Viewer.Text = 'Z';
 
             % Create ZEditField_Viewer
-            app.ZEditField_Viewer = uieditfield(app.DViewerTab, 'numeric');
-            app.ZEditField_Viewer.Position = [126 261 59 22];
+            app.ZEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.ZEditField_Viewer.Position = [56 6 59 22];
+
+            % Create ColormapDropDownLabel_Viewer
+            app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
+            app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
+            app.ColormapDropDownLabel_Viewer.Position = [1090 463 57 22];
+            app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
+
+            % Create ColormapDropDown_Viewer
+            app.ColormapDropDown_Viewer = uidropdown(app.DViewerTab);
+            app.ColormapDropDown_Viewer.Items = {'Greyscale', 'Turbo', 'Hot', 'Jet', 'Parula', 'Sky', 'Cool', 'Copper', 'Bone'};
+            app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
+            app.ColormapDropDown_Viewer.Enable = 'off';
+            app.ColormapDropDown_Viewer.Tooltip = {''};
+            app.ColormapDropDown_Viewer.Position = [1020 435 196 22];
+            app.ColormapDropDown_Viewer.Value = 'Greyscale';
+
+            % Create AlphamapDropDownLabel_Viewer
+            app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
+            app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
+            app.AlphamapDropDownLabel_Viewer.Position = [1089 328 59 22];
+            app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
+
+            % Create AlphamapDropDown_Viewer
+            app.AlphamapDropDown_Viewer = uidropdown(app.DViewerTab);
+            app.AlphamapDropDown_Viewer.Items = {'Linear', 'MRI', 'MRI-mip'};
+            app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
+            app.AlphamapDropDown_Viewer.Enable = 'off';
+            app.AlphamapDropDown_Viewer.Tooltip = {''};
+            app.AlphamapDropDown_Viewer.Position = [1020 300 196 22];
+            app.AlphamapDropDown_Viewer.Value = 'Linear';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
