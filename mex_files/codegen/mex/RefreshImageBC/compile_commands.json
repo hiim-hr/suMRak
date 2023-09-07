@@ -1,0 +1,62 @@
+[
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  RefreshImageBC_data.cpp /Fobuild\\win64\\RefreshImageBC_data.obj",
+    "file": "RefreshImageBC_data.cpp",
+    "output": "build/win64/RefreshImageBC_data.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  rt_nonfinite.cpp /Fobuild\\win64\\rt_nonfinite.obj",
+    "file": "rt_nonfinite.cpp",
+    "output": "build/win64/rt_nonfinite.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  RefreshImageBC_initialize.cpp /Fobuild\\win64\\RefreshImageBC_initialize.obj",
+    "file": "RefreshImageBC_initialize.cpp",
+    "output": "build/win64/RefreshImageBC_initialize.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  RefreshImageBC_terminate.cpp /Fobuild\\win64\\RefreshImageBC_terminate.obj",
+    "file": "RefreshImageBC_terminate.cpp",
+    "output": "build/win64/RefreshImageBC_terminate.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_RefreshImageBC_api.cpp /Fobuild\\win64\\_coder_RefreshImageBC_api.obj",
+    "file": "interface/_coder_RefreshImageBC_api.cpp",
+    "output": "build/win64/_coder_RefreshImageBC_api.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_RefreshImageBC_mex.cpp /Fobuild\\win64\\_coder_RefreshImageBC_mex.obj",
+    "file": "interface/_coder_RefreshImageBC_mex.cpp",
+    "output": "build/win64/_coder_RefreshImageBC_mex.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  eml_int_forloop_overflow_check.cpp /Fobuild\\win64\\eml_int_forloop_overflow_check.obj",
+    "file": "eml_int_forloop_overflow_check.cpp",
+    "output": "build/win64/eml_int_forloop_overflow_check.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  RefreshImageBC.cpp /Fobuild\\win64\\RefreshImageBC.obj",
+    "file": "RefreshImageBC.cpp",
+    "output": "build/win64/RefreshImageBC.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_RefreshImageBC_info.cpp /Fobuild\\win64\\_coder_RefreshImageBC_info.obj",
+    "file": "interface/_coder_RefreshImageBC_info.cpp",
+    "output": "build/win64/_coder_RefreshImageBC_info.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\\codegen\\mex\\RefreshImageBC",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\maps_mex_files\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DMODEL=RefreshImageBC_mex -DMW_NEEDS_VERSION_H /wd4251  \"C:\\Program Files\\MATLAB\\R2023a\\extern\\version\\cpp_mexapi_version.cpp\" /Fobuild\\win64\\cpp_mexapi_version.obj",
+    "file": "C:/Program Files/MATLAB/R2023a/extern/version/cpp_mexapi_version.cpp",
+    "output": "build/win64/cpp_mexapi_version.obj"
+  }
+]

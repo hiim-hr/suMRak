@@ -436,13 +436,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Preview.Value) +  app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
+            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Preview.Value) +  app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Preview.Value,app.BrightnessSlider_Preview.Value);
             switch app.TurboButton_Preview.Value
                 case true
-                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview, Colormap = turbo);
+                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Preview, Colormap = turbo);
                 otherwise
-                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Preview);
+                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Preview);
             end
             app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
         end
@@ -462,8 +463,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
             switch app.CurrentSegmentationDropDown.Value
                 % Brain segmentation image updating
                 case 'Brain'
@@ -471,9 +473,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Overlay"
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
                             end
                                  
                             try
@@ -489,9 +491,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
                             end
                             app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
@@ -500,9 +502,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 'Hemisphere'
                     switch app.TurboButton_Segmenter.Value
                         case true
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                         otherwise
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
                     end
                     try
                         hold(app.UIAxes_Segmenter, "on");
@@ -527,9 +529,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Overlay"
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
                             end
                             hold(app.UIAxes_Segmenter, "on");
                             mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
@@ -562,9 +564,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             end
                             switch app.TurboButton_Segmenter.Value
                                 case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
                                 otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Segmenter);
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
                             end
                             app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
@@ -581,12 +583,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     app.CurrentSlice = app.RegisteredImageData(:,:,app.SliceSpinner_Registration.Value);
             end
-            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
             switch app.TurboButton_Registration.Value
                 case true
-                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
                 otherwise
-                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Registration);
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
             end
             reg.ContextMenu = app.ContextMenu_Registration;
         end
@@ -606,8 +608,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = im2uint8((app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)))); % Scale image to [0 1]
-            app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PreMap);
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PreMap);
             app.PreMapImage.ContextMenu = app.ContextMenu_PreMap;
         end
 
@@ -622,13 +624,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_PostMap.Value) + app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
+            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_PostMap.Value) + app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_PostMap.Value,app.BrightnessSlider_PostMap.Value);
             switch app.TurboButton_PostMap.Value
                 case true
-                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
+                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
                 otherwise
-                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_PostMap);
+                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PostMap);
             end
             app.PostMapImage.ContextMenu = app.ContextMenu_PostMap;
         end
@@ -4195,7 +4198,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Please wait",...
-                 'Message', "Starting parallel workers...", "Indeterminate", "on");
+                 'Message', "Calculating T1 maps...", "Indeterminate", "on");
             drawnow
 
             T1raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
@@ -4219,7 +4222,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % use parallel processing for faster fitting
             % delete(gcp('nocreate'));
             % parpool("local");
-            progress.Message = "Calculating T1 maps... This might take awhile.";
             
             coeffs = CalculateT1Map_mex(T1raw_reordered_reshaped,tvalues,ivalues);             
 
@@ -4291,7 +4293,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Please wait",...
-                 'Message', "Starting parallel workers...", "Indeterminate", "on");
+                 'Message', "Calculating T2 maps...", "Indeterminate", "on");
             drawnow
 
             T2raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
@@ -4374,7 +4376,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
 
             progress = uiprogressdlg(app.BrukKitAlphav0823UIFigure,'Title',"Please wait",...
-                 'Message', "Starting parallel workers...", "Indeterminate", "on");
+                 'Message', "Calculating pASL maps...", "Indeterminate", "on");
             drawnow
 
             switch numel(size(app.PreMapImageData))
