@@ -57,6 +57,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
         BrainSegmentationToolsPanel     matlab.ui.container.Panel
+        VolumeSwitch                    matlab.ui.control.Switch
         ApplyMaskButton                 matlab.ui.control.Button
         ResetSliceButton                matlab.ui.control.Button
         ImageshownSwitch_Brain          matlab.ui.control.Switch
@@ -2680,17 +2681,36 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: AutoClusterButton
         function AutoClusterButtonPushed(app, event)
-            
-            % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
-            % select best cluster
-            clusters = imsegkmeans(single(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value),2,'NumAttempts',2);
-            cluster_1_dice = dice(clusters==1, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
-            cluster_2_dice = dice(clusters==2, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
-            if cluster_1_dice > cluster_2_dice
-                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 1;
-            else 
-                app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 2;
-            end  
+            switch app.VolumeSwitch.Value
+                case '2D'
+                    % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
+                    % select best cluster
+                    clusters = imsegkmeans(single(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value),2,'NumAttempts',2);
+                    cluster_1_dice = dice(clusters==1, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
+                    cluster_2_dice = dice(clusters==2, logical(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)));
+                    if cluster_1_dice > cluster_2_dice
+                        app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 1;
+                    else 
+                        app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = clusters == 2;
+                    end  
+                case '3D'
+                    % Prompt for slice limits
+                    limits = inputdlg({'Enter lower slice limit:','Enter upper slice limit:'}, 'Input slice limits', [1 40], {'1', num2str(app.ExpDimsSegmenter(3))});
+                    min = str2double(limits{1});
+                    max = str2double(limits{2});
+                    % Expand selection to chosen slices
+                    app.BrainMask(:,:,min:max) = repmat(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value),[1 1 max-min+1]);
+                    % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
+                    % select best cluster
+                    clusters = imsegkmeans3(single(app.OriginalSegmenterImageData(:,:,min:max)).*app.BrainMask(:,:,min:max),2,'NumAttempts',2);
+                    cluster_1_dice = dice(clusters==1, logical(app.BrainMask(:,:,min:max)));
+                    cluster_2_dice = dice(clusters==2, logical(app.BrainMask(:,:,min:max)));
+                    if cluster_1_dice > cluster_2_dice
+                        app.BrainMask(:,:,min:max) = clusters == 1;
+                    else 
+                        app.BrainMask(:,:,min:max) = clusters == 2;
+                    end 
+            end
             
             app.AutoClusterButton.Enable = 'off'; % Turn off auto cluster button
             app.ImageshownSwitch_Brain.Value = "Overlay"; % Set image shown value to overlay
@@ -2704,7 +2724,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, open image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imopen(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+
+            switch app.VolumeSwitch.Value
+                case '2D'
+                    app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imopen(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+                case '3D'
+                    app.BrainMask = imopen(app.BrainMask, SE);
+            end
             
             % Show image with mask overlaid on top
             RefreshImageSegmenter(app);
@@ -2716,7 +2742,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Construct structuring element, close image mask
             disk_Radius = app.DiskradiusSpinner.Value;
             SE = strel('disk', disk_Radius, 0);
-            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imclose(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+
+            switch app.VolumeSwitch.Value
+                case '2D'
+                    app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = imclose(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value), SE);
+                case '3D'
+                    app.BrainMask = imclose(app.BrainMask, SE);
+            end
             
             % Show image with mask overlaid on top
             RefreshImageSegmenter(app);
@@ -2725,25 +2757,48 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: ApplyMaskButton
         function ApplyMaskButtonPushed(app, event)
 
-            % Save slice image based on number of dimensions in original matrix
-            switch numel(app.ExpDimsSegmenter)
-                case 5
-                    for i=1:app.ExpDimsSegmenter(4)
-                        for j=1:app.ExpDimsSegmenter(5)
-                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
-                        end
-                    end         
-                case 4
-                    for i=1:app.ExpDimsSegmenter(4)
-                        app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+            switch app.VolumeSwitch.Value
+                case '2D'
+                    % Save slice image based on number of dimensions in original matrix
+                    switch numel(app.ExpDimsSegmenter)
+                        case 5
+                            for i=1:app.ExpDimsSegmenter(4)
+                                for j=1:app.ExpDimsSegmenter(5)
+                                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
+                                end
+                            end         
+                        case 4
+                            for i=1:app.ExpDimsSegmenter(4)
+                                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                            end
+                        otherwise
+                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
                     end
-                otherwise
-                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value).*app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+        
+                    % Save slice mask
+                    app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
+                    app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+                case '3D'
+                    % Save slice image based on number of dimensions in original matrix
+                    switch numel(app.ExpDimsSegmenter)
+                        case 5
+                            for i=1:app.ExpDimsSegmenter(4)
+                                for j=1:app.ExpDimsSegmenter(5)
+                                    app.WorkingSegmenterImageData(:,:,:,i,j) = app.BrainMask.*app.OriginalSegmenterImageData(:,:,:,i,j);
+                                end
+                            end         
+                        case 4
+                            for i=1:app.ExpDimsSegmenter(4)
+                                app.WorkingSegmenterImageData(:,:,:,i) = app.BrainMask.*app.OriginalSegmenterImageData(:,:,:,i);
+                            end
+                        otherwise
+                            app.WorkingSegmenterImageData = app.BrainMask.*app.OriginalSegmenterImageData;
+                    end
+        
+                    % Save slice mask
+                    app.SavedBrainMask = app.BrainMask;
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
             end
-
-            % Save slice mask
-            app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
-            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
 
             app.ImageshownSwitch_Brain.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % TUrn off auto cluster button
@@ -2765,26 +2820,50 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Segmenter.XLim = [-inf inf];
             app.UIAxes_Segmenter.YLim = [-inf inf];
             
-            % Reset slice image based on number of dimensions in original
-            % matrix
-            switch numel(app.ExpDimsSegmenter)
-                case 5
-                    for j=1:app.ExpDimsSegmenter(5)
-                        for i=1:app.ExpDimsSegmenter(4)
-                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
-                        end
-                    end         
-                case 4
-                    for i=1:app.ExpDimsSegmenter(4)
-                        app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+            switch app.VolumeSwitch.Value
+                case '2D'
+                    % Reset slice image based on number of dimensions in original
+                    % matrix
+                    switch numel(app.ExpDimsSegmenter)
+                        case 5
+                            for j=1:app.ExpDimsSegmenter(5)
+                                for i=1:app.ExpDimsSegmenter(4)
+                                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i,j);
+                                end
+                            end         
+                        case 4
+                            for i=1:app.ExpDimsSegmenter(4)
+                                app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value,i);
+                            end
+                        otherwise
+                            app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
                     end
-                otherwise
-                    app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value) = app.OriginalSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+        
+                    % Reset slice mask
+                    app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+                    app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
+                case '3D'
+                    % Reset slice image based on number of dimensions in original
+                    % matrix
+                    switch numel(app.ExpDimsSegmenter)
+                        case 5
+                            for j=1:app.ExpDimsSegmenter(5)
+                                for i=1:app.ExpDimsSegmenter(4)
+                                    app.WorkingSegmenterImageData(:,:,:,i,j) = app.OriginalSegmenterImageData(:,:,:,i,j);
+                                end
+                            end         
+                        case 4
+                            for i=1:app.ExpDimsSegmenter(4)
+                                app.WorkingSegmenterImageData(:,:,:,i) = app.OriginalSegmenterImageData(:,:,:,i);
+                            end
+                        otherwise
+                            app.WorkingSegmenterImageData = app.OriginalSegmenterImageData;
+                    end
+        
+                    % Reset slice mask
+                    app.SavedBrainMask = false(app.ExpDimsSegmenter(1:3));
+                    app.BrainMask = false(app.ExpDimsSegmenter(1:3));
             end
-
-            % Reset slice mask
-            app.SavedBrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
-            app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value) = false(app.ExpDimsSegmenter(1:2));
             
             app.ImageshownSwitch_Brain.Value = "Overlay"; % Set image shown value to overlay
             app.AutoClusterButton.Enable = 'off'; % Turn off auto cluster button
@@ -4729,6 +4808,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
         end
+
+        % Value changed function: VolumeSwitch
+        function VolumeSwitchValueChanged(app, event)
+            value = app.VolumeSwitch.Value;
+            switch value
+                case '2D'
+                    app.AutoClusterButton.Text = "Auto Cluster";
+                    app.OpenMaskButton.Text = "Open Mask";
+                    app.CloseMaskButton.Text = "Close Mask";
+                    app.ResetSliceButton.Text = "Reset Slice";
+                    app.ApplyMaskButton.Text = "Apply Slice";
+                case '3D'
+                    app.AutoClusterButton.Text = "3D Auto Cluster";
+                    app.OpenMaskButton.Text = "3D Open Mask";
+                    app.CloseMaskButton.Text = "3D Close Mask";
+                    app.ResetSliceButton.Text = "Reset All";
+                    app.ApplyMaskButton.Text = "Apply All";
+            end
+        end
     end
 
     % Component initialization
@@ -5409,43 +5507,47 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create DiskradiusSpinnerLabel
             app.DiskradiusSpinnerLabel = uilabel(app.BrainSegmentationToolsPanel);
             app.DiskradiusSpinnerLabel.HorizontalAlignment = 'right';
-            app.DiskradiusSpinnerLabel.Position = [146 87 65 22];
+            app.DiskradiusSpinnerLabel.Position = [164 88 65 22];
             app.DiskradiusSpinnerLabel.Text = {'Disk radius'; ''};
 
             % Create DiskradiusSpinner
             app.DiskradiusSpinner = uispinner(app.BrainSegmentationToolsPanel);
             app.DiskradiusSpinner.Limits = [1 100];
-            app.DiskradiusSpinner.Position = [150 54 58 22];
+            app.DiskradiusSpinner.Position = [168 55 58 22];
             app.DiskradiusSpinner.Value = 3;
 
             % Create OpenMaskButton
             app.OpenMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.OpenMaskButton.ButtonPushedFcn = createCallbackFcn(app, @OpenMaskButtonPushed, true);
-            app.OpenMaskButton.Position = [48 87 75 22];
+            app.OpenMaskButton.WordWrap = 'on';
+            app.OpenMaskButton.Position = [24 86 99 22];
             app.OpenMaskButton.Text = {'Open Mask'; ''};
 
             % Create CloseMaskButton
             app.CloseMaskButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.CloseMaskButton.ButtonPushedFcn = createCallbackFcn(app, @CloseMaskButtonPushed, true);
-            app.CloseMaskButton.Position = [47 54 76 22];
+            app.CloseMaskButton.WordWrap = 'on';
+            app.CloseMaskButton.Position = [24 55 99 22];
             app.CloseMaskButton.Text = {'Close Mask'; ''};
 
             % Create MorphologyLabel
             app.MorphologyLabel = uilabel(app.BrainSegmentationToolsPanel);
-            app.MorphologyLabel.Position = [98 117 68 15];
+            app.MorphologyLabel.HorizontalAlignment = 'center';
+            app.MorphologyLabel.Position = [95 117 68 15];
             app.MorphologyLabel.Text = {'Morphology'; ''};
 
             % Create InitialSelectionButton
             app.InitialSelectionButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.InitialSelectionButton.ButtonPushedFcn = createCallbackFcn(app, @InitialSelectionButtonPushed, true);
-            app.InitialSelectionButton.Position = [24 145 100 22];
+            app.InitialSelectionButton.Position = [24 175 100 22];
             app.InitialSelectionButton.Text = {'Initial Selection'; ''};
 
             % Create AutoClusterButton
             app.AutoClusterButton = uibutton(app.BrainSegmentationToolsPanel, 'push');
             app.AutoClusterButton.ButtonPushedFcn = createCallbackFcn(app, @AutoClusterButtonPushed, true);
+            app.AutoClusterButton.WordWrap = 'on';
             app.AutoClusterButton.Enable = 'off';
-            app.AutoClusterButton.Position = [134 145 100 22];
+            app.AutoClusterButton.Position = [134 175 100 22];
             app.AutoClusterButton.Text = 'Auto Cluster';
 
             % Create LoadExternalBrainMaskButton
@@ -5457,14 +5559,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ImageshownSwitchLabel
             app.ImageshownSwitchLabel = uilabel(app.BrainSegmentationToolsPanel);
             app.ImageshownSwitchLabel.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel.Position = [90 188 77 22];
+            app.ImageshownSwitchLabel.Position = [93 236 77 22];
             app.ImageshownSwitchLabel.Text = {'Image shown'; ''};
 
             % Create ImageshownSwitch_Brain
             app.ImageshownSwitch_Brain = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
             app.ImageshownSwitch_Brain.Items = {'Overlay', 'Masked'};
             app.ImageshownSwitch_Brain.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_BrainValueChanged, true);
-            app.ImageshownSwitch_Brain.Position = [106 217 45 20];
+            app.ImageshownSwitch_Brain.Position = [106 216 45 20];
             app.ImageshownSwitch_Brain.Value = 'Overlay';
 
             % Create ResetSliceButton
@@ -5478,6 +5580,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ApplyMaskButton.ButtonPushedFcn = createCallbackFcn(app, @ApplyMaskButtonPushed, true);
             app.ApplyMaskButton.Position = [134 21 100 22];
             app.ApplyMaskButton.Text = 'Apply Mask';
+
+            % Create VolumeSwitch
+            app.VolumeSwitch = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
+            app.VolumeSwitch.Items = {'2D', '3D'};
+            app.VolumeSwitch.ValueChangedFcn = createCallbackFcn(app, @VolumeSwitchValueChanged, true);
+            app.VolumeSwitch.Position = [107 147 45 20];
+            app.VolumeSwitch.Value = '2D';
 
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
