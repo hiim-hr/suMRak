@@ -273,6 +273,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        ColormapImage_Viewer            matlab.ui.control.Image
         AlphamapDropDown_Viewer         matlab.ui.control.DropDown
         AlphamapDropDownLabel_Viewer    matlab.ui.control.Label
         ColormapDropDown_Viewer         matlab.ui.control.DropDown
@@ -1314,9 +1315,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             delete(app.ViewerParentObject);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Value = "Volume Rendering";
+            app.ColormapDropDown_Viewer.Enable = 'off';
+            app.ColormapDropDown_Viewer.Value = "Greyscale";
+            app.ColormapImage_Viewer.Visible = 'off';
+            app.AlphamapDropDown_Viewer.Enable = 'off';
+            app.AlphamapDropDown_Viewer.Value = "Linear";
             app.XEditField_Viewer.Value = 0;
             app.YEditField_Viewer.Value = 0;
             app.ZEditField_Viewer.Value = 0;
+            app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
+            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+            app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
+            app.SliceRangeHighSpinner_Viewer.Value = 1;
         end
     end   
 
@@ -2661,6 +2672,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             RefreshImageSegmenter(app);
             uiconfirm(app.BrukKitAlphav0823UIFigure, "External brain mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+        end
+
+        % Value changed function: VolumeSwitch
+        function VolumeSwitchValueChanged(app, event)
+            value = app.VolumeSwitch.Value;
+            switch value
+                case '2D'
+                    app.AutoClusterButton.Text = "Auto Cluster";
+                    app.OpenMaskButton.Text = "Open Mask";
+                    app.CloseMaskButton.Text = "Close Mask";
+                    app.ResetSliceButton.Text = "Reset Slice";
+                    app.ApplyMaskButton.Text = "Apply Slice";
+                case '3D'
+                    app.AutoClusterButton.Text = "3D Auto Cluster";
+                    app.OpenMaskButton.Text = "3D Open Mask";
+                    app.CloseMaskButton.Text = "3D Close Mask";
+                    app.ResetSliceButton.Text = "Reset All";
+                    app.ApplyMaskButton.Text = "Apply All";
+            end
         end
 
         % Button pushed function: InitialSelectionButton
@@ -4672,11 +4702,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
                 app.ColormapDropDown_Viewer.Enable = 'off';
                 app.ColormapDropDown_Viewer.Value = "Greyscale";
+                app.ColormapImage_Viewer.Visible = 'off';
                 app.AlphamapDropDown_Viewer.Enable = 'off';
-                app.AlphamapDropDown_Viewer.Value = "Linear"; 
+                app.AlphamapDropDown_Viewer.Value = "Linear";
                 app.XEditField_Viewer.Value = 0;
                 app.YEditField_Viewer.Value = 0;
                 app.ZEditField_Viewer.Value = 0;
+                app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+                app.SliceRangeLowSpinner_Viewer.Value = 1;
+                app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+                app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
+                app.SliceRangeHighSpinner_Viewer.Value = 1;
                 return
             end
             
@@ -4688,11 +4724,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
                 app.ColormapDropDown_Viewer.Enable = 'off';
                 app.ColormapDropDown_Viewer.Value = "Greyscale";
+                app.ColormapImage_Viewer.Visible = 'off';
                 app.AlphamapDropDown_Viewer.Enable = 'off';
-                app.AlphamapDropDown_Viewer.Value = "Linear";   
+                app.AlphamapDropDown_Viewer.Value = "Linear";
                 app.XEditField_Viewer.Value = 0;
                 app.YEditField_Viewer.Value = 0;
                 app.ZEditField_Viewer.Value = 0;
+                app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+                app.SliceRangeLowSpinner_Viewer.Value = 1;
+                app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+                app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
+                app.SliceRangeHighSpinner_Viewer.Value = 1;
                 uialert(app.BrukKitAlphav0823UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
                 return
             end
@@ -4709,11 +4751,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.Value = "Volume Rendering";
             app.ColormapDropDown_Viewer.Enable = 'on';
             app.ColormapDropDown_Viewer.Value = "Greyscale";
+            app.ColormapImage_Viewer.Visible = 'on';
+            app.ColormapImage_Viewer.ImageSource = getColormapImageArray(25,256, "Greyscale");
             app.AlphamapDropDown_Viewer.Enable = 'on';
             app.AlphamapDropDown_Viewer.Value = "Linear";
             % Set slice slider limits and values
+            app.SliceRangeLowSpinner_Viewer.Enable = 'on';
             app.SliceRangeLowSpinner_Viewer.Limits = [1, imdata_size(3)-1];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
+            app.SliceRangeHighSpinner_Viewer.Enable = 'on';
             app.SliceRangeHighSpinner_Viewer.Limits = [2, imdata_size(3)];
             app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);       
 
@@ -4764,6 +4810,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     colormapChoice = bone;
             end
             app.ViewerParentObject.Children.Colormap = colormapChoice;
+            app.ColormapImage_Viewer.ImageSource = getColormapImageArray(25,256, app.ColormapDropDown_Viewer.Value);
         end
 
         % Value changed function: AlphamapDropDown_Viewer
@@ -4778,6 +4825,55 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     alphamapChoice = [0;0;0;0;0;0;0;0;0;0.000712491613668749;0.0179626128265740;0.0352127340394794;0.0524628552523847;0.0697129764652900;0.0869630976781953;0.104213218891101;0.121463340104006;0.138713461316911;0.155963582529817;0.173213703742722;0.190463824955627;0.207713946168532;0.224964067381438;0.242214188594343;0.259464309807248;0.276714431020154;0.293964552233059;0.311214673445964;0.328464794658870;0.345714915871775;0.362965037084680;0.380215158297586;0.397465279510491;0.414715400723396;0.431965521936301;0.449215643149207;0.466465764362112;0.483715885575017;0.500128998968008;0.502432551968156;0.504736104968303;0.507039657968451;0.509343210968598;0.511646763968745;0.513950316968893;0.516253869969040;0.518557422969188;0.520860975969335;0.523164528969483;0.525468081969630;0.527771634969777;0.530075187969925;0.532378740970072;0.534682293970220;0.536985846970367;0.539289399970515;0.541592952970662;0.543896505970809;0.546200058970957;0.548503611971104;0.550807164971252;0.553110717971399;0.555414270971547;0.557717823971694;0.560021376971841;0.562324929971989;0.564628482972136;0.566932035972284;0.569235588972431;0.571539141972579;0.573842694972726;0.576146247972873;0.578449800973021;0.580753353973168;0.583056906973316;0.585360459973463;0.587664012973611;0.589967565973758;0.592271118973905;0.594574671974053;0.596878224974200;0.599181777974348;0.601485330974495;0.603788883974643;0.606092436974790;0.608395989974937;0.610699542975085;0.613003095975232;0.615306648975380;0.617610201975527;0.619913754975675;0.622217307975822;0.624520860975969;0.626824413976117;0.629127966976264;0.631431519976412;0.633735072976559;0.636038625976707;0.638342178976854;0.640645731977001;0.642949284977149;0.645252837977296;0.647556390977444;0.649859943977591;0.652163496977739;0.654467049977886;0.656770602978033;0.659074155978181;0.661377708978328;0.663681261978476;0.665984814978623;0.668288367978770;0.670591920978918;0.672895473979065;0.675199026979213;0.677502579979360;0.679806132979508;0.682109685979655;0.684413238979802;0.686716791979950;0.689020344980097;0.691323897980245;0.693627450980392;0.695931003980540;0.698234556980687;0.700538109980834;0.702841662980982;0.705145215981129;0.707448768981277;0.709752321981424;0.712055874981572;0.714359427981719;0.716662980981867;0.718966533982014;0.721270086982161;0.723573639982309;0.725877192982456;0.728180745982604;0.730484298982751;0.732787851982898;0.735091404983046;0.737394957983193;0.739698510983341;0.742002063983488;0.744305616983636;0.746609169983783;0.748912722983930;0.751216275984078;0.753519828984225;0.755823381984373;0.758126934984520;0.760430487984668;0.762734040984815;0.765037593984962;0.767341146985110;0.769644699985257;0.771948252985405;0.774251805985552;0.776555358985700;0.778858911985847;0.781162464985994;0.783466017986142;0.785769570986289;0.788073123986437;0.790376676986584;0.792680229986732;0.794983782986879;0.797287335987026;0.799590888987174;0.801894441987321;0.804197994987469;0.806501547987616;0.808805100987764;0.811108653987911;0.813412206988058;0.815715759988206;0.818019312988353;0.820322865988501;0.822626418988648;0.824929971988796;0.827233524988943;0.829537077989090;0.831840630989238;0.834144183989385;0.836447736989533;0.838751289989680;0.841054842989828;0.843358395989975;0.845661948990123;0.847965501990270;0.850269054990417;0.852572607990565;0.854876160990712;0.857179713990860;0.859483266991007;0.861786819991154;0.864090372991302;0.866393925991449;0.868697478991597;0.871001031991744;0.873304584991892;0.875608137992039;0.877911690992186;0.880215243992334;0.882518796992481;0.884822349992629;0.887125902992776;0.889429455992923;0.891733008993071;0.894036561993218;0.896340114993366;0.898643667993513;0.900947220993661;0.903250773993808;0.905554326993955;0.907857879994103;0.910161432994251;0.912464985994398;0.914768538994545;0.917072091994693;0.919375644994840;0.921679197994987;0.923982750995135;0.926286303995282;0.928589856995430;0.930893409995577;0.933196962995725;0.935500515995872;0.937804068996019;0.940107621996167;0.942411174996314;0.944714727996462;0.947018280996609;0.949321833996757;0.951625386996904;0.953928939997051;0.956232492997199;0.958536045997346;0.960839598997494;0.963143151997641;0.965446704997789;0.967750257997936;0.970053810998083;0.972357363998231;0.974660916998378;0.976964469998526;0.979268022998673;0.981571575998821;0.983875128998968;0.986178681999115;0.988482234999263;0.990785787999410;0.993089340999558;0.995392893999705;0.997696446999853;1];
             end
             app.ViewerParentObject.Children.Alphamap = alphamapChoice;
+        end
+
+        % Value changed function: XEditField_Viewer
+        function XEditField_ViewerValueChanged(app, event)
+            value = app.XEditField_Viewer.Value;
+            app.ViewerDimTriplet(1) = value;
+            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
+            tform = affinetform3d(T);
+            app.ViewerParentObject.Children.Transformation = tform;
+        end
+
+        % Value changed function: YEditField_Viewer
+        function YEditField_ViewerValueChanged(app, event)
+            value = app.YEditField_Viewer.Value;
+            app.ViewerDimTriplet(2) = value;
+            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
+            tform = affinetform3d(T);
+            app.ViewerParentObject.Children.Transformation = tform;
+        end
+
+        % Value changed function: ZEditField_Viewer
+        function ZEditField_ViewerValueChanged(app, event)
+            value = app.ZEditField_Viewer.Value;
+            app.ViewerDimTriplet(3) = value;
+            T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
+            tform = affinetform3d(T);
+            app.ViewerParentObject.Children.Transformation = tform;
+        end
+
+        % Value changed function: SliceRangeLowSpinner_Viewer
+        function SliceRangeLowSpinner_ViewerValueChanged(app, event)
+            value = app.SliceRangeLowSpinner_Viewer.Value;
+            
+            % Update spinner limits
+            maxBoundary = app.SliceRangeHighSpinner_Viewer.Limits(2);
+            app.SliceRangeHighSpinner_Viewer.Limits = [value+1, maxBoundary];
+            % Update 3D Viewer data
+            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
+        end
+
+        % Value changed function: SliceRangeHighSpinner_Viewer
+        function SliceRangeHighSpinner_ViewerValueChanged(app, event)
+            value = app.SliceRangeHighSpinner_Viewer.Value;
+            
+            % Update spinner limits
+            minBoundary = app.SliceRangeLowSpinner_Viewer.Limits(1);
+            app.SliceRangeLowSpinner_Viewer.Limits = [minBoundary, value-1];
+            % Update 3D Viewer data
+            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
         end
 
         % Close request function: BrukKitAlphav0823UIFigure
@@ -4807,25 +4903,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     return
             end
             
-        end
-
-        % Value changed function: VolumeSwitch
-        function VolumeSwitchValueChanged(app, event)
-            value = app.VolumeSwitch.Value;
-            switch value
-                case '2D'
-                    app.AutoClusterButton.Text = "Auto Cluster";
-                    app.OpenMaskButton.Text = "Open Mask";
-                    app.CloseMaskButton.Text = "Close Mask";
-                    app.ResetSliceButton.Text = "Reset Slice";
-                    app.ApplyMaskButton.Text = "Apply Slice";
-                case '3D'
-                    app.AutoClusterButton.Text = "3D Auto Cluster";
-                    app.OpenMaskButton.Text = "3D Open Mask";
-                    app.CloseMaskButton.Text = "3D Close Mask";
-                    app.ResetSliceButton.Text = "Reset All";
-                    app.ApplyMaskButton.Text = "Apply All";
-            end
         end
     end
 
@@ -6582,12 +6659,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerPanel.TitlePosition = 'centertop';
             app.ViewerPanel.Title = 'Viewer';
             app.ViewerPanel.BackgroundColor = [1 1 1];
-            app.ViewerPanel.Position = [306 94 669 510];
+            app.ViewerPanel.Position = [23 92 903 586];
 
             % Create Select3DViewerLabel
             app.Select3DViewerLabel = uilabel(app.DViewerTab);
             app.Select3DViewerLabel.HorizontalAlignment = 'right';
-            app.Select3DViewerLabel.Position = [568 654 147 22];
+            app.Select3DViewerLabel.Position = [1015 641 147 22];
             app.Select3DViewerLabel.Text = 'Select Experiment To View';
 
             % Create Select3DViewerDropDown
@@ -6595,38 +6672,40 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Items = {'None'};
             app.Select3DViewerDropDown.ValueChangedFcn = createCallbackFcn(app, @Select3DViewerDropDownValueChanged, true);
             app.Select3DViewerDropDown.Placeholder = 'None';
-            app.Select3DViewerDropDown.Position = [461 624 360 21];
+            app.Select3DViewerDropDown.Position = [955 611 268 21];
             app.Select3DViewerDropDown.Value = 'None';
 
             % Create SliceRangeLowSpinner_Viewer
             app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
             app.SliceRangeLowSpinner_Viewer.Enable = 'off';
-            app.SliceRangeLowSpinner_Viewer.Position = [573 24 51 22];
+            app.SliceRangeLowSpinner_Viewer.Position = [409 24 51 22];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
 
             % Create SliceRangeHighSpinner_Viewer
             app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
             app.SliceRangeHighSpinner_Viewer.Enable = 'off';
-            app.SliceRangeHighSpinner_Viewer.Position = [659 24 51 22];
+            app.SliceRangeHighSpinner_Viewer.Position = [495 24 51 22];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
 
             % Create Label
             app.Label = uilabel(app.DViewerTab);
             app.Label.HorizontalAlignment = 'center';
             app.Label.FontWeight = 'bold';
-            app.Label.Position = [630 23 19 25];
+            app.Label.Position = [466 23 19 25];
             app.Label.Text = '-';
 
             % Create DisplayedSliceRangeLabel
             app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
             app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
-            app.DisplayedSliceRangeLabel.Position = [578 58 126 22];
+            app.DisplayedSliceRangeLabel.Position = [414 58 126 22];
             app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
 
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [111 463 90 22];
+            app.RenderingStyleDropDownLabel.Position = [1044 562 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
@@ -6635,7 +6714,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [58 435 196 22];
+            app.RenderingStyleDropDown.Position = [991 534 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
 
             % Create DataDimensionsPanel
@@ -6643,7 +6722,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DataDimensionsPanel.BorderType = 'none';
             app.DataDimensionsPanel.TitlePosition = 'centertop';
             app.DataDimensionsPanel.Title = 'Data Dimensions';
-            app.DataDimensionsPanel.Position = [72 214 169 186];
+            app.DataDimensionsPanel.Position = [1004 149 169 186];
 
             % Create YEditFieldLabel_Viewer
             app.YEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
@@ -6653,6 +6732,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create YEditField_Viewer
             app.YEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.YEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @YEditField_ViewerValueChanged, true);
             app.YEditField_Viewer.Position = [56 60 59 22];
 
             % Create XEditFieldLabel_Viewer
@@ -6663,6 +6743,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create XEditField_Viewer
             app.XEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.XEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @XEditField_ViewerValueChanged, true);
             app.XEditField_Viewer.Position = [56 115 59 22];
 
             % Create ZEditFieldLabel_Viewer
@@ -6673,12 +6754,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create ZEditField_Viewer
             app.ZEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
+            app.ZEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @ZEditField_ViewerValueChanged, true);
             app.ZEditField_Viewer.Position = [56 6 59 22];
 
             % Create ColormapDropDownLabel_Viewer
             app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.ColormapDropDownLabel_Viewer.Position = [1090 463 57 22];
+            app.ColormapDropDownLabel_Viewer.Position = [1061 492 57 22];
             app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
 
             % Create ColormapDropDown_Viewer
@@ -6687,13 +6769,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
             app.ColormapDropDown_Viewer.Enable = 'off';
             app.ColormapDropDown_Viewer.Tooltip = {''};
-            app.ColormapDropDown_Viewer.Position = [1020 435 196 22];
+            app.ColormapDropDown_Viewer.Position = [991 464 196 22];
             app.ColormapDropDown_Viewer.Value = 'Greyscale';
 
             % Create AlphamapDropDownLabel_Viewer
             app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.AlphamapDropDownLabel_Viewer.Position = [1089 328 59 22];
+            app.AlphamapDropDownLabel_Viewer.Position = [1060 384 59 22];
             app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
 
             % Create AlphamapDropDown_Viewer
@@ -6702,8 +6784,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
             app.AlphamapDropDown_Viewer.Enable = 'off';
             app.AlphamapDropDown_Viewer.Tooltip = {''};
-            app.AlphamapDropDown_Viewer.Position = [1020 300 196 22];
+            app.AlphamapDropDown_Viewer.Position = [991 356 196 22];
             app.AlphamapDropDown_Viewer.Value = 'Linear';
+
+            % Create ColormapImage_Viewer
+            app.ColormapImage_Viewer = uiimage(app.DViewerTab);
+            app.ColormapImage_Viewer.Visible = 'off';
+            app.ColormapImage_Viewer.Position = [967 431 244 21];
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0823UIFigure);
