@@ -540,7 +540,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
                             hold(app.UIAxes_Segmenter, "off");
                             try
-                                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                                 if ~isequal(index, [])
                                     if numel(app.ExpDimsSegmenter) ~= 2
                                         mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
@@ -556,7 +556,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             mask_overlay_Yellow.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
                             try
-                                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                                 if numel(app.ExpDimsSegmenter) ~= 2
                                     app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
                                 else
@@ -1007,6 +1007,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
 
                 % Update DSC and Registration tab drop down menus
                 app.DropDownItemsSavedOnly = cat(1, app.DropDownItemsSavedOnly, exp_ID);
@@ -1014,7 +1015,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
-                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
                 uiconfirm(app.BrukKitAlphav0832UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -1568,6 +1568,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+            app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -1616,11 +1617,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
-                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
@@ -1808,6 +1809,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+            app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -3002,7 +3004,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ROI_name = inputdlg('Enter ROI Name', 'Add New ROI', [1 40]);
 
             % Check for empty/duplicate name input
-            if ~isequal(ROI_name, {''}) & ~any(contains(app.ROIIdentifiers,ROI_name)) %#ok<AND2> 
+            if ~isequal(ROI_name, {''}) & ~any(strcmp(app.ROIIdentifiers,ROI_name)) %#ok<AND2> 
                 app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROI_name);
                 app.ROIListListBox.Items = app.ROIIdentifiers;
                 app.ROIListListBox.Value = ROI_name;
@@ -3023,7 +3025,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function DeleteROIButtonPushed(app, event)
             try
                 % Find ROI index
-                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                 % Delete ROI identifier
                 app.ROIIdentifiers(index) = [];
                 app.ROIListListBox.Items = app.ROIIdentifiers;
@@ -3042,7 +3044,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ResetROISliceButtonPushed(app, event)
             try
                  % Find ROI index
-                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                 % Reset ROI slice
                 if numel(app.ExpDimsSegmenter) ~= 2
                     app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index) = false(app.ExpDimsSegmenter(1:2));
@@ -3211,7 +3213,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         end
                     case 'ROI'
                         % Find selected ROI index
-                        index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                        index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                         switch app.ROI_OperationID
                             case 'add'
                                 added_Mask = app.FreeROI.createMask(app.SegmenterImage);
@@ -4750,8 +4752,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 return
             end
             
-            % Get image data, check dims, initialize viewer3d parent object 
-            app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
+            % Get image data, check dims, initialize viewer3d parent object
+            try
+                app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
+            catch
+                app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));     
+            end
             imdata_size = size(app.ViewerImageData);
             if numel(imdata_size)~=3
                 app.RenderingStyleDropDown.Enable = 'off';
@@ -4775,7 +4781,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
 
             % Get dimension scales, create triplet and update edit fields
-            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
+            try
+                app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
+            catch 
+                app.ViewerDimTriplet = [app.ExperimentPropertyTable.(5)(value) app.ExperimentPropertyTable.(6)(value) app.ExperimentPropertyTable.(7)(value)+app.ExperimentPropertyTable.(8)(value)];
+            end
             app.XEditField_Viewer.Value = app.ViewerDimTriplet(1);
             app.YEditField_Viewer.Value = app.ViewerDimTriplet(2);
             app.ZEditField_Viewer.Value = app.ViewerDimTriplet(3);
