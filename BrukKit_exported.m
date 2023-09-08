@@ -8,7 +8,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExportEnvironmentButton         matlab.ui.control.Button
         LoadBrukKitFolderButton         matlab.ui.control.Button
         LoadBrukerStudyButton           matlab.ui.control.Button
-        CreateExportFolderButton        matlab.ui.control.Button
+        CreateBrukKitFolderButton       matlab.ui.control.Button
         SaveDataButton_Preview          matlab.ui.control.Button
         ExportDataButton_Preview        matlab.ui.control.Button
         ColormapButtonGroup_Preview     matlab.ui.container.ButtonGroup
@@ -652,8 +652,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             dice_right = dice(logical(slice_mask), logical(right_hemi));
             left_area = nnz(left_hemi);
             right_area = nnz(right_hemi);
+
             if dice_left > dice_right
+                % Get area to adjust and remaining ROI area
                 area_to_adjust = nnz(slice_mask & left_hemi);
+                remaining_area = slice_mask;
+                remaining_area(slice_mask & left_hemi) = 0;
+                remaining_area = nnz(remaining_area);
                 % Use simple hemisphere scaling where area is adjusted for
                 % a factor of (contralateral area/ipsilateral area)
                 if app.HemisphereScalingFactorMenu.Checked == "on"
@@ -668,8 +673,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 elseif app.GerrietsCompressionFactorMenu.Checked == "on"
                     adj_Area = right_area+left_area-((right_area+left_area-area_to_adjust)*((right_area+left_area)/(2*right_area)));
                 end
-            else
+                % Add remaining area to edema corrected area
+                adj_Area = adj_Area + remaining_area;
+
+            elseif dice_right > dice_left
+                % Get area to adjust and remaining ROI area
                 area_to_adjust = nnz(slice_mask & right_hemi);
+                remaining_area = slice_mask;
+                remaining_area(slice_mask & right_hemi) = 0;
+                remaining_area = nnz(remaining_area);
                 % Use simple hemisphere scaling where area is adjusted for
                 % a factor of (contralateral area/ipsilateral area)
                 if app.HemisphereScalingFactorMenu.Checked == "on"
@@ -684,6 +696,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 elseif app.GerrietsCompressionFactorMenu.Checked == "on"
                     adj_Area = left_area+right_area-((left_area+right_area-area_to_adjust)*((left_area+right_area)/(2*left_area)));
                 end
+                % Add remaining area to edema corrected area
+                adj_Area = adj_Area + remaining_area;
+
+            elseif dice_right == dice_left
+                adj_Area = nnz(slice_mask);
             end
         end
 
@@ -1171,7 +1188,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
     
             % Main
             app.ExportEnvironmentButton.Enable = 'off';
-            app.CreateExportFolderButton.Enable = 'off';
+            app.CreateBrukKitFolderButton.Enable = 'off';
             % Reset UIAxes
             cla(app.UIAxes_Preview);
             app.UITable_Preview.Data=table();
@@ -1550,7 +1567,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
-            app.CreateExportFolderButton.Enable = 'on';
+            app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
             progress.Value = 1;
@@ -1790,7 +1807,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
-            app.CreateExportFolderButton.Enable = 'on';
+            app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
             progress.Value = 1;
@@ -1799,8 +1816,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
         end
 
-        % Button pushed function: CreateExportFolderButton
-        function CreateExportFolderButtonPushed(app, event)
+        % Button pushed function: CreateBrukKitFolderButton
+        function CreateBrukKitFolderButtonPushed(app, event)
             selected_path = uigetdir;
             app.ExportFolderPath = string(selected_path) + filesep + app.SubjectIDEditField.Value + "_" + app.StudyIDEditField.Value;
             figure(app.BrukKitAlphav0823UIFigure);
@@ -5240,12 +5257,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SaveDataButton_Preview.Position = [1083 469 102 22];
             app.SaveDataButton_Preview.Text = 'Save Data';
 
-            % Create CreateExportFolderButton
-            app.CreateExportFolderButton = uibutton(app.MainTab, 'push');
-            app.CreateExportFolderButton.ButtonPushedFcn = createCallbackFcn(app, @CreateExportFolderButtonPushed, true);
-            app.CreateExportFolderButton.Enable = 'off';
-            app.CreateExportFolderButton.Position = [977 524 127 22];
-            app.CreateExportFolderButton.Text = 'Create Export Folder';
+            % Create CreateBrukKitFolderButton
+            app.CreateBrukKitFolderButton = uibutton(app.MainTab, 'push');
+            app.CreateBrukKitFolderButton.ButtonPushedFcn = createCallbackFcn(app, @CreateBrukKitFolderButtonPushed, true);
+            app.CreateBrukKitFolderButton.Enable = 'off';
+            app.CreateBrukKitFolderButton.Tooltip = {'Creates a BrukKit folder used as a directory for all data/environment exports.'};
+            app.CreateBrukKitFolderButton.Position = [954 523 130 23];
+            app.CreateBrukKitFolderButton.Text = 'Create BrukKit Folder';
 
             % Create LoadBrukerStudyButton
             app.LoadBrukerStudyButton = uibutton(app.MainTab, 'push');
