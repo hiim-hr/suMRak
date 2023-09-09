@@ -184,27 +184,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectVolumetryDropDown         matlab.ui.control.DropDown
         SelectExperimentForVolumetryLabel  matlab.ui.control.Label
         RegistrationTab                 matlab.ui.container.Tab
+        TimeSeriesAlignmentPanel        matlab.ui.container.Panel
+        ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
+        ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
         SliceSlider_Registration        matlab.ui.control.Slider
         SliceSliderLabel_Registration   matlab.ui.control.Label
         SliceSpinner_Registration       matlab.ui.control.Spinner
         ColormapButtonGroup_Registration  matlab.ui.container.ButtonGroup
         TurboButton_Registration        matlab.ui.control.RadioButton
         GreyscaleButton_Registration    matlab.ui.control.RadioButton
-        RegistrationViewerButton        matlab.ui.control.Button
-        DataavailableforregistrationonlyaftersegmentationLabel  matlab.ui.control.Label
         ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
-        ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
-        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
-        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
+        StandardAtlasRegistrationPanel  matlab.ui.container.Panel
         SelectparameterDropDown         matlab.ui.control.DropDown
         SelectparameterLabel            matlab.ui.control.Label
         UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
-        RegisterButton                  matlab.ui.control.Button
-        SelectmovingDropDown            matlab.ui.control.DropDown
-        SelectmovingLabel               matlab.ui.control.Label
         SelectfixedDropDown             matlab.ui.control.DropDown
         SelectfixedLabel                matlab.ui.control.Label
+        SelectmovingDropDown            matlab.ui.control.DropDown
+        SelectmovingLabel               matlab.ui.control.Label
+        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
+        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
+        RegistrationViewerButton        matlab.ui.control.Button
+        ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
+        RegisterButton                  matlab.ui.control.Button
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
         FAIRpASLMappingoptionsPanel     matlab.ui.container.Panel
@@ -542,7 +545,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
                             hold(app.UIAxes_Segmenter, "off");
                             try
-                                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                                 if ~isequal(index, [])
                                     if numel(app.ExpDimsSegmenter) ~= 2
                                         mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
@@ -558,7 +561,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             mask_overlay_Yellow.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
                             try
-                                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                                 if numel(app.ExpDimsSegmenter) ~= 2
                                     app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
                                 else
@@ -1009,6 +1012,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
 
                 % Update DSC and Registration tab drop down menus
                 app.DropDownItemsSavedOnly = cat(1, app.DropDownItemsSavedOnly, exp_ID);
@@ -1016,7 +1020,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
-                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
                 uiconfirm(app.BrukKitAlphav0832UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
@@ -1570,6 +1573,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+            app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -1618,11 +1622,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectfixedDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectmovingDropDown.Items = app.DropDownItemsSavedOnly;
                 app.SelectparameterDropDown.Items = app.DropDownItemsSavedOnly;
-                app.Select3DViewerDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
@@ -1810,6 +1814,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+            app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
             
             % close the dialog box
@@ -3004,7 +3009,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ROI_name = inputdlg('Enter ROI Name', 'Add New ROI', [1 40]);
 
             % Check for empty/duplicate name input
-            if ~isequal(ROI_name, {''}) & ~any(contains(app.ROIIdentifiers,ROI_name)) %#ok<AND2> 
+            if ~isequal(ROI_name, {''}) & ~any(strcmp(app.ROIIdentifiers,ROI_name)) %#ok<AND2> 
                 app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROI_name);
                 app.ROIListListBox.Items = app.ROIIdentifiers;
                 app.ROIListListBox.Value = ROI_name;
@@ -3025,7 +3030,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function DeleteROIButtonPushed(app, event)
             try
                 % Find ROI index
-                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                 % Delete ROI identifier
                 app.ROIIdentifiers(index) = [];
                 app.ROIListListBox.Items = app.ROIIdentifiers;
@@ -3044,7 +3049,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ResetROISliceButtonPushed(app, event)
             try
                  % Find ROI index
-                index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                 % Reset ROI slice
                 if numel(app.ExpDimsSegmenter) ~= 2
                     app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index) = false(app.ExpDimsSegmenter(1:2));
@@ -3213,7 +3218,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         end
                     case 'ROI'
                         % Find selected ROI index
-                        index = find(contains(app.ROIIdentifiers,app.ROIListListBox.Value));
+                        index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
                         switch app.ROI_OperationID
                             case 'add'
                                 added_Mask = app.FreeROI.createMask(app.SegmenterImage);
@@ -3611,7 +3616,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: SelectfixedDropDown
+        % Callback function: not associated with a component
         function SelectfixedDropDownValueChanged(app, event)
             if app.SelectfixedDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3624,7 +3629,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Value changed function: SelectmovingDropDown
+        % Callback function: not associated with a component
         function SelectmovingDropDownValueChanged(app, event)
             if app.SelectmovingDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3637,7 +3642,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Value changed function: UsedifferentparametermapCheckBox
+        % Callback function: not associated with a component
         function UsedifferentparametermapCheckBoxValueChanged(app, event)
 
             if app.UsedifferentparametermapCheckBox.Value == 1
@@ -3649,7 +3654,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Value changed function: SelectparameterDropDown
+        % Callback function: not associated with a component
         function SelectparameterDropDownValueChanged(app, event)
             if app.SelectparameterDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3662,7 +3667,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Button pushed function: RegistrationViewerButton
+        % Callback function: not associated with a component
         function RegistrationViewerButtonPushed(app, event)
             % Check for valid selections
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
@@ -3691,7 +3696,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: ManualinstructioninputCheckBox
+        % Callback function: not associated with a component
         function ManualinstructioninputCheckBoxValueChanged(app, event)
             value = app.ManualinstructioninputCheckBox.Value;
                
@@ -3702,7 +3707,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: RegisterButton
+        % Callback function: not associated with a component
         function RegisterButtonPushed(app, event)
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0832UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
@@ -3848,7 +3853,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress)
         end
 
-        % Value changing function: SliceSlider_Registration
+        % Callback function: not associated with a component
         function SliceSlider_RegistrationValueChanging(app, event)
             event.Source.Value = round(event.Value);
             app.SliceSpinner_Registration.Value = event.Source.Value;
@@ -3856,20 +3861,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageRegistration(app);
         end
 
-        % Value changed function: SliceSpinner_Registration
+        % Callback function: not associated with a component
         function SliceSpinner_RegistrationValueChanged(app, event)
             app.SliceSlider_Registration.Value = app.SliceSpinner_Registration.Value;
 
             RefreshImageRegistration(app);
         end
 
-        % Selection changed function: ColormapButtonGroup_Registration
+        % Callback function: not associated with a component
         function ColormapButtonGroup_RegistrationSelectionChanged(app, event)
 
             RefreshImageRegistration(app);
         end
 
-        % Button pushed function: ExportDataButton_Registration
+        % Callback function: not associated with a component
         function ExportDataButton_RegistrationPushed(app, event)
             
             ExportImageData(app, 'Registration');
@@ -3878,7 +3883,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             uiconfirm(app.BrukKitAlphav0832UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
-        % Button pushed function: SaveRegisteredDataButton
+        % Callback function: not associated with a component
         function SaveRegisteredDataButtonPushed(app, event)
             SaveData(app, 'Registration');
         end
@@ -4752,8 +4757,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 return
             end
             
-            % Get image data, check dims, initialize viewer3d parent object 
-            app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
+            % Get image data, check dims, initialize viewer3d parent object
+            try
+                app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
+            catch
+                app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));     
+            end
             imdata_size = size(app.ViewerImageData);
             if numel(imdata_size)~=3
                 app.RenderingStyleDropDown.Enable = 'off';
@@ -4777,7 +4786,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
 
             % Get dimension scales, create triplet and update edit fields
-            app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
+            try
+                app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
+            catch 
+                app.ViewerDimTriplet = [app.ExperimentPropertyTable.(5)(value) app.ExperimentPropertyTable.(6)(value) app.ExperimentPropertyTable.(7)(value)+app.ExperimentPropertyTable.(8)(value)];
+            end
             app.XEditField_Viewer.Value = app.ViewerDimTriplet(1);
             app.YEditField_Viewer.Value = app.ViewerDimTriplet(2);
             app.ZEditField_Viewer.Value = app.ViewerDimTriplet(3);
@@ -6112,108 +6125,98 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Registration.Box = 'on';
             app.UIAxes_Registration.Position = [5 66 903 627];
 
-            % Create SelectfixedLabel
-            app.SelectfixedLabel = uilabel(app.RegistrationTab);
-            app.SelectfixedLabel.HorizontalAlignment = 'right';
-            app.SelectfixedLabel.Position = [1023 524 137 22];
-            app.SelectfixedLabel.Text = 'Select Fixed Image Data';
-
-            % Create SelectfixedDropDown
-            app.SelectfixedDropDown = uidropdown(app.RegistrationTab);
-            app.SelectfixedDropDown.Items = {'None'};
-            app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
-            app.SelectfixedDropDown.Placeholder = 'None';
-            app.SelectfixedDropDown.Position = [959 490 264 21];
-            app.SelectfixedDropDown.Value = 'None';
-
-            % Create SelectmovingLabel
-            app.SelectmovingLabel = uilabel(app.RegistrationTab);
-            app.SelectmovingLabel.HorizontalAlignment = 'right';
-            app.SelectmovingLabel.Position = [1018 599 146 22];
-            app.SelectmovingLabel.Text = 'Select Moving Image Data';
-
-            % Create SelectmovingDropDown
-            app.SelectmovingDropDown = uidropdown(app.RegistrationTab);
-            app.SelectmovingDropDown.Items = {'None'};
-            app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
-            app.SelectmovingDropDown.Tooltip = {''};
-            app.SelectmovingDropDown.Placeholder = 'None';
-            app.SelectmovingDropDown.Position = [959 568 264 21];
-            app.SelectmovingDropDown.Value = 'None';
+            % Create StandardAtlasRegistrationPanel
+            app.StandardAtlasRegistrationPanel = uipanel(app.RegistrationTab);
+            app.StandardAtlasRegistrationPanel.BorderType = 'none';
+            app.StandardAtlasRegistrationPanel.TitlePosition = 'centertop';
+            app.StandardAtlasRegistrationPanel.Position = [917 94 349 500];
 
             % Create RegisterButton
-            app.RegisterButton = uibutton(app.RegistrationTab, 'push');
-            app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
-            app.RegisterButton.Position = [1041 107 100 22];
+            app.RegisterButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.RegisterButton.Position = [126 14 100 22];
             app.RegisterButton.Text = 'Register';
 
-            % Create UsedifferentparametermapCheckBox
-            app.UsedifferentparametermapCheckBox = uicheckbox(app.RegistrationTab);
-            app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
-            app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
-            app.UsedifferentparametermapCheckBox.Position = [1007 423 175 22];
+            % Create ManualinstructioninputCheckBox
+            app.ManualinstructioninputCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
+            app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
+            app.ManualinstructioninputCheckBox.Position = [102 52 149 22];
 
-            % Create SelectparameterLabel
-            app.SelectparameterLabel = uilabel(app.RegistrationTab);
-            app.SelectparameterLabel.HorizontalAlignment = 'center';
-            app.SelectparameterLabel.Position = [1009 389 164 22];
-            app.SelectparameterLabel.Text = 'Select Parameter Image Data';
-
-            % Create SelectparameterDropDown
-            app.SelectparameterDropDown = uidropdown(app.RegistrationTab);
-            app.SelectparameterDropDown.Items = {'None'};
-            app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
-            app.SelectparameterDropDown.Enable = 'off';
-            app.SelectparameterDropDown.Placeholder = 'None';
-            app.SelectparameterDropDown.Position = [959 360 264 21];
-            app.SelectparameterDropDown.Value = 'None';
+            % Create RegistrationViewerButton
+            app.RegistrationViewerButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.RegistrationViewerButton.Position = [106 222 140 22];
+            app.RegistrationViewerButton.Text = 'Registration Viewer';
 
             % Create RegistrationInstructionsTextAreaLabel
-            app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationTab);
+            app.RegistrationInstructionsTextAreaLabel = uilabel(app.StandardAtlasRegistrationPanel);
             app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'center';
-            app.RegistrationInstructionsTextAreaLabel.Position = [1024 280 134 22];
+            app.RegistrationInstructionsTextAreaLabel.Position = [109 187 134 22];
             app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
 
             % Create RegistrationInstructionsTextArea
-            app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationTab);
+            app.RegistrationInstructionsTextArea = uitextarea(app.StandardAtlasRegistrationPanel);
             app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [931 181 320 92];
+            app.RegistrationInstructionsTextArea.Position = [16 88 320 92];
 
-            % Create ManualinstructioninputCheckBox
-            app.ManualinstructioninputCheckBox = uicheckbox(app.RegistrationTab);
-            app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
-            app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
-            app.ManualinstructioninputCheckBox.Position = [1017 145 149 22];
+            % Create SelectmovingLabel
+            app.SelectmovingLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.SelectmovingLabel.HorizontalAlignment = 'right';
+            app.SelectmovingLabel.Position = [103 475 146 22];
+            app.SelectmovingLabel.Text = 'Select Moving Image Data';
+
+            % Create SelectmovingDropDown
+            app.SelectmovingDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
+            app.SelectmovingDropDown.Items = {'None'};
+            app.SelectmovingDropDown.Tooltip = {''};
+            app.SelectmovingDropDown.Placeholder = 'None';
+            app.SelectmovingDropDown.Position = [44 444 264 21];
+            app.SelectmovingDropDown.Value = 'None';
+
+            % Create SelectfixedLabel
+            app.SelectfixedLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.SelectfixedLabel.HorizontalAlignment = 'right';
+            app.SelectfixedLabel.Position = [108 400 137 22];
+            app.SelectfixedLabel.Text = 'Select Fixed Image Data';
+
+            % Create SelectfixedDropDown
+            app.SelectfixedDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
+            app.SelectfixedDropDown.Items = {'None'};
+            app.SelectfixedDropDown.Placeholder = 'None';
+            app.SelectfixedDropDown.Position = [44 366 264 21];
+            app.SelectfixedDropDown.Value = 'None';
+
+            % Create UsedifferentparametermapCheckBox
+            app.UsedifferentparametermapCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
+            app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
+            app.UsedifferentparametermapCheckBox.Position = [92 322 175 22];
+
+            % Create SelectparameterLabel
+            app.SelectparameterLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.SelectparameterLabel.HorizontalAlignment = 'center';
+            app.SelectparameterLabel.Position = [94 296 164 22];
+            app.SelectparameterLabel.Text = 'Select Parameter Image Data';
+
+            % Create SelectparameterDropDown
+            app.SelectparameterDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
+            app.SelectparameterDropDown.Items = {'None'};
+            app.SelectparameterDropDown.Enable = 'off';
+            app.SelectparameterDropDown.Placeholder = 'None';
+            app.SelectparameterDropDown.Position = [44 267 264 21];
+            app.SelectparameterDropDown.Value = 'None';
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
-            app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
             app.SaveRegisteredDataButton.Enable = 'off';
             app.SaveRegisteredDataButton.Position = [1021 56 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportDataButton_Registration
             app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
-            app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
             app.ExportDataButton_Registration.Enable = 'off';
             app.ExportDataButton_Registration.Position = [1021 24 140 22];
             app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
-            % Create DataavailableforregistrationonlyaftersegmentationLabel
-            app.DataavailableforregistrationonlyaftersegmentationLabel = uilabel(app.RegistrationTab);
-            app.DataavailableforregistrationonlyaftersegmentationLabel.HorizontalAlignment = 'center';
-            app.DataavailableforregistrationonlyaftersegmentationLabel.Position = [943 639 297 42];
-            app.DataavailableforregistrationonlyaftersegmentationLabel.Text = 'Data available for registration only after segmentation!';
-
-            % Create RegistrationViewerButton
-            app.RegistrationViewerButton = uibutton(app.RegistrationTab, 'push');
-            app.RegistrationViewerButton.ButtonPushedFcn = createCallbackFcn(app, @RegistrationViewerButtonPushed, true);
-            app.RegistrationViewerButton.Position = [1021 315 140 22];
-            app.RegistrationViewerButton.Text = 'Registration Viewer';
-
             % Create ColormapButtonGroup_Registration
             app.ColormapButtonGroup_Registration = uibuttongroup(app.RegistrationTab);
-            app.ColormapButtonGroup_Registration.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_RegistrationSelectionChanged, true);
             app.ColormapButtonGroup_Registration.BorderType = 'none';
             app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Registration.Title = 'Colormap';
@@ -6234,7 +6237,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SliceSpinner_Registration
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
             app.SliceSpinner_Registration.Position = [463 24 51 22];
             app.SliceSpinner_Registration.Value = 1;
@@ -6250,11 +6252,30 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.Limits = [1 100];
             app.SliceSlider_Registration.MajorTicks = [];
             app.SliceSlider_Registration.MajorTickLabels = {};
-            app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
             app.SliceSlider_Registration.Position = [269 33 183 3];
             app.SliceSlider_Registration.Value = 1;
+
+            % Create ChooseRegistrationTypeDropDownLabel
+            app.ChooseRegistrationTypeDropDownLabel = uilabel(app.RegistrationTab);
+            app.ChooseRegistrationTypeDropDownLabel.HorizontalAlignment = 'center';
+            app.ChooseRegistrationTypeDropDownLabel.Position = [1021 642 143 22];
+            app.ChooseRegistrationTypeDropDownLabel.Text = 'Choose Registration Type';
+
+            % Create ChooseRegistrationTypeDropDown
+            app.ChooseRegistrationTypeDropDown = uidropdown(app.RegistrationTab);
+            app.ChooseRegistrationTypeDropDown.Items = {'Standard', 'Reference Atlas', 'Time-Series Alignment'};
+            app.ChooseRegistrationTypeDropDown.Tooltip = {''};
+            app.ChooseRegistrationTypeDropDown.Position = [981 614 222 22];
+            app.ChooseRegistrationTypeDropDown.Value = 'Standard';
+
+            % Create TimeSeriesAlignmentPanel
+            app.TimeSeriesAlignmentPanel = uipanel(app.RegistrationTab);
+            app.TimeSeriesAlignmentPanel.BorderType = 'none';
+            app.TimeSeriesAlignmentPanel.TitlePosition = 'centertop';
+            app.TimeSeriesAlignmentPanel.Visible = 'off';
+            app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -7024,9 +7045,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetInstructionsMenu = uimenu(app.ContextMenu_RegistrationInstructions);
             app.ResetInstructionsMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetInstructionsMenuSelected, true);
             app.ResetInstructionsMenu.Text = 'Reset Instructions';
-            
-            % Assign app.ContextMenu_RegistrationInstructions
-            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
 
             % Show the figure after all components are created
             app.BrukKitAlphav0832UIFigure.Visible = 'on';
@@ -7039,26 +7057,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Construct app
         function app = BrukKit_exported
 
-            runningApp = getRunningApp(app);
+            % Create UIFigure and components
+            createComponents(app)
 
-            % Check for running singleton app
-            if isempty(runningApp)
+            % Register the app with App Designer
+            registerApp(app, app.BrukKitAlphav0832UIFigure)
 
-                % Create UIFigure and components
-                createComponents(app)
-
-                % Register the app with App Designer
-                registerApp(app, app.BrukKitAlphav0832UIFigure)
-
-                % Execute the startup function
-                runStartupFcn(app, @StartUpFcn)
-            else
-
-                % Focus the running singleton app
-                figure(runningApp.BrukKitAlphav0832UIFigure)
-
-                app = runningApp;
-            end
+            % Execute the startup function
+            runStartupFcn(app, @StartUpFcn)
 
             if nargout == 0
                 clear app
