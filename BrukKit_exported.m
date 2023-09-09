@@ -56,23 +56,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PreviewLabel                    matlab.ui.control.Label
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
-        ROISegmentationToolsPanel       matlab.ui.container.Panel
-        VolROISegmentationToolsButton   matlab.ui.control.Button
-        LoadExternalROIPackButton       matlab.ui.control.Button
-        ImageshownSwitch_ROI            matlab.ui.control.Switch
-        ImageshownSwitchLabel_ROI       matlab.ui.control.Label
-        ResetROISliceButton             matlab.ui.control.Button
-        DeleteROIButton                 matlab.ui.control.Button
-        AddROIButton                    matlab.ui.control.Button
-        ROIListListBox                  matlab.ui.control.ListBox
-        ROIListListBoxLabel             matlab.ui.control.Label
-        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
-        AutoCompleteHemispheresCheckBox  matlab.ui.control.CheckBox
-        LoadExternalHemisphereMaskButton  matlab.ui.control.Button
-        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
-        RightredButton                  matlab.ui.control.RadioButton
-        LeftblueButton                  matlab.ui.control.RadioButton
-        ResetHemispheresButton          matlab.ui.control.Button
         BrainSegmentationToolsPanel     matlab.ui.container.Panel
         VolumeSwitch                    matlab.ui.control.Switch
         ApplyMaskButton                 matlab.ui.control.Button
@@ -87,6 +70,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
         OpenMaskButton                  matlab.ui.control.Button
         DiskradiusSpinner               matlab.ui.control.Spinner
         DiskradiusSpinnerLabel          matlab.ui.control.Label
+        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
+        AutoCompleteHemispheresCheckBox  matlab.ui.control.CheckBox
+        LoadExternalHemisphereMaskButton  matlab.ui.control.Button
+        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
+        RightredButton                  matlab.ui.control.RadioButton
+        LeftblueButton                  matlab.ui.control.RadioButton
+        ResetHemispheresButton          matlab.ui.control.Button
+        ROISegmentationToolsPanel       matlab.ui.container.Panel
+        VolROISegmentationToolsButton   matlab.ui.control.Button
+        LoadExternalROIPackButton       matlab.ui.control.Button
+        ImageshownSwitch_ROI            matlab.ui.control.Switch
+        ImageshownSwitchLabel_ROI       matlab.ui.control.Label
+        ResetROISliceButton             matlab.ui.control.Button
+        DeleteROIButton                 matlab.ui.control.Button
+        AddROIButton                    matlab.ui.control.Button
+        ROIListListBox                  matlab.ui.control.ListBox
+        ROIListListBoxLabel             matlab.ui.control.Label
         SelectionToolsPanel             matlab.ui.container.Panel
         DeleteButton                    matlab.ui.control.Button
         ConfirmButton                   matlab.ui.control.Button
@@ -184,7 +184,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectVolumetryDropDown         matlab.ui.control.DropDown
         SelectExperimentForVolumetryLabel  matlab.ui.control.Label
         RegistrationTab                 matlab.ui.container.Tab
-        TimeSeriesAlignmentPanel        matlab.ui.container.Panel
         ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
         ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
         SliceSlider_Registration        matlab.ui.control.Slider
@@ -208,6 +207,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         RegistrationViewerButton        matlab.ui.control.Button
         ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
         RegisterButton                  matlab.ui.control.Button
+        TimeSeriesAlignmentPanel        matlab.ui.container.Panel
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
         FAIRpASLMappingoptionsPanel     matlab.ui.container.Panel
@@ -368,7 +368,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         MaskedImage % Masked image of current slice
         BrainMask % Binary mask of current slice brain
         GreenScreen % Mask green screen of current slice
-        VolumeSegmenterWindow % Volume segmenter window
          
         % Hemisphere segmentation
         HemisphereMask % 4D Matrix with right and left hemisphere masks stored in 4th dimension for each slice - 1 = left, 2 = right
@@ -3066,6 +3065,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageSegmenter(app);
         end
 
+        % Button pushed function: VolROISegmentationToolsButton
+        function VolROISegmentationToolsButtonPushed(app, event)
+            % app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0832UIFigure,'Title',"Please wait",...
+                 % 'Message', "Segmenting ROI Volumes...", 'Indeterminate','on');
+            % drawnow
+            
+            % app.VolROISegmentationToolsButton.Enable = 'off';
+
+            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
+            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
+            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
+            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
+            app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
+            find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value)), vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
+        end
+
         % Button pushed function: FreeButton_Add
         function FreeButton_AddPushed(app, event)
             
@@ -3621,7 +3636,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: ChooseRegistrationTypeDropDown
+        function ChooseRegistrationTypeDropDownValueChanged(app, event)
+            
+            switch app.ChooseRegistrationTypeDropDown.Value
+                case "Standard"
+                    app.StandardAtlasRegistrationPanel.Visible = 'on';
+                    app.TimeSeriesAlignmentPanel.Visible = 'off';
+                case "Reference Atlas"
+                    app.StandardAtlasRegistrationPanel.Visible = 'on';
+                    app.TimeSeriesAlignmentPanel.Visible = 'off';
+                case "Time-Series Alignment"
+                    app.StandardAtlasRegistrationPanel.Visible = 'off';
+                    app.TimeSeriesAlignmentPanel.Visible = 'on';
+            end         
+        end
+
+        % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
             if app.SelectfixedDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3634,7 +3665,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
             if app.SelectmovingDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3647,7 +3678,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: UsedifferentparametermapCheckBox
         function UsedifferentparametermapCheckBoxValueChanged(app, event)
 
             if app.UsedifferentparametermapCheckBox.Value == 1
@@ -3659,7 +3690,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
             if app.SelectparameterDropDown.Value == "None"
                 app.RegistrationInstructionsTextArea.Value = '';
@@ -3672,7 +3703,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Callback function: not associated with a component
+        % Button pushed function: RegistrationViewerButton
         function RegistrationViewerButtonPushed(app, event)
             % Check for valid selections
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
@@ -3701,7 +3732,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: ManualinstructioninputCheckBox
         function ManualinstructioninputCheckBoxValueChanged(app, event)
             value = app.ManualinstructioninputCheckBox.Value;
                
@@ -3712,7 +3743,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Callback function: not associated with a component
+        % Button pushed function: RegisterButton
         function RegisterButtonPushed(app, event)
             if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0832UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
@@ -3858,7 +3889,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress)
         end
 
-        % Callback function: not associated with a component
+        % Value changing function: SliceSlider_Registration
         function SliceSlider_RegistrationValueChanging(app, event)
             event.Source.Value = round(event.Value);
             app.SliceSpinner_Registration.Value = event.Source.Value;
@@ -3866,20 +3897,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageRegistration(app);
         end
 
-        % Callback function: not associated with a component
+        % Value changed function: SliceSpinner_Registration
         function SliceSpinner_RegistrationValueChanged(app, event)
             app.SliceSlider_Registration.Value = app.SliceSpinner_Registration.Value;
 
             RefreshImageRegistration(app);
         end
 
-        % Callback function: not associated with a component
+        % Selection changed function: ColormapButtonGroup_Registration
         function ColormapButtonGroup_RegistrationSelectionChanged(app, event)
 
             RefreshImageRegistration(app);
         end
 
-        % Callback function: not associated with a component
+        % Button pushed function: ExportDataButton_Registration
         function ExportDataButton_RegistrationPushed(app, event)
             
             ExportImageData(app, 'Registration');
@@ -3888,7 +3919,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             uiconfirm(app.BrukKitAlphav0832UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
-        % Callback function: not associated with a component
+        % Button pushed function: SaveRegisteredDataButton
         function SaveRegisteredDataButtonPushed(app, event)
             SaveData(app, 'Registration');
         end
@@ -3904,6 +3935,54 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: ResetInstructionsMenu
         function ResetInstructionsMenuSelected(app, event)
             app.RegistrationInstructionsTextArea.Value = '';
+        end
+
+        % Value changed function: ChooseMapTypeDropDown
+        function ChooseMapTypeDropDownValueChanged(app, event)
+            switch app.ChooseMapTypeDropDown.Value
+                case "DSC"
+                    app.DSCMappingOptionsPanel.Visible = 'on';
+                    app.T1OptionsPanel.Visible = 'off';
+                    app.T2OptionsPanel.Visible = 'off';
+                    % app.OptimizationOptionsPanel.Visible = 'off';
+                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
+                case "T2"
+                    app.DSCMappingOptionsPanel.Visible = 'off';
+                    app.T1OptionsPanel.Visible = 'off';
+                    app.T2OptionsPanel.Visible = 'on';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
+                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
+                    % t2Position = app.T2OptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = t2Position(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
+                case "T1"
+                    app.DSCMappingOptionsPanel.Visible = 'off';
+                    app.T1OptionsPanel.Visible = 'on';
+                    app.T2OptionsPanel.Visible = 'off';
+                    app.CalculateT1mapButton.Visible = 'on';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
+                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
+                    % t1Position = app.T1OptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = t1Position(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
+                case "pASL"
+                    app.DSCMappingOptionsPanel.Visible = 'off';
+                    app.T1OptionsPanel.Visible = 'on';
+                    app.T2OptionsPanel.Visible = 'off';
+                    app.CalculateT1mapButton.Visible = 'off';
+                    % app.OptimizationOptionsPanel.Visible = 'on';
+                    t1Position = app.T1OptionsPanel.Position;
+                    pASLPosition = app.OptimizationOptionsPanel.Position;
+                    pASLPosition(2) = t1Position(2)-pASLPosition(4);
+                    app.FAIRpASLMappingoptionsPanel.Position = pASLPosition;
+                    app.FAIRpASLMappingoptionsPanel.Visible = 'on';
+                    % aslPosition = app.FAIRpASLMappingoptionsPanel.Position;
+                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
+                    % optimizationPosition(2) = aslPosition(2)-optimizationPosition(4);
+                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
+            end
         end
 
         % Value changed function: SelectPreMapDropDown
@@ -4153,54 +4232,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Spinner_PreMap.Value = temp_value;
 
             RefreshImagePreMap(app);
-        end
-
-        % Value changed function: ChooseMapTypeDropDown
-        function ChooseMapTypeDropDownValueChanged(app, event)
-            switch app.ChooseMapTypeDropDown.Value
-                case "DSC"
-                    app.DSCMappingOptionsPanel.Visible = 'on';
-                    app.T1OptionsPanel.Visible = 'off';
-                    app.T2OptionsPanel.Visible = 'off';
-                    % app.OptimizationOptionsPanel.Visible = 'off';
-                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                case "T2"
-                    app.DSCMappingOptionsPanel.Visible = 'off';
-                    app.T1OptionsPanel.Visible = 'off';
-                    app.T2OptionsPanel.Visible = 'on';
-                    % app.OptimizationOptionsPanel.Visible = 'on';
-                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                    % t2Position = app.T2OptionsPanel.Position;
-                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    % optimizationPosition(2) = t2Position(2)-optimizationPosition(4);
-                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
-                case "T1"
-                    app.DSCMappingOptionsPanel.Visible = 'off';
-                    app.T1OptionsPanel.Visible = 'on';
-                    app.T2OptionsPanel.Visible = 'off';
-                    app.CalculateT1mapButton.Visible = 'on';
-                    % app.OptimizationOptionsPanel.Visible = 'on';
-                    app.FAIRpASLMappingoptionsPanel.Visible = 'off';
-                    % t1Position = app.T1OptionsPanel.Position;
-                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    % optimizationPosition(2) = t1Position(2)-optimizationPosition(4);
-                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
-                case "pASL"
-                    app.DSCMappingOptionsPanel.Visible = 'off';
-                    app.T1OptionsPanel.Visible = 'on';
-                    app.T2OptionsPanel.Visible = 'off';
-                    app.CalculateT1mapButton.Visible = 'off';
-                    % app.OptimizationOptionsPanel.Visible = 'on';
-                    t1Position = app.T1OptionsPanel.Position;
-                    pASLPosition = app.OptimizationOptionsPanel.Position;
-                    pASLPosition(2) = t1Position(2)-pASLPosition(4);
-                    app.FAIRpASLMappingoptionsPanel.Position = pASLPosition;
-                    app.FAIRpASLMappingoptionsPanel.Visible = 'on';
-                    % aslPosition = app.FAIRpASLMappingoptionsPanel.Position;
-                    % optimizationPosition = app.OptimizationOptionsPanel.Position;
-                    % optimizationPosition(2) = aslPosition(2)-optimizationPosition(4);
-                    % app.OptimizationOptionsPanel.Position = optimizationPosition;
-            end
         end
 
         % Button pushed function: AdvancedSettingsButton
@@ -4958,6 +4989,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
         end
+<<<<<<< HEAD
 
         % Button pushed function: VolROISegmentationToolsButton
         function VolROISegmentationToolsButtonPushed(app, event)
@@ -4974,6 +5006,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
                 app.ROIIdentifiers, vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
         end
+=======
+>>>>>>> 92f634202a78a840dd4f5a23e36e7c6d14c839c0
     end
 
     % Component initialization
@@ -5506,7 +5540,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectionToolsPanel.TitlePosition = 'centertop';
             app.SelectionToolsPanel.Title = 'Selection Tools';
             app.SelectionToolsPanel.Visible = 'off';
-            app.SelectionToolsPanel.Position = [1050 86 149 140];
+            app.SelectionToolsPanel.Position = [1050 82 149 140];
 
             % Create FreeButton_Add
             app.FreeButton_Add = uibutton(app.SelectionToolsPanel, 'push');
@@ -5545,6 +5579,114 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DeleteButton.Icon = 'x icon.png';
             app.DeleteButton.Position = [81 19 27 22];
             app.DeleteButton.Text = '';
+
+            % Create ROISegmentationToolsPanel
+            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.ROISegmentationToolsPanel.BorderType = 'none';
+            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
+            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
+            app.ROISegmentationToolsPanel.Visible = 'off';
+            app.ROISegmentationToolsPanel.Position = [998 221 253 319];
+
+            % Create ROIListListBoxLabel
+            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
+            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
+            app.ROIListListBoxLabel.Position = [103 245 49 22];
+            app.ROIListListBoxLabel.Text = 'ROI List';
+
+            % Create ROIListListBox
+            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
+            app.ROIListListBox.Items = {};
+            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
+            app.ROIListListBox.Position = [35 157 188 86];
+            app.ROIListListBox.Value = {};
+
+            % Create AddROIButton
+            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
+            app.AddROIButton.Position = [24 74 100 22];
+            app.AddROIButton.Text = 'Add ROI';
+
+            % Create DeleteROIButton
+            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
+            app.DeleteROIButton.Position = [134 74 100 22];
+            app.DeleteROIButton.Text = 'Delete ROI';
+
+            % Create ResetROISliceButton
+            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
+            app.ResetROISliceButton.Position = [77 43 101 22];
+            app.ResetROISliceButton.Text = 'Reset ROI Slice';
+
+            % Create ImageshownSwitchLabel_ROI
+            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
+            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
+            app.ImageshownSwitchLabel_ROI.Position = [90 101 77 22];
+            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
+
+            % Create ImageshownSwitch_ROI
+            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
+            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
+            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
+            app.ImageshownSwitch_ROI.Position = [105 130 45 20];
+            app.ImageshownSwitch_ROI.Value = 'Overlay';
+
+            % Create LoadExternalROIPackButton
+            app.LoadExternalROIPackButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.LoadExternalROIPackButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalROIPackButtonPushed, true);
+            app.LoadExternalROIPackButton.Position = [52 269 154 22];
+            app.LoadExternalROIPackButton.Text = 'Load External ROI Pack';
+
+            % Create VolROISegmentationToolsButton
+            app.VolROISegmentationToolsButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.VolROISegmentationToolsButton.ButtonPushedFcn = createCallbackFcn(app, @VolROISegmentationToolsButtonPushed, true);
+            app.VolROISegmentationToolsButton.Position = [46 12 164 23];
+            app.VolROISegmentationToolsButton.Text = '3D ROI Segmentation Tools';
+
+            % Create HemisphereSegmentationToolsPanel
+            app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.HemisphereSegmentationToolsPanel.BorderType = 'none';
+            app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
+            app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
+            app.HemisphereSegmentationToolsPanel.Visible = 'off';
+            app.HemisphereSegmentationToolsPanel.Position = [998 339 253 201];
+
+            % Create ResetHemispheresButton
+            app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
+            app.ResetHemispheresButton.Position = [67 10 121 22];
+            app.ResetHemispheresButton.Text = 'Reset Hemispheres';
+
+            % Create HemisphereButtonGroup
+            app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
+            app.HemisphereButtonGroup.BorderType = 'none';
+            app.HemisphereButtonGroup.TitlePosition = 'centertop';
+            app.HemisphereButtonGroup.Title = 'Hemisphere ';
+            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
+            app.HemisphereButtonGroup.Position = [78 64 100 74];
+
+            % Create LeftblueButton
+            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.LeftblueButton.Text = 'Left - blue';
+            app.LeftblueButton.Position = [11 29 75 22];
+            app.LeftblueButton.Value = true;
+
+            % Create RightredButton
+            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.RightredButton.Text = 'Right - red';
+            app.RightredButton.Position = [11 7 78 22];
+
+            % Create LoadExternalHemisphereMaskButton
+            app.LoadExternalHemisphereMaskButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.LoadExternalHemisphereMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalHemisphereMaskButtonPushed, true);
+            app.LoadExternalHemisphereMaskButton.Position = [32 151 191 22];
+            app.LoadExternalHemisphereMaskButton.Text = 'Load External Hemisphere Mask';
+
+            % Create AutoCompleteHemispheresCheckBox
+            app.AutoCompleteHemispheresCheckBox = uicheckbox(app.HemisphereSegmentationToolsPanel);
+            app.AutoCompleteHemispheresCheckBox.Text = 'Auto-Complete Hemispheres';
+            app.AutoCompleteHemispheresCheckBox.Position = [40 41 176 22];
 
             % Create BrainSegmentationToolsPanel
             app.BrainSegmentationToolsPanel = uipanel(app.SegmenterTab);
@@ -5609,14 +5751,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ImageshownSwitchLabel
             app.ImageshownSwitchLabel = uilabel(app.BrainSegmentationToolsPanel);
             app.ImageshownSwitchLabel.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel.Position = [93 236 77 22];
+            app.ImageshownSwitchLabel.Position = [93 232 77 22];
             app.ImageshownSwitchLabel.Text = {'Image shown'; ''};
 
             % Create ImageshownSwitch_Brain
             app.ImageshownSwitch_Brain = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
             app.ImageshownSwitch_Brain.Items = {'Overlay', 'Masked'};
             app.ImageshownSwitch_Brain.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_BrainValueChanged, true);
-            app.ImageshownSwitch_Brain.Position = [106 216 45 20];
+            app.ImageshownSwitch_Brain.Position = [106 212 45 20];
             app.ImageshownSwitch_Brain.Value = 'Overlay';
 
             % Create ResetSliceButton
@@ -5635,115 +5777,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.VolumeSwitch = uiswitch(app.BrainSegmentationToolsPanel, 'slider');
             app.VolumeSwitch.Items = {'2D', '3D'};
             app.VolumeSwitch.ValueChangedFcn = createCallbackFcn(app, @VolumeSwitchValueChanged, true);
-            app.VolumeSwitch.Position = [107 147 45 20];
+            app.VolumeSwitch.Position = [107 145 45 20];
             app.VolumeSwitch.Value = '2D';
-
-            % Create HemisphereSegmentationToolsPanel
-            app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
-            app.HemisphereSegmentationToolsPanel.BorderType = 'none';
-            app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
-            app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
-            app.HemisphereSegmentationToolsPanel.Visible = 'off';
-            app.HemisphereSegmentationToolsPanel.Position = [998 339 253 201];
-
-            % Create ResetHemispheresButton
-            app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
-            app.ResetHemispheresButton.Position = [67 10 121 22];
-            app.ResetHemispheresButton.Text = 'Reset Hemispheres';
-
-            % Create HemisphereButtonGroup
-            app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
-            app.HemisphereButtonGroup.BorderType = 'none';
-            app.HemisphereButtonGroup.TitlePosition = 'centertop';
-            app.HemisphereButtonGroup.Title = 'Hemisphere ';
-            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.HemisphereButtonGroup.Position = [78 64 100 74];
-
-            % Create LeftblueButton
-            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.LeftblueButton.Text = 'Left - blue';
-            app.LeftblueButton.Position = [11 29 75 22];
-            app.LeftblueButton.Value = true;
-
-            % Create RightredButton
-            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.RightredButton.Text = 'Right - red';
-            app.RightredButton.Position = [11 7 78 22];
-
-            % Create LoadExternalHemisphereMaskButton
-            app.LoadExternalHemisphereMaskButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.LoadExternalHemisphereMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalHemisphereMaskButtonPushed, true);
-            app.LoadExternalHemisphereMaskButton.Position = [32 151 191 22];
-            app.LoadExternalHemisphereMaskButton.Text = 'Load External Hemisphere Mask';
-
-            % Create AutoCompleteHemispheresCheckBox
-            app.AutoCompleteHemispheresCheckBox = uicheckbox(app.HemisphereSegmentationToolsPanel);
-            app.AutoCompleteHemispheresCheckBox.Text = 'Auto-Complete Hemispheres';
-            app.AutoCompleteHemispheresCheckBox.Position = [40 41 176 22];
-
-            % Create ROISegmentationToolsPanel
-            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
-            app.ROISegmentationToolsPanel.BorderType = 'none';
-            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
-            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
-            app.ROISegmentationToolsPanel.Position = [998 231 253 309];
-
-            % Create ROIListListBoxLabel
-            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
-            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
-            app.ROIListListBoxLabel.Position = [103 237 49 16];
-            app.ROIListListBoxLabel.Text = 'ROI List';
-
-            % Create ROIListListBox
-            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
-            app.ROIListListBox.Items = {};
-            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
-            app.ROIListListBox.Position = [35 147 188 86];
-            app.ROIListListBox.Value = {};
-
-            % Create AddROIButton
-            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
-            app.AddROIButton.Position = [24 68 100 22];
-            app.AddROIButton.Text = 'Add ROI';
-
-            % Create DeleteROIButton
-            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
-            app.DeleteROIButton.Position = [134 68 100 22];
-            app.DeleteROIButton.Text = 'Delete ROI';
-
-            % Create ResetROISliceButton
-            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
-            app.ResetROISliceButton.Position = [79 38 101 22];
-            app.ResetROISliceButton.Text = 'Reset ROI Slice';
-
-            % Create ImageshownSwitchLabel_ROI
-            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
-            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel_ROI.Position = [88 126 77 17];
-            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
-
-            % Create ImageshownSwitch_ROI
-            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
-            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
-            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
-            app.ImageshownSwitch_ROI.Position = [106 101 45 20];
-            app.ImageshownSwitch_ROI.Value = 'Overlay';
-
-            % Create LoadExternalROIPackButton
-            app.LoadExternalROIPackButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.LoadExternalROIPackButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalROIPackButtonPushed, true);
-            app.LoadExternalROIPackButton.Position = [52 258 154 22];
-            app.LoadExternalROIPackButton.Text = 'Load External ROI Pack';
-
-            % Create VolROISegmentationToolsButton
-            app.VolROISegmentationToolsButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.VolROISegmentationToolsButton.ButtonPushedFcn = createCallbackFcn(app, @VolROISegmentationToolsButtonPushed, true);
-            app.VolROISegmentationToolsButton.Position = [48 8 164 23];
-            app.VolROISegmentationToolsButton.Text = '3D ROI Segmentation Tools';
 
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
@@ -6130,6 +6165,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Registration.Box = 'on';
             app.UIAxes_Registration.Position = [5 66 903 627];
 
+            % Create TimeSeriesAlignmentPanel
+            app.TimeSeriesAlignmentPanel = uipanel(app.RegistrationTab);
+            app.TimeSeriesAlignmentPanel.BorderType = 'none';
+            app.TimeSeriesAlignmentPanel.TitlePosition = 'centertop';
+            app.TimeSeriesAlignmentPanel.Visible = 'off';
+            app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
+
             % Create StandardAtlasRegistrationPanel
             app.StandardAtlasRegistrationPanel = uipanel(app.RegistrationTab);
             app.StandardAtlasRegistrationPanel.BorderType = 'none';
@@ -6138,16 +6180,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create RegisterButton
             app.RegisterButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
             app.RegisterButton.Position = [126 14 100 22];
             app.RegisterButton.Text = 'Register';
 
             % Create ManualinstructioninputCheckBox
             app.ManualinstructioninputCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
+            app.ManualinstructioninputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualinstructioninputCheckBoxValueChanged, true);
             app.ManualinstructioninputCheckBox.Text = 'Manual instruction input';
             app.ManualinstructioninputCheckBox.Position = [102 52 149 22];
 
             % Create RegistrationViewerButton
             app.RegistrationViewerButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.RegistrationViewerButton.ButtonPushedFcn = createCallbackFcn(app, @RegistrationViewerButtonPushed, true);
             app.RegistrationViewerButton.Position = [106 222 140 22];
             app.RegistrationViewerButton.Text = 'Registration Viewer';
 
@@ -6171,6 +6216,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectmovingDropDown
             app.SelectmovingDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
             app.SelectmovingDropDown.Items = {'None'};
+            app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
             app.SelectmovingDropDown.Tooltip = {''};
             app.SelectmovingDropDown.Placeholder = 'None';
             app.SelectmovingDropDown.Position = [44 444 264 21];
@@ -6185,12 +6231,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectfixedDropDown
             app.SelectfixedDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
             app.SelectfixedDropDown.Items = {'None'};
+            app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
             app.SelectfixedDropDown.Placeholder = 'None';
             app.SelectfixedDropDown.Position = [44 366 264 21];
             app.SelectfixedDropDown.Value = 'None';
 
             % Create UsedifferentparametermapCheckBox
             app.UsedifferentparametermapCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
+            app.UsedifferentparametermapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UsedifferentparametermapCheckBoxValueChanged, true);
             app.UsedifferentparametermapCheckBox.Text = 'Use different parameter map';
             app.UsedifferentparametermapCheckBox.Position = [92 322 175 22];
 
@@ -6203,6 +6251,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectparameterDropDown
             app.SelectparameterDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
             app.SelectparameterDropDown.Items = {'None'};
+            app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
             app.SelectparameterDropDown.Enable = 'off';
             app.SelectparameterDropDown.Placeholder = 'None';
             app.SelectparameterDropDown.Position = [44 267 264 21];
@@ -6210,18 +6259,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
+            app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
             app.SaveRegisteredDataButton.Enable = 'off';
             app.SaveRegisteredDataButton.Position = [1021 56 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportDataButton_Registration
             app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
+            app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
             app.ExportDataButton_Registration.Enable = 'off';
             app.ExportDataButton_Registration.Position = [1021 24 140 22];
             app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
             % Create ColormapButtonGroup_Registration
             app.ColormapButtonGroup_Registration = uibuttongroup(app.RegistrationTab);
+            app.ColormapButtonGroup_Registration.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_RegistrationSelectionChanged, true);
             app.ColormapButtonGroup_Registration.BorderType = 'none';
             app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Registration.Title = 'Colormap';
@@ -6242,6 +6294,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SliceSpinner_Registration
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
             app.SliceSpinner_Registration.Position = [463 24 51 22];
             app.SliceSpinner_Registration.Value = 1;
@@ -6257,6 +6310,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.Limits = [1 100];
             app.SliceSlider_Registration.MajorTicks = [];
             app.SliceSlider_Registration.MajorTickLabels = {};
+            app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
             app.SliceSlider_Registration.Position = [269 33 183 3];
@@ -6271,16 +6325,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ChooseRegistrationTypeDropDown
             app.ChooseRegistrationTypeDropDown = uidropdown(app.RegistrationTab);
             app.ChooseRegistrationTypeDropDown.Items = {'Standard', 'Reference Atlas', 'Time-Series Alignment'};
+            app.ChooseRegistrationTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ChooseRegistrationTypeDropDownValueChanged, true);
             app.ChooseRegistrationTypeDropDown.Tooltip = {''};
             app.ChooseRegistrationTypeDropDown.Position = [981 614 222 22];
             app.ChooseRegistrationTypeDropDown.Value = 'Standard';
-
-            % Create TimeSeriesAlignmentPanel
-            app.TimeSeriesAlignmentPanel = uipanel(app.RegistrationTab);
-            app.TimeSeriesAlignmentPanel.BorderType = 'none';
-            app.TimeSeriesAlignmentPanel.TitlePosition = 'centertop';
-            app.TimeSeriesAlignmentPanel.Visible = 'off';
-            app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -7050,6 +7098,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetInstructionsMenu = uimenu(app.ContextMenu_RegistrationInstructions);
             app.ResetInstructionsMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetInstructionsMenuSelected, true);
             app.ResetInstructionsMenu.Text = 'Reset Instructions';
+            
+            % Assign app.ContextMenu_RegistrationInstructions
+            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
 
             % Show the figure after all components are created
             app.BrukKitAlphav0832UIFigure.Visible = 'on';
