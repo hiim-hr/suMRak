@@ -376,8 +376,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         RedScreen % Hemisphere mask red screen for right hemi
 
         % ROI segmentation
-        ROIIdentifiers = {}; % Matrix containing added ROI Names
-        ROIMask = [];% 4D Matrix containing added ROI masks for each slice
         YellowScreen % ROI mask yellow screen
         
         % Saved segmenter data
@@ -427,6 +425,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
     properties (Access = public)
         ProgressBar % Property for storing progress dialogues when opening new windows
         DSCOptions = DSC_mri_getOptions; % DSC map calculation options
+
+        % ROI segmentation
+        ROIIdentifiers = {}; % Matrix containing added ROI Names
+        ROIMask = [];% 4D Matrix containing added ROI masks for each slice
     end
     
     methods (Access = private)
@@ -454,132 +456,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Preview);
             end
             app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
-        end
-        
-        % Segmenter UIAxes image updating
-        function RefreshImageSegmenter(app)
-            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
-            switch numel(app.ExpDimsSegmenter)
-                case 2
-                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
-                case 3
-                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
-                case 4
-                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
-                case 5
-                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
-                otherwise
-                    %error alert missing
-            end
-            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
-            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
-            switch app.CurrentSegmentationDropDown.Value
-                % Brain segmentation image updating
-                case 'Brain'
-                    switch app.ImageshownSwitch_Brain.Value
-                        case "Overlay"
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                                 
-                            try
-                                hold(app.UIAxes_Segmenter, "on");
-                                mask_Overlay = imshow(app.GreenScreen, "Parent", app.UIAxes_Segmenter);
-                                hold(app.UIAxes_Segmenter, "off");
-                                mask_Overlay.AlphaData = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)-0.8;
-                            catch
-                                return
-                            end
-                            mask_Overlay.ContextMenu = app.ContextMenu_Segmenter;
-                        case "Masked"
-                            app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
-                    end
-
-                % Hemisphere segmentation image updating
-                case 'Hemisphere'
-                    switch app.TurboButton_Segmenter.Value
-                        case true
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                        otherwise
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                    end
-                    try
-                        hold(app.UIAxes_Segmenter, "on");
-                        mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
-                        mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-                        hold(app.UIAxes_Segmenter, "off");
-                        if numel(app.ExpDimsSegmenter) ~= 2
-                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1)-0.8;
-                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2)-0.8;
-                        else
-                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,1)-0.8;
-                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,2)-0.8;
-                        end
-                    catch
-                        return
-                    end
-                    mask_overlay_Red.ContextMenu = app.ContextMenu_Segmenter;
-
-                % ROI segmentation image updating
-                case 'ROI'
-                    switch app.ImageshownSwitch_ROI.Value
-                        case "Overlay"
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                            hold(app.UIAxes_Segmenter, "on");
-                            mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
-                            hold(app.UIAxes_Segmenter, "off");
-                            try
-                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
-                                if ~isequal(index, [])
-                                    if numel(app.ExpDimsSegmenter) ~= 2
-                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
-                                    else
-                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,index)-0.8;
-                                    end
-                                else
-                                    mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
-                                end
-                            catch
-                                mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
-                            end
-                            mask_overlay_Yellow.ContextMenu = app.ContextMenu_Segmenter;
-                        case "Masked"
-                            try
-                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
-                                if numel(app.ExpDimsSegmenter) ~= 2
-                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
-                                else
-                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,index);
-                                end
-                            catch
-                                app.MaskedImage = double(app.CurrentSlice).*(false(app.ExpDimsSegmenter(1:2)));
-                            end
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
-                    end
-                otherwise
-            end
         end
         
         % Registration UIAxes image updating
@@ -1352,7 +1228,136 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
         end
-    end   
+    end
+
+    methods (Access = public)
+        
+        % Segmenter UIAxes image updating
+        function RefreshImageSegmenter(app)
+            app.ExpDimsSegmenter = size(app.OriginalSegmenterImageData);
+            switch numel(app.ExpDimsSegmenter)
+                case 2
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:);
+                case 3
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value);
+                case 4
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
+                case 5
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
+                otherwise
+                    %error alert missing
+            end
+            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
+            switch app.CurrentSegmentationDropDown.Value
+                % Brain segmentation image updating
+                case 'Brain'
+                    switch app.ImageshownSwitch_Brain.Value
+                        case "Overlay"
+                            switch app.TurboButton_Segmenter.Value
+                                case true
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                otherwise
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
+                            end
+                                 
+                            try
+                                hold(app.UIAxes_Segmenter, "on");
+                                mask_Overlay = imshow(app.GreenScreen, "Parent", app.UIAxes_Segmenter);
+                                hold(app.UIAxes_Segmenter, "off");
+                                mask_Overlay.AlphaData = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)-0.8;
+                            catch
+                                return
+                            end
+                            mask_Overlay.ContextMenu = app.ContextMenu_Segmenter;
+                        case "Masked"
+                            app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
+                            switch app.TurboButton_Segmenter.Value
+                                case true
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                otherwise
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
+                            end
+                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
+                    end
+
+                % Hemisphere segmentation image updating
+                case 'Hemisphere'
+                    switch app.TurboButton_Segmenter.Value
+                        case true
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                        otherwise
+                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
+                    end
+                    try
+                        hold(app.UIAxes_Segmenter, "on");
+                        mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
+                        mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
+                        hold(app.UIAxes_Segmenter, "off");
+                        if numel(app.ExpDimsSegmenter) ~= 2
+                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1)-0.8;
+                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2)-0.8;
+                        else
+                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,1)-0.8;
+                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,2)-0.8;
+                        end
+                    catch
+                        return
+                    end
+                    mask_overlay_Red.ContextMenu = app.ContextMenu_Segmenter;
+
+                % ROI segmentation image updating
+                case 'ROI'
+                    switch app.ImageshownSwitch_ROI.Value
+                        case "Overlay"
+                            switch app.TurboButton_Segmenter.Value
+                                case true
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                otherwise
+                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
+                            end
+                            hold(app.UIAxes_Segmenter, "on");
+                            mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
+                            hold(app.UIAxes_Segmenter, "off");
+                            try
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                if ~isequal(index, [])
+                                    if numel(app.ExpDimsSegmenter) ~= 2
+                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
+                                    else
+                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,index)-0.8;
+                                    end
+                                else
+                                    mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
+                                end
+                            catch
+                                mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
+                            end
+                            mask_overlay_Yellow.ContextMenu = app.ContextMenu_Segmenter;
+                        case "Masked"
+                            try
+                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
+                                if numel(app.ExpDimsSegmenter) ~= 2
+                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
+                                else
+                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,index);
+                                end
+                            catch
+                                app.MaskedImage = double(app.CurrentSlice).*(false(app.ExpDimsSegmenter(1:2)));
+                            end
+                            switch app.TurboButton_Segmenter.Value
+                                case true
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
+                                otherwise
+                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
+                            end
+                            app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
+                    end
+                otherwise
+            end
+        end
+    end
 
     % Callbacks that handle component events
     methods (Access = private)
@@ -4967,7 +4972,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
             slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
             app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
-                find(contains(app.ROIIdentifiers,app.ROIListListBox.Value)), vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
+                app.ROIIdentifiers, vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
         end
     end
 
@@ -7057,14 +7062,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Construct app
         function app = BrukKit_exported
 
-            % Create UIFigure and components
-            createComponents(app)
+            runningApp = getRunningApp(app);
 
-            % Register the app with App Designer
-            registerApp(app, app.BrukKitAlphav0832UIFigure)
+            % Check for running singleton app
+            if isempty(runningApp)
 
-            % Execute the startup function
-            runStartupFcn(app, @StartUpFcn)
+                % Create UIFigure and components
+                createComponents(app)
+
+                % Register the app with App Designer
+                registerApp(app, app.BrukKitAlphav0832UIFigure)
+
+                % Execute the startup function
+                runStartupFcn(app, @StartUpFcn)
+            else
+
+                % Focus the running singleton app
+                figure(runningApp.BrukKitAlphav0832UIFigure)
+
+                app = runningApp;
+            end
 
             if nargout == 0
                 clear app
