@@ -56,6 +56,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PreviewLabel                    matlab.ui.control.Label
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
+        ROISegmentationToolsPanel       matlab.ui.container.Panel
+        VolROISegmentationToolsButton   matlab.ui.control.Button
+        LoadExternalROIPackButton       matlab.ui.control.Button
+        ImageshownSwitch_ROI            matlab.ui.control.Switch
+        ImageshownSwitchLabel_ROI       matlab.ui.control.Label
+        ResetROISliceButton             matlab.ui.control.Button
+        DeleteROIButton                 matlab.ui.control.Button
+        AddROIButton                    matlab.ui.control.Button
+        ROIListListBox                  matlab.ui.control.ListBox
+        ROIListListBoxLabel             matlab.ui.control.Label
+        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
+        AutoCompleteHemispheresCheckBox  matlab.ui.control.CheckBox
+        LoadExternalHemisphereMaskButton  matlab.ui.control.Button
+        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
+        RightredButton                  matlab.ui.control.RadioButton
+        LeftblueButton                  matlab.ui.control.RadioButton
+        ResetHemispheresButton          matlab.ui.control.Button
         BrainSegmentationToolsPanel     matlab.ui.container.Panel
         VolumeSwitch                    matlab.ui.control.Switch
         ApplyMaskButton                 matlab.ui.control.Button
@@ -70,22 +87,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         OpenMaskButton                  matlab.ui.control.Button
         DiskradiusSpinner               matlab.ui.control.Spinner
         DiskradiusSpinnerLabel          matlab.ui.control.Label
-        HemisphereSegmentationToolsPanel  matlab.ui.container.Panel
-        AutoCompleteHemispheresCheckBox  matlab.ui.control.CheckBox
-        LoadExternalHemisphereMaskButton  matlab.ui.control.Button
-        HemisphereButtonGroup           matlab.ui.container.ButtonGroup
-        RightredButton                  matlab.ui.control.RadioButton
-        LeftblueButton                  matlab.ui.control.RadioButton
-        ResetHemispheresButton          matlab.ui.control.Button
-        ROISegmentationToolsPanel       matlab.ui.container.Panel
-        LoadExternalROIPackButton       matlab.ui.control.Button
-        ImageshownSwitch_ROI            matlab.ui.control.Switch
-        ImageshownSwitchLabel_ROI       matlab.ui.control.Label
-        ResetROISliceButton             matlab.ui.control.Button
-        DeleteROIButton                 matlab.ui.control.Button
-        AddROIButton                    matlab.ui.control.Button
-        ROIListListBox                  matlab.ui.control.ListBox
-        ROIListListBoxLabel             matlab.ui.control.Label
         SelectionToolsPanel             matlab.ui.container.Panel
         DeleteButton                    matlab.ui.control.Button
         ConfirmButton                   matlab.ui.control.Button
@@ -364,6 +365,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         MaskedImage % Masked image of current slice
         BrainMask % Binary mask of current slice brain
         GreenScreen % Mask green screen of current slice
+        VolumeSegmenterWindow % Volume segmenter window
          
         % Hemisphere segmentation
         HemisphereMask % 4D Matrix with right and left hemisphere masks stored in 4th dimension for each slice - 1 = left, 2 = right
@@ -4938,6 +4940,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
         end
+
+        % Button pushed function: VolROISegmentationToolsButton
+        function VolROISegmentationToolsButtonPushed(app, event)
+            % app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0832UIFigure,'Title',"Please wait",...
+                 % 'Message', "Segmenting ROI Volumes...", 'Indeterminate','on');
+            % drawnow
+            
+            % app.VolROISegmentationToolsButton.Enable = 'off';
+
+            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
+            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
+            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
+            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
+            app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
+                find(contains(app.ROIIdentifiers,app.ROIListListBox.Value)), vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
+        end
     end
 
     % Component initialization
@@ -5510,108 +5528,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DeleteButton.Position = [81 19 27 22];
             app.DeleteButton.Text = '';
 
-            % Create ROISegmentationToolsPanel
-            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
-            app.ROISegmentationToolsPanel.BorderType = 'none';
-            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
-            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
-            app.ROISegmentationToolsPanel.Visible = 'off';
-            app.ROISegmentationToolsPanel.Position = [998 231 253 309];
-
-            % Create ROIListListBoxLabel
-            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
-            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
-            app.ROIListListBoxLabel.Position = [103 228 49 22];
-            app.ROIListListBoxLabel.Text = 'ROI List';
-
-            % Create ROIListListBox
-            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
-            app.ROIListListBox.Items = {};
-            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
-            app.ROIListListBox.Position = [35 140 188 86];
-            app.ROIListListBox.Value = {};
-
-            % Create AddROIButton
-            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
-            app.AddROIButton.Position = [24 51 100 22];
-            app.AddROIButton.Text = 'Add ROI';
-
-            % Create DeleteROIButton
-            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
-            app.DeleteROIButton.Position = [134 51 100 22];
-            app.DeleteROIButton.Text = 'Delete ROI';
-
-            % Create ResetROISliceButton
-            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
-            app.ResetROISliceButton.Position = [79 17 101 22];
-            app.ResetROISliceButton.Text = 'Reset ROI Slice';
-
-            % Create ImageshownSwitchLabel_ROI
-            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
-            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
-            app.ImageshownSwitchLabel_ROI.Position = [90 80 77 22];
-            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
-
-            % Create ImageshownSwitch_ROI
-            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
-            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
-            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
-            app.ImageshownSwitch_ROI.Position = [105 109 45 20];
-            app.ImageshownSwitch_ROI.Value = 'Overlay';
-
-            % Create LoadExternalROIPackButton
-            app.LoadExternalROIPackButton = uibutton(app.ROISegmentationToolsPanel, 'push');
-            app.LoadExternalROIPackButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalROIPackButtonPushed, true);
-            app.LoadExternalROIPackButton.Position = [52 258 154 22];
-            app.LoadExternalROIPackButton.Text = 'Load External ROI Pack';
-
-            % Create HemisphereSegmentationToolsPanel
-            app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
-            app.HemisphereSegmentationToolsPanel.BorderType = 'none';
-            app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
-            app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
-            app.HemisphereSegmentationToolsPanel.Visible = 'off';
-            app.HemisphereSegmentationToolsPanel.Position = [998 339 253 201];
-
-            % Create ResetHemispheresButton
-            app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
-            app.ResetHemispheresButton.Position = [67 10 121 22];
-            app.ResetHemispheresButton.Text = 'Reset Hemispheres';
-
-            % Create HemisphereButtonGroup
-            app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
-            app.HemisphereButtonGroup.BorderType = 'none';
-            app.HemisphereButtonGroup.TitlePosition = 'centertop';
-            app.HemisphereButtonGroup.Title = 'Hemisphere ';
-            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
-            app.HemisphereButtonGroup.Position = [78 64 100 74];
-
-            % Create LeftblueButton
-            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.LeftblueButton.Text = 'Left - blue';
-            app.LeftblueButton.Position = [11 29 75 22];
-            app.LeftblueButton.Value = true;
-
-            % Create RightredButton
-            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
-            app.RightredButton.Text = 'Right - red';
-            app.RightredButton.Position = [11 7 78 22];
-
-            % Create LoadExternalHemisphereMaskButton
-            app.LoadExternalHemisphereMaskButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
-            app.LoadExternalHemisphereMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalHemisphereMaskButtonPushed, true);
-            app.LoadExternalHemisphereMaskButton.Position = [32 151 191 22];
-            app.LoadExternalHemisphereMaskButton.Text = 'Load External Hemisphere Mask';
-
-            % Create AutoCompleteHemispheresCheckBox
-            app.AutoCompleteHemispheresCheckBox = uicheckbox(app.HemisphereSegmentationToolsPanel);
-            app.AutoCompleteHemispheresCheckBox.Text = 'Auto-Complete Hemispheres';
-            app.AutoCompleteHemispheresCheckBox.Position = [40 41 176 22];
-
             % Create BrainSegmentationToolsPanel
             app.BrainSegmentationToolsPanel = uipanel(app.SegmenterTab);
             app.BrainSegmentationToolsPanel.BorderType = 'none';
@@ -5703,6 +5619,113 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.VolumeSwitch.ValueChangedFcn = createCallbackFcn(app, @VolumeSwitchValueChanged, true);
             app.VolumeSwitch.Position = [107 147 45 20];
             app.VolumeSwitch.Value = '2D';
+
+            % Create HemisphereSegmentationToolsPanel
+            app.HemisphereSegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.HemisphereSegmentationToolsPanel.BorderType = 'none';
+            app.HemisphereSegmentationToolsPanel.TitlePosition = 'centertop';
+            app.HemisphereSegmentationToolsPanel.Title = 'Hemisphere Segmentation Tools';
+            app.HemisphereSegmentationToolsPanel.Visible = 'off';
+            app.HemisphereSegmentationToolsPanel.Position = [998 339 253 201];
+
+            % Create ResetHemispheresButton
+            app.ResetHemispheresButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.ResetHemispheresButton.ButtonPushedFcn = createCallbackFcn(app, @ResetHemispheresButtonPushed, true);
+            app.ResetHemispheresButton.Position = [67 10 121 22];
+            app.ResetHemispheresButton.Text = 'Reset Hemispheres';
+
+            % Create HemisphereButtonGroup
+            app.HemisphereButtonGroup = uibuttongroup(app.HemisphereSegmentationToolsPanel);
+            app.HemisphereButtonGroup.BorderType = 'none';
+            app.HemisphereButtonGroup.TitlePosition = 'centertop';
+            app.HemisphereButtonGroup.Title = 'Hemisphere ';
+            app.HemisphereButtonGroup.BackgroundColor = [0.9412 0.9412 0.9412];
+            app.HemisphereButtonGroup.Position = [78 64 100 74];
+
+            % Create LeftblueButton
+            app.LeftblueButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.LeftblueButton.Text = 'Left - blue';
+            app.LeftblueButton.Position = [11 29 75 22];
+            app.LeftblueButton.Value = true;
+
+            % Create RightredButton
+            app.RightredButton = uiradiobutton(app.HemisphereButtonGroup);
+            app.RightredButton.Text = 'Right - red';
+            app.RightredButton.Position = [11 7 78 22];
+
+            % Create LoadExternalHemisphereMaskButton
+            app.LoadExternalHemisphereMaskButton = uibutton(app.HemisphereSegmentationToolsPanel, 'push');
+            app.LoadExternalHemisphereMaskButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalHemisphereMaskButtonPushed, true);
+            app.LoadExternalHemisphereMaskButton.Position = [32 151 191 22];
+            app.LoadExternalHemisphereMaskButton.Text = 'Load External Hemisphere Mask';
+
+            % Create AutoCompleteHemispheresCheckBox
+            app.AutoCompleteHemispheresCheckBox = uicheckbox(app.HemisphereSegmentationToolsPanel);
+            app.AutoCompleteHemispheresCheckBox.Text = 'Auto-Complete Hemispheres';
+            app.AutoCompleteHemispheresCheckBox.Position = [40 41 176 22];
+
+            % Create ROISegmentationToolsPanel
+            app.ROISegmentationToolsPanel = uipanel(app.SegmenterTab);
+            app.ROISegmentationToolsPanel.BorderType = 'none';
+            app.ROISegmentationToolsPanel.TitlePosition = 'centertop';
+            app.ROISegmentationToolsPanel.Title = 'ROI Segmentation Tools';
+            app.ROISegmentationToolsPanel.Position = [998 231 253 309];
+
+            % Create ROIListListBoxLabel
+            app.ROIListListBoxLabel = uilabel(app.ROISegmentationToolsPanel);
+            app.ROIListListBoxLabel.HorizontalAlignment = 'center';
+            app.ROIListListBoxLabel.Position = [103 237 49 16];
+            app.ROIListListBoxLabel.Text = 'ROI List';
+
+            % Create ROIListListBox
+            app.ROIListListBox = uilistbox(app.ROISegmentationToolsPanel);
+            app.ROIListListBox.Items = {};
+            app.ROIListListBox.ValueChangedFcn = createCallbackFcn(app, @ROIListListBoxValueChanged, true);
+            app.ROIListListBox.Position = [35 147 188 86];
+            app.ROIListListBox.Value = {};
+
+            % Create AddROIButton
+            app.AddROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.AddROIButton.ButtonPushedFcn = createCallbackFcn(app, @AddROIButtonPushed, true);
+            app.AddROIButton.Position = [24 68 100 22];
+            app.AddROIButton.Text = 'Add ROI';
+
+            % Create DeleteROIButton
+            app.DeleteROIButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.DeleteROIButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteROIButtonPushed, true);
+            app.DeleteROIButton.Position = [134 68 100 22];
+            app.DeleteROIButton.Text = 'Delete ROI';
+
+            % Create ResetROISliceButton
+            app.ResetROISliceButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.ResetROISliceButton.ButtonPushedFcn = createCallbackFcn(app, @ResetROISliceButtonPushed, true);
+            app.ResetROISliceButton.Position = [79 38 101 22];
+            app.ResetROISliceButton.Text = 'Reset ROI Slice';
+
+            % Create ImageshownSwitchLabel_ROI
+            app.ImageshownSwitchLabel_ROI = uilabel(app.ROISegmentationToolsPanel);
+            app.ImageshownSwitchLabel_ROI.HorizontalAlignment = 'center';
+            app.ImageshownSwitchLabel_ROI.Position = [88 126 77 17];
+            app.ImageshownSwitchLabel_ROI.Text = {'Image shown'; ''};
+
+            % Create ImageshownSwitch_ROI
+            app.ImageshownSwitch_ROI = uiswitch(app.ROISegmentationToolsPanel, 'slider');
+            app.ImageshownSwitch_ROI.Items = {'Overlay', 'Masked'};
+            app.ImageshownSwitch_ROI.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_ROIValueChanged, true);
+            app.ImageshownSwitch_ROI.Position = [106 101 45 20];
+            app.ImageshownSwitch_ROI.Value = 'Overlay';
+
+            % Create LoadExternalROIPackButton
+            app.LoadExternalROIPackButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.LoadExternalROIPackButton.ButtonPushedFcn = createCallbackFcn(app, @LoadExternalROIPackButtonPushed, true);
+            app.LoadExternalROIPackButton.Position = [52 258 154 22];
+            app.LoadExternalROIPackButton.Text = 'Load External ROI Pack';
+
+            % Create VolROISegmentationToolsButton
+            app.VolROISegmentationToolsButton = uibutton(app.ROISegmentationToolsPanel, 'push');
+            app.VolROISegmentationToolsButton.ButtonPushedFcn = createCallbackFcn(app, @VolROISegmentationToolsButtonPushed, true);
+            app.VolROISegmentationToolsButton.Position = [48 8 164 23];
+            app.VolROISegmentationToolsButton.Text = '3D ROI Segmentation Tools';
 
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
