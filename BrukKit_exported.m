@@ -376,6 +376,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % ROI segmentation
         YellowScreen % ROI mask yellow screen
+        VolumeSegmenterWindow % Volume segmenter window
         
         % Saved segmenter data
         SavedBrainMask % Saved brain mask data of current experiment
@@ -425,7 +426,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ProgressBar % Property for storing progress dialogues when opening new windows
         DSCOptions = DSC_mri_getOptions; % DSC map calculation options
 
-        % ROI segmentation
+        % ROI segmentation properties 
         ROIIdentifiers = {}; % Matrix containing added ROI Names
         ROIMask = [];% 4D Matrix containing added ROI masks for each slice
     end
@@ -3078,7 +3079,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
             slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
             app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
-            find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value)), vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
+                app.ROIIdentifiers, vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
         end
 
         % Button pushed function: FreeButton_Add
@@ -4989,25 +4990,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
         end
-<<<<<<< HEAD
-
-        % Button pushed function: VolROISegmentationToolsButton
-        function VolROISegmentationToolsButtonPushed(app, event)
-            % app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0832UIFigure,'Title',"Please wait",...
-                 % 'Message', "Segmenting ROI Volumes...", 'Indeterminate','on');
-            % drawnow
-            
-            % app.VolROISegmentationToolsButton.Enable = 'off';
-
-            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
-            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
-            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
-            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
-            app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, app.WorkingSegmenterImageData, app.ROIMask, ...
-                app.ROIIdentifiers, vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
-        end
-=======
->>>>>>> 92f634202a78a840dd4f5a23e36e7c6d14c839c0
     end
 
     % Component initialization
