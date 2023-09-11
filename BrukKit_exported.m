@@ -198,6 +198,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
+        AtlasPathEditFieldLabel         matlab.ui.control.Label
+        AtlasPathEditField              matlab.ui.control.EditField
+        ImportAtlasButton               matlab.ui.control.Button
         SelectparameterDropDown         matlab.ui.control.DropDown
         SelectparameterLabel            matlab.ui.control.Label
         UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
@@ -401,6 +404,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         MovingNDims % Number of moving image data dimensions
         FixedNDims % Number of fixed image data dimensions
         ParameterNDims % Number of parameter image data dimensions
+        AtlasImageData % Loaded reference atlas image data
         RegisteredImageData % Property for storing registered image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
         
@@ -1131,6 +1135,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Registration
             % Reset UIAxes
             cla(app.UIAxes_Registration);
+            app.ChooseRegistrationTypeDropDown.Value = "Standard";
             app.SliceSlider_Registration.Enable = 'off';
             app.SliceSlider_Registration.Value = 1;
             app.SliceSpinner_Registration.Enable = 'off';
@@ -1140,6 +1145,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UsedifferentparametermapCheckBox.Value = 0;
             app.SelectparameterDropDown.Enable = 'off';
             app.RegistrationInstructionsTextArea.Value = '';
+            app.StandardAtlasRegistrationPanel.Visible = 'on';
+            app.TimeSeriesAlignmentPanel.Visible = 'off';
+            app.SelectfixedDropDown.Visible = 'on';
+            app.SelectfixedLabel.Visible = 'on';
+            app.ImportAtlasButton.Visible = 'off';
+            app.AtlasPathEditField.Visible = 'off';
+            app.AtlasPathEditField.Value = "";
+            app.AtlasPathEditFieldLabel.Visible = 'off';
     
             % Volumetry 
             app.ExportDataButton_Volumetry.Enable = 'off';
@@ -3640,6 +3653,94 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
+        % Cell selection callback: UITable_VolumetryBrain
+        function UITable_VolumetryBrainCellSelection(app, event)
+            indices = event.Indices;
+
+            selectedSlice = table2array(app.UITable_VolumetryBrain.Data(indices(1),1));
+            maskPreview = app.VolumetryBrainMask(:,:,selectedSlice);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [371,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+
+        end
+
+        % Cell selection callback: UITable_VolumetryHemisphere
+        function UITable_VolumetryHemisphereCellSelection(app, event)
+            indices = event.Indices;
+            
+            selectedSlice = table2array(app.UITable_VolumetryHemisphere.Data(indices(1),1));
+            switch app.SelectHemisphereDropDown.Value
+                case 'Left'
+                    selectedHemisphere = 1;
+                case 'Right'
+                    selectedHemisphere = 2;
+            end
+            maskPreview = app.VolumetryHemiMask(:,:,selectedSlice,selectedHemisphere);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [795,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+        end
+
+        % Cell selection callback: UITable_VolumetryROI
+        function UITable_VolumetryROICellSelection(app, event)
+            indices = event.Indices;
+            
+            selectedSlice = table2array(app.UITable_VolumetryROI.Data(indices(1),1));
+            selectedROI = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
+            maskPreview = app.VolumetryROI.Mask(:,:,selectedSlice,selectedROI);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [611,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+        end
+
+        % Button down function: VolumetryTab
+        function VolumetryTabButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: BrainPanel
+        function BrainPanelButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: HemispherePanel
+        function HemispherePanelButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: ROIPanel_Volumetry
+        function ROIPanel_VolumetryButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Clicked callback: SelectVolumetryDropDown
+        function SelectVolumetryDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Clicked callback: SelectHemisphereDropDown
+        function SelectHemisphereDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";  
+        end
+
+        % Clicked callback: SelectROIDropDown
+        function SelectROIDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
         % Value changed function: ChooseRegistrationTypeDropDown
         function ChooseRegistrationTypeDropDownValueChanged(app, event)
             
@@ -3647,9 +3748,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case "Standard"
                     app.StandardAtlasRegistrationPanel.Visible = 'on';
                     app.TimeSeriesAlignmentPanel.Visible = 'off';
+                    app.SelectfixedDropDown.Visible = 'on';
+                    app.SelectfixedLabel.Visible = 'on';
+                    app.ImportAtlasButton.Visible = 'off';
+                    app.AtlasPathEditField.Visible = 'off';
+                    app.AtlasPathEditFieldLabel.Visible = 'off';
                 case "Reference Atlas"
                     app.StandardAtlasRegistrationPanel.Visible = 'on';
                     app.TimeSeriesAlignmentPanel.Visible = 'off';
+                    app.SelectfixedDropDown.Visible = 'off';
+                    app.SelectfixedLabel.Visible = 'off';
+                    app.ImportAtlasButton.Visible = 'on';
+                    app.AtlasPathEditField.Visible = 'on';
+                    app.AtlasPathEditFieldLabel.Visible = 'on';
                 case "Time-Series Alignment"
                     app.StandardAtlasRegistrationPanel.Visible = 'off';
                     app.TimeSeriesAlignmentPanel.Visible = 'on';
@@ -3707,26 +3818,58 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
+        % Button pushed function: ImportAtlasButton
+        function ImportAtlasButtonPushed(app, event)
+            
+            % Get reference atlas path
+            atlas_Path = uigetdir;
+            atlas_Path = string(atlas_Path) + filesep + "atlasVolume" + filesep + "atlasVolume.raw";
+            figure(app.BrukKitAlphav0832UIFigure);
+            if isequal(atlas_Path, 0)
+                return;
+            end
+            try
+                % Open atlas according to allen brain instructions, permute
+                % and pagetranspose to get slices on 3rd dim
+                fid = fopen(atlas_Path, 'r', 'l' );
+                atlas = fread( fid, prod([528 320 456]), 'uint8' );
+                fclose(fid);
+                atlas = reshape(atlas,[528 320 456]);
+                atlas = permute(atlas, [3 2 1]);
+                app.AtlasImageData = pagetranspose(atlas);
+                app.AtlasPathEditField.Value = atlas_Path;
+                % Display confirmation figure
+                uiconfirm(app.BrukKitAlphav0832UIFigure, "Reference atlas sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            catch
+                uialert(app.BrukKitAlphav0832UIFigure, 'No valid reference atlas was found on selected path. Please check manual for detailed atlas loading instructions.', 'No Valid Reference Atlas Found')
+            end
+        end
+
         % Button pushed function: RegistrationViewerButton
         function RegistrationViewerButtonPushed(app, event)
             % Check for valid selections
-            if app.SelectmovingDropDown.Value == "None"|app.SelectfixedDropDown.Value == "None"|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
+            if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0832UIFigure, 'Cannot open Registration Viewer: please select valid registration data.', 'Registration Viewer Error.')
                 return
             end
             
+            % Get registration image data based on registration type
+            moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
+            switch app.ChooseRegistrationTypeDropDown.Value
+                case "Standard"
+                    fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+                case "Reference Atlas"
+                    fixed_Image = app.AtlasImageData;
+            end
+            
             % Open Registration Viewer 
             if app.UsedifferentparametermapCheckBox.Value == 0
-                moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
-                fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
                 app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0832UIFigure,'Title',"Please wait",...
                      'Message', "Viewing Registration Data...", 'Indeterminate','on');
                 drawnow
                 app.RegistrationViewerButton.Enable = 'off';
                 app.RegistrationViewerWindow = RegistrationViewer_Basic(app, moving_Image, fixed_Image);
             elseif app.UsedifferentparametermapCheckBox.Value == 1
-                moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
-                fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
                 parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
                 app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0832UIFigure,'Title',"Please wait",...
                      'Message', "Viewing Registration Data...", 'Indeterminate','on');
@@ -5006,94 +5149,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 0
             end
         end
-
-        % Cell selection callback: UITable_VolumetryBrain
-        function UITable_VolumetryBrainCellSelection(app, event)
-            indices = event.Indices;
-
-            selectedSlice = table2array(app.UITable_VolumetryBrain.Data(indices(1),1));
-            maskPreview = app.VolumetryBrainMask(:,:,selectedSlice);
-            app.UIAxes_Volumetry_Container.Visible = "on";
-            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
-            
-            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
-            app.UIAxes_Volumetry_Container.Position = [371,234,300,185];
-            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
-            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
-
-        end
-
-        % Button down function: VolumetryTab
-        function VolumetryTabButtonDown(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Button down function: BrainPanel
-        function BrainPanelButtonDown(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Button down function: HemispherePanel
-        function HemispherePanelButtonDown(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Button down function: ROIPanel_Volumetry
-        function ROIPanel_VolumetryButtonDown(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Clicked callback: SelectHemisphereDropDown
-        function SelectHemisphereDropDownClicked(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";  
-        end
-
-        % Clicked callback: SelectROIDropDown
-        function SelectROIDropDownClicked(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Clicked callback: SelectVolumetryDropDown
-        function SelectVolumetryDropDownClicked(app, event)
-            app.UIAxes_Volumetry_Container.Visible = "off";
-        end
-
-        % Cell selection callback: UITable_VolumetryHemisphere
-        function UITable_VolumetryHemisphereCellSelection(app, event)
-            indices = event.Indices;
-            
-            selectedSlice = table2array(app.UITable_VolumetryHemisphere.Data(indices(1),1));
-            switch app.SelectHemisphereDropDown.Value
-                case 'Left'
-                    selectedHemisphere = 1;
-                case 'Right'
-                    selectedHemisphere = 2;
-            end
-            maskPreview = app.VolumetryHemiMask(:,:,selectedSlice,selectedHemisphere);
-            app.UIAxes_Volumetry_Container.Visible = "on";
-            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
-            
-            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
-            app.UIAxes_Volumetry_Container.Position = [795,234,300,185];
-            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
-            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
-        end
-
-        % Cell selection callback: UITable_VolumetryROI
-        function UITable_VolumetryROICellSelection(app, event)
-            indices = event.Indices;
-            
-            selectedSlice = table2array(app.UITable_VolumetryROI.Data(indices(1),1));
-            selectedROI = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
-            maskPreview = app.VolumetryROI.Mask(:,:,selectedSlice,selectedROI);
-            app.UIAxes_Volumetry_Container.Visible = "on";
-            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
-            
-            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
-            app.UIAxes_Volumetry_Container.Position = [611,234,300,185];
-            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
-            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
-        end
     end
 
     % Component initialization
@@ -6274,6 +6329,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Volumetry.XTick = [];
             app.UIAxes_Volumetry.YTick = [];
             app.UIAxes_Volumetry.ZTick = [];
+            app.UIAxes_Volumetry.Visible = 'off';
             app.UIAxes_Volumetry.Position = [0 0 300 185];
 
             % Create RegistrationTab
@@ -6381,6 +6437,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.Placeholder = 'None';
             app.SelectparameterDropDown.Position = [44 267 264 21];
             app.SelectparameterDropDown.Value = 'None';
+
+            % Create ImportAtlasButton
+            app.ImportAtlasButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.ImportAtlasButton.ButtonPushedFcn = createCallbackFcn(app, @ImportAtlasButtonPushed, true);
+            app.ImportAtlasButton.Visible = 'off';
+            app.ImportAtlasButton.Position = [134 400 85 23];
+            app.ImportAtlasButton.Text = 'Import Atlas';
+
+            % Create AtlasPathEditField
+            app.AtlasPathEditField = uieditfield(app.StandardAtlasRegistrationPanel, 'text');
+            app.AtlasPathEditField.Editable = 'off';
+            app.AtlasPathEditField.Visible = 'off';
+            app.AtlasPathEditField.Position = [117 365 187 22];
+
+            % Create AtlasPathEditFieldLabel
+            app.AtlasPathEditFieldLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.AtlasPathEditFieldLabel.HorizontalAlignment = 'right';
+            app.AtlasPathEditFieldLabel.Visible = 'off';
+            app.AtlasPathEditFieldLabel.Position = [49 365 60 22];
+            app.AtlasPathEditFieldLabel.Text = 'Atlas Path';
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
