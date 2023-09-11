@@ -56,6 +56,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         PreviewLabel                    matlab.ui.control.Label
         UIAxes_Preview                  matlab.ui.control.UIAxes
         SegmenterTab                    matlab.ui.container.Tab
+        PerspectiveViewButton           matlab.ui.control.StateButton
         BrainSegmentationToolsPanel     matlab.ui.container.Panel
         VolumeSwitch                    matlab.ui.control.Switch
         ApplyMaskButton                 matlab.ui.control.Button
@@ -116,12 +117,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
         SelectExperimentToSegmentLabel  matlab.ui.control.Label
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         VolumetryTab                    matlab.ui.container.Tab
+        UIAxes_Volumetry_Container      matlab.ui.container.Panel
+        UIAxes_Volumetry                matlab.ui.control.UIAxes
         ExportDataButton_Volumetry      matlab.ui.control.Button
         VolumeUnitLabel                 matlab.ui.control.Label
         AreaUnitLabel                   matlab.ui.control.Label
         VolumeLabel                     matlab.ui.control.Label
         AreaLabel                       matlab.ui.control.Label
         UnitsLabel                      matlab.ui.control.Label
+        SelectVolumetryDropDown         matlab.ui.control.DropDown
+        SelectExperimentForVolumetryLabel  matlab.ui.control.Label
         ROIPanel_Volumetry              matlab.ui.container.Panel
         IQRUpperEditField_ROI           matlab.ui.control.NumericEditField
         IQRLowerEditField_ROI           matlab.ui.control.NumericEditField
@@ -181,9 +186,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         VolumeEditField_Brain           matlab.ui.control.NumericEditField
         VolumeEditFieldLabel_Brain      matlab.ui.control.Label
         UITable_VolumetryBrain          matlab.ui.control.Table
-        SelectVolumetryDropDown         matlab.ui.control.DropDown
-        SelectExperimentForVolumetryLabel  matlab.ui.control.Label
-        UIAxes_Volumetry                matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
         ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
         ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
@@ -4991,6 +4993,107 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
         end
+
+        % Value changed function: PerspectiveViewButton
+        function PerspectiveViewButtonValueChanged(app, event)
+            value = app.PerspectiveViewButton.Value;
+            
+            switch value
+                case 1
+                    app.BrukKitAlphav0832UIFigure.HandleVisibility = 'callback';
+                    [x,y] = ginput(1);
+                    app.BrukKitAlphav0832UIFigure.HandleVisibility = 'off';
+                case 0
+            end
+        end
+
+        % Cell selection callback: UITable_VolumetryBrain
+        function UITable_VolumetryBrainCellSelection(app, event)
+            indices = event.Indices;
+
+            selectedSlice = table2array(app.UITable_VolumetryBrain.Data(indices(1),1));
+            maskPreview = app.VolumetryBrainMask(:,:,selectedSlice);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [371,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+
+        end
+
+        % Button down function: VolumetryTab
+        function VolumetryTabButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: BrainPanel
+        function BrainPanelButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: HemispherePanel
+        function HemispherePanelButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Button down function: ROIPanel_Volumetry
+        function ROIPanel_VolumetryButtonDown(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Clicked callback: SelectHemisphereDropDown
+        function SelectHemisphereDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";  
+        end
+
+        % Clicked callback: SelectROIDropDown
+        function SelectROIDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Clicked callback: SelectVolumetryDropDown
+        function SelectVolumetryDropDownClicked(app, event)
+            app.UIAxes_Volumetry_Container.Visible = "off";
+        end
+
+        % Cell selection callback: UITable_VolumetryHemisphere
+        function UITable_VolumetryHemisphereCellSelection(app, event)
+            indices = event.Indices;
+            
+            selectedSlice = table2array(app.UITable_VolumetryHemisphere.Data(indices(1),1));
+            switch app.SelectHemisphereDropDown.Value
+                case 'Left'
+                    selectedHemisphere = 1;
+                case 'Right'
+                    selectedHemisphere = 2;
+            end
+            maskPreview = app.VolumetryHemiMask(:,:,selectedSlice,selectedHemisphere);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [795,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+        end
+
+        % Cell selection callback: UITable_VolumetryROI
+        function UITable_VolumetryROICellSelection(app, event)
+            indices = event.Indices;
+            
+            selectedSlice = table2array(app.UITable_VolumetryROI.Data(indices(1),1));
+            selectedROI = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
+            maskPreview = app.VolumetryROI.Mask(:,:,selectedSlice,selectedROI);
+            app.UIAxes_Volumetry_Container.Visible = "on";
+            imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+            
+            app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
+            app.UIAxes_Volumetry_Container.Position = [611,234,300,185];
+            app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
+            app.UIAxes_Volumetry.InnerPosition = [0,0,app.UIAxes_Volumetry_Container.Position(3),app.UIAxes_Volumetry_Container.Position(4)];
+        end
     end
 
     % Component initialization
@@ -5006,7 +5109,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrukKitAlphav0832UIFigure = uifigure('Visible', 'off');
             app.BrukKitAlphav0832UIFigure.Position = [100 100 1280 720];
             app.BrukKitAlphav0832UIFigure.Name = 'BrukKit Alpha v0.8.3.2';
-            app.BrukKitAlphav0832UIFigure.Icon = 'brukkit_icon.jpeg';
+            app.BrukKitAlphav0832UIFigure.Icon = 'D:\Users\rok.ister\Documents\GitHub\MRI-processing-tool\resources\brukkit_icon.jpeg';
             app.BrukKitAlphav0832UIFigure.CloseRequestFcn = createCallbackFcn(app, @BrukKitAlphav0832UIFigureCloseRequest, true);
             app.BrukKitAlphav0832UIFigure.KeyPressFcn = createCallbackFcn(app, @BrukKitAlphav0832UIFigureKeyPress, true);
 
@@ -5390,7 +5493,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Segmenter = uispinner(app.SegmenterTab);
             app.SliceSpinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_SegmenterValueChanged, true);
             app.SliceSpinner_Segmenter.Enable = 'off';
-            app.SliceSpinner_Segmenter.Position = [330 24 51 22];
+            app.SliceSpinner_Segmenter.Position = [278 22 51 22];
             app.SliceSpinner_Segmenter.Value = 1;
 
             % Create SaveSegmentedDataButton
@@ -5410,33 +5513,33 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Dim4Spinner_SegmenterLabel
             app.Dim4Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim4Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_SegmenterLabel.Position = [402 24 44 22];
+            app.Dim4Spinner_SegmenterLabel.Position = [342 22 44 22];
             app.Dim4Spinner_SegmenterLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Segmenter
             app.Dim4Spinner_Segmenter = uispinner(app.SegmenterTab);
             app.Dim4Spinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_SegmenterValueChanged, true);
             app.Dim4Spinner_Segmenter.Enable = 'off';
-            app.Dim4Spinner_Segmenter.Position = [457 24 51 22];
+            app.Dim4Spinner_Segmenter.Position = [397 22 51 22];
             app.Dim4Spinner_Segmenter.Value = 1;
 
             % Create Dim5Spinner_SegmenterLabel
             app.Dim5Spinner_SegmenterLabel = uilabel(app.SegmenterTab);
             app.Dim5Spinner_SegmenterLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_SegmenterLabel.Position = [522 24 44 22];
+            app.Dim5Spinner_SegmenterLabel.Position = [462 22 44 22];
             app.Dim5Spinner_SegmenterLabel.Text = 'Dim - 5';
 
             % Create Dim5Spinner_Segmenter
             app.Dim5Spinner_Segmenter = uispinner(app.SegmenterTab);
             app.Dim5Spinner_Segmenter.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_SegmenterValueChanged, true);
             app.Dim5Spinner_Segmenter.Enable = 'off';
-            app.Dim5Spinner_Segmenter.Position = [578 24 51 22];
+            app.Dim5Spinner_Segmenter.Position = [518 22 51 22];
             app.Dim5Spinner_Segmenter.Value = 1;
 
             % Create SliceSliderLabel
             app.SliceSliderLabel = uilabel(app.SegmenterTab);
             app.SliceSliderLabel.HorizontalAlignment = 'right';
-            app.SliceSliderLabel.Position = [75 25 32 22];
+            app.SliceSliderLabel.Position = [23 23 32 22];
             app.SliceSliderLabel.Text = 'Slice';
 
             % Create SliceSlider_Segmenter
@@ -5447,7 +5550,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Segmenter.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_SegmenterValueChanging, true);
             app.SliceSlider_Segmenter.MinorTicks = [];
             app.SliceSlider_Segmenter.Enable = 'off';
-            app.SliceSlider_Segmenter.Position = [136 33 183 3];
+            app.SliceSlider_Segmenter.Position = [84 31 183 3];
             app.SliceSlider_Segmenter.Value = 1;
 
             % Create BrightnessSliderLabel_Segmenter
@@ -5479,7 +5582,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Segmenter.BorderType = 'none';
             app.ColormapButtonGroup_Segmenter.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Segmenter.Title = 'Colormap';
-            app.ColormapButtonGroup_Segmenter.Position = [673 17 167 38];
+            app.ColormapButtonGroup_Segmenter.Position = [596 15 167 38];
 
             % Create GreyscaleButton_Segmenter
             app.GreyscaleButton_Segmenter = uiradiobutton(app.ColormapButtonGroup_Segmenter);
@@ -5766,45 +5869,31 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.VolumeSwitch.Position = [107 145 45 20];
             app.VolumeSwitch.Value = '2D';
 
+            % Create PerspectiveViewButton
+            app.PerspectiveViewButton = uibutton(app.SegmenterTab, 'state');
+            app.PerspectiveViewButton.ValueChangedFcn = createCallbackFcn(app, @PerspectiveViewButtonValueChanged, true);
+            app.PerspectiveViewButton.Text = 'Perspective View';
+            app.PerspectiveViewButton.Position = [783 21 107 23];
+
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
             app.VolumetryTab.Title = 'Volumetry';
-
-            % Create UIAxes_Volumetry
-            app.UIAxes_Volumetry = uiaxes(app.VolumetryTab);
-            app.UIAxes_Volumetry.Toolbar.Visible = 'off';
-            app.UIAxes_Volumetry.XTick = [];
-            app.UIAxes_Volumetry.YTick = [];
-            app.UIAxes_Volumetry.ZTick = [];
-            app.UIAxes_Volumetry.Box = 'on';
-            app.UIAxes_Volumetry.Visible = 'off';
-            app.UIAxes_Volumetry.Position = [12 502 300 185];
-
-            % Create SelectExperimentForVolumetryLabel
-            app.SelectExperimentForVolumetryLabel = uilabel(app.VolumetryTab);
-            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'right';
-            app.SelectExperimentForVolumetryLabel.Position = [518 654 245 22];
-            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Volumetry Calculation';
-
-            % Create SelectVolumetryDropDown
-            app.SelectVolumetryDropDown = uidropdown(app.VolumetryTab);
-            app.SelectVolumetryDropDown.Items = {'None'};
-            app.SelectVolumetryDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectVolumetryDropDownValueChanged, true);
-            app.SelectVolumetryDropDown.Placeholder = 'None';
-            app.SelectVolumetryDropDown.Position = [461 624 360 21];
-            app.SelectVolumetryDropDown.Value = 'None';
+            app.VolumetryTab.ButtonDownFcn = createCallbackFcn(app, @VolumetryTabButtonDown, true);
 
             % Create BrainPanel
             app.BrainPanel = uipanel(app.VolumetryTab);
             app.BrainPanel.BorderType = 'none';
             app.BrainPanel.TitlePosition = 'centertop';
             app.BrainPanel.Title = 'Brain';
+            app.BrainPanel.ButtonDownFcn = createCallbackFcn(app, @BrainPanelButtonDown, true);
             app.BrainPanel.Position = [26 38 383 525];
 
             % Create UITable_VolumetryBrain
             app.UITable_VolumetryBrain = uitable(app.BrainPanel);
             app.UITable_VolumetryBrain.ColumnName = {'Slice Number'; 'Slice Area'};
             app.UITable_VolumetryBrain.RowName = {};
+            app.UITable_VolumetryBrain.CellSelectionCallback = createCallbackFcn(app, @UITable_VolumetryBrainCellSelection, true);
+            app.UITable_VolumetryBrain.Multiselect = 'off';
             app.UITable_VolumetryBrain.Position = [41 5 304 190];
 
             % Create VolumeEditFieldLabel_Brain
@@ -5893,12 +5982,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemispherePanel.BorderType = 'none';
             app.HemispherePanel.TitlePosition = 'centertop';
             app.HemispherePanel.Title = 'Hemisphere';
+            app.HemispherePanel.ButtonDownFcn = createCallbackFcn(app, @HemispherePanelButtonDown, true);
             app.HemispherePanel.Position = [449 38 383 525];
 
             % Create UITable_VolumetryHemisphere
             app.UITable_VolumetryHemisphere = uitable(app.HemispherePanel);
             app.UITable_VolumetryHemisphere.ColumnName = {'Slice Number'; 'Slice Area'};
             app.UITable_VolumetryHemisphere.RowName = {};
+            app.UITable_VolumetryHemisphere.CellSelectionCallback = createCallbackFcn(app, @UITable_VolumetryHemisphereCellSelection, true);
             app.UITable_VolumetryHemisphere.Position = [41 5 304 190];
 
             % Create VolumeEditFieldLabel_Hemisphere
@@ -5970,6 +6061,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectHemisphereDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectHemisphereDropDownValueChanged, true);
             app.SelectHemisphereDropDown.Enable = 'off';
             app.SelectHemisphereDropDown.Placeholder = 'None';
+            app.SelectHemisphereDropDown.ClickedFcn = createCallbackFcn(app, @SelectHemisphereDropDownClicked, true);
             app.SelectHemisphereDropDown.Position = [101 435 182 21];
             app.SelectHemisphereDropDown.Value = 'Left';
 
@@ -6002,12 +6094,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIPanel_Volumetry.BorderType = 'none';
             app.ROIPanel_Volumetry.TitlePosition = 'centertop';
             app.ROIPanel_Volumetry.Title = 'ROI';
+            app.ROIPanel_Volumetry.ButtonDownFcn = createCallbackFcn(app, @ROIPanel_VolumetryButtonDown, true);
             app.ROIPanel_Volumetry.Position = [872 38 383 525];
 
             % Create UITable_VolumetryROI
             app.UITable_VolumetryROI = uitable(app.ROIPanel_Volumetry);
             app.UITable_VolumetryROI.ColumnName = {'Slice Number'; 'Slice Area'};
             app.UITable_VolumetryROI.RowName = {};
+            app.UITable_VolumetryROI.CellSelectionCallback = createCallbackFcn(app, @UITable_VolumetryROICellSelection, true);
             app.UITable_VolumetryROI.Position = [41 5 304 190];
 
             % Create VolumeEditFieldLabel_ROI
@@ -6079,6 +6173,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectROIDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectROIDropDownValueChanged, true);
             app.SelectROIDropDown.Enable = 'off';
             app.SelectROIDropDown.Placeholder = 'None';
+            app.SelectROIDropDown.ClickedFcn = createCallbackFcn(app, @SelectROIDropDownClicked, true);
             app.SelectROIDropDown.Position = [101 435 182 21];
             app.SelectROIDropDown.Value = {};
 
@@ -6113,6 +6208,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.IQRUpperEditField_ROI = uieditfield(app.ROIPanel_Volumetry, 'numeric');
             app.IQRUpperEditField_ROI.Position = [242 279 27 22];
 
+            % Create SelectExperimentForVolumetryLabel
+            app.SelectExperimentForVolumetryLabel = uilabel(app.VolumetryTab);
+            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'right';
+            app.SelectExperimentForVolumetryLabel.Position = [518 654 245 22];
+            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Volumetry Calculation';
+
+            % Create SelectVolumetryDropDown
+            app.SelectVolumetryDropDown = uidropdown(app.VolumetryTab);
+            app.SelectVolumetryDropDown.Items = {'None'};
+            app.SelectVolumetryDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectVolumetryDropDownValueChanged, true);
+            app.SelectVolumetryDropDown.Placeholder = 'None';
+            app.SelectVolumetryDropDown.ClickedFcn = createCallbackFcn(app, @SelectVolumetryDropDownClicked, true);
+            app.SelectVolumetryDropDown.Position = [461 624 360 21];
+            app.SelectVolumetryDropDown.Value = 'None';
+
             % Create UnitsLabel
             app.UnitsLabel = uilabel(app.VolumetryTab);
             app.UnitsLabel.Position = [522 586 39 26];
@@ -6146,6 +6256,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExportDataButton_Volumetry.Enable = 'off';
             app.ExportDataButton_Volumetry.Position = [847 623 136 22];
             app.ExportDataButton_Volumetry.Text = 'Export Volumetry Data';
+
+            % Create UIAxes_Volumetry_Container
+            app.UIAxes_Volumetry_Container = uipanel(app.VolumetryTab);
+            app.UIAxes_Volumetry_Container.BorderColor = [1 1 1];
+            app.UIAxes_Volumetry_Container.BorderWidth = 5;
+            app.UIAxes_Volumetry_Container.Visible = 'off';
+            app.UIAxes_Volumetry_Container.BackgroundColor = [0.9412 0.9412 0.9412];
+            app.UIAxes_Volumetry_Container.Position = [5 493 310 195];
+
+            % Create UIAxes_Volumetry
+            app.UIAxes_Volumetry = uiaxes(app.UIAxes_Volumetry_Container);
+            app.UIAxes_Volumetry.Toolbar.Visible = 'off';
+            app.UIAxes_Volumetry.XLim = [-Inf Inf];
+            app.UIAxes_Volumetry.YLim = [-Inf Inf];
+            app.UIAxes_Volumetry.GridLineStyle = 'none';
+            app.UIAxes_Volumetry.XTick = [];
+            app.UIAxes_Volumetry.YTick = [];
+            app.UIAxes_Volumetry.ZTick = [];
+            app.UIAxes_Volumetry.Position = [0 0 300 185];
 
             % Create RegistrationTab
             app.RegistrationTab = uitab(app.TabGroup);
