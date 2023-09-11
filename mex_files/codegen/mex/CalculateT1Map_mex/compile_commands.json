@@ -1,0 +1,188 @@
+[
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  CalculateT1Map_mex_data.cpp /Fobuild\\win64\\CalculateT1Map_mex_data.obj",
+    "file": "CalculateT1Map_mex_data.cpp",
+    "output": "build/win64/CalculateT1Map_mex_data.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  rt_nonfinite.cpp /Fobuild\\win64\\rt_nonfinite.obj",
+    "file": "rt_nonfinite.cpp",
+    "output": "build/win64/rt_nonfinite.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  CalculateT1Map_mex_initialize.cpp /Fobuild\\win64\\CalculateT1Map_mex_initialize.obj",
+    "file": "CalculateT1Map_mex_initialize.cpp",
+    "output": "build/win64/CalculateT1Map_mex_initialize.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  CalculateT1Map_mex_terminate.cpp /Fobuild\\win64\\CalculateT1Map_mex_terminate.obj",
+    "file": "CalculateT1Map_mex_terminate.cpp",
+    "output": "build/win64/CalculateT1Map_mex_terminate.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  CalculateT1Map.cpp /Fobuild\\win64\\CalculateT1Map.obj",
+    "file": "CalculateT1Map.cpp",
+    "output": "build/win64/CalculateT1Map.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  lsqcurvefit.cpp /Fobuild\\win64\\lsqcurvefit.obj",
+    "file": "lsqcurvefit.cpp",
+    "output": "build/win64/lsqcurvefit.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  all.cpp /Fobuild\\win64\\all.obj",
+    "file": "all.cpp",
+    "output": "build/win64/all.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  checkBounds.cpp /Fobuild\\win64\\checkBounds.obj",
+    "file": "checkBounds.cpp",
+    "output": "build/win64/checkBounds.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  driver.cpp /Fobuild\\win64\\driver.obj",
+    "file": "driver.cpp",
+    "output": "build/win64/driver.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  warning.cpp /Fobuild\\win64\\warning.obj",
+    "file": "warning.cpp",
+    "output": "build/win64/warning.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  xdot.cpp /Fobuild\\win64\\xdot.obj",
+    "file": "xdot.cpp",
+    "output": "build/win64/xdot.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  factoryConstruct.cpp /Fobuild\\win64\\factoryConstruct.obj",
+    "file": "factoryConstruct.cpp",
+    "output": "build/win64/factoryConstruct.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  validateattributes.cpp /Fobuild\\win64\\validateattributes.obj",
+    "file": "validateattributes.cpp",
+    "output": "build/win64/validateattributes.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  norm.cpp /Fobuild\\win64\\norm.obj",
+    "file": "norm.cpp",
+    "output": "build/win64/norm.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  CalculateT2Map.cpp /Fobuild\\win64\\CalculateT2Map.obj",
+    "file": "CalculateT2Map.cpp",
+    "output": "build/win64/CalculateT2Map.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_CalculateT1Map_mex_api.cpp /Fobuild\\win64\\_coder_CalculateT1Map_mex_api.obj",
+    "file": "interface/_coder_CalculateT1Map_mex_api.cpp",
+    "output": "build/win64/_coder_CalculateT1Map_mex_api.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_CalculateT1Map_mex_mex.cpp /Fobuild\\win64\\_coder_CalculateT1Map_mex_mex.obj",
+    "file": "interface/_coder_CalculateT1Map_mex_mex.cpp",
+    "output": "build/win64/_coder_CalculateT1Map_mex_mex.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  eml_int_forloop_overflow_check.cpp /Fobuild\\win64\\eml_int_forloop_overflow_check.obj",
+    "file": "eml_int_forloop_overflow_check.cpp",
+    "output": "build/win64/eml_int_forloop_overflow_check.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  checkStoppingCriteria.cpp /Fobuild\\win64\\checkStoppingCriteria.obj",
+    "file": "checkStoppingCriteria.cpp",
+    "output": "build/win64/checkStoppingCriteria.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  hasFiniteBounds.cpp /Fobuild\\win64\\hasFiniteBounds.obj",
+    "file": "hasFiniteBounds.cpp",
+    "output": "build/win64/hasFiniteBounds.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  exp.cpp /Fobuild\\win64\\exp.obj",
+    "file": "exp.cpp",
+    "output": "build/win64/exp.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  checkFinite.cpp /Fobuild\\win64\\checkFinite.obj",
+    "file": "checkFinite.cpp",
+    "output": "build/win64/checkFinite.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  jacobianFiniteDifference.cpp /Fobuild\\win64\\jacobianFiniteDifference.obj",
+    "file": "jacobianFiniteDifference.cpp",
+    "output": "build/win64/jacobianFiniteDifference.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  computeFiniteDifferences.cpp /Fobuild\\win64\\computeFiniteDifferences.obj",
+    "file": "computeFiniteDifferences.cpp",
+    "output": "build/win64/computeFiniteDifferences.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  xgemv.cpp /Fobuild\\win64\\xgemv.obj",
+    "file": "xgemv.cpp",
+    "output": "build/win64/xgemv.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  projectBox.cpp /Fobuild\\win64\\projectBox.obj",
+    "file": "projectBox.cpp",
+    "output": "build/win64/projectBox.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  linearLeastSquares.cpp /Fobuild\\win64\\linearLeastSquares.obj",
+    "file": "linearLeastSquares.cpp",
+    "output": "build/win64/linearLeastSquares.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  xcopy.cpp /Fobuild\\win64\\xcopy.obj",
+    "file": "xcopy.cpp",
+    "output": "build/win64/xcopy.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  fwdFinDiffInsideBnds.cpp /Fobuild\\win64\\fwdFinDiffInsideBnds.obj",
+    "file": "fwdFinDiffInsideBnds.cpp",
+    "output": "build/win64/fwdFinDiffInsideBnds.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  interface\\_coder_CalculateT1Map_mex_info.cpp /Fobuild\\win64\\_coder_CalculateT1Map_mex_info.obj",
+    "file": "interface/_coder_CalculateT1Map_mex_info.cpp",
+    "output": "build/win64/_coder_CalculateT1Map_mex_info.obj"
+  },
+  {
+    "directory": "D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\\codegen\\mex\\CalculateT1Map_mex",
+    "command": "cl /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I \".\" /I \"D:\\Users\\rok.ister\\Documents\\GitHub\\MRI-processing-tool\" /I \".\\interface\" /I \"C:\\Program Files\\MATLAB\\R2023a\\extern\\include\" /I \".\" -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251  \"C:\\Program Files\\MATLAB\\R2023a\\extern\\version\\cpp_mexapi_version.cpp\" /Fobuild\\win64\\cpp_mexapi_version.obj",
+    "file": "C:/Program Files/MATLAB/R2023a/extern/version/cpp_mexapi_version.cpp",
+    "output": "build/win64/cpp_mexapi_version.obj"
+  }
+]

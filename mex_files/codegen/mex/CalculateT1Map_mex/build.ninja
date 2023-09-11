@@ -1,0 +1,74 @@
+# CompilerName=msvcpp160
+# Mode=optim
+ninja_required_version = 1.3
+
+# Basic folders
+root = .
+builddir = $root\build\win64
+matlabdir = C:\Program Files\MATLAB\R2023a
+startdir = D:\Users\rok.ister\Documents\GitHub\MRI-processing-tool
+
+# Toolchain information
+cc = cl
+cxx = cl
+linker = link
+linkerxx = link
+
+cflags =  /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I "$root" /I "$startdir" /I "$root\interface" /I "$matlabdir\extern\include" /I "." -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251 
+
+cxxflags =   /c /Zc:__cplusplus /Zp8 /GR /W3 /EHs /nologo /MD /D_CRT_SECURE_NO_DEPRECATE /D_SCL_SECURE_NO_DEPRECATE /D_SECURE_SCL=0   /DMATLAB_MEX_FILE  /DMATLAB_MEX_FILE /O2 /Oy- /DNDEBUG /fp:strict /utf-8 /I "$root" /I "$startdir" /I "$root\interface" /I "$matlabdir\extern\include" /I "." -DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_STRUCTURE -DMW_HAVE_LAPACK_DECLS -DMODEL=CalculateT1Map_mex -DMW_NEEDS_VERSION_H /wd4251 
+
+ldflags =  /nologo /manifest   /DLL /LIBPATH:"$matlabdir\extern\lib\win64\microsoft" libmx.lib libmex.lib libmat.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib libMatlabDataArray.lib libMatlabEngine.lib  /out:"CalculateT1Map_mex.mexw64" /LIBPATH:"$matlabdir\extern\lib\win64\microsoft" libmwlapack.lib libmwblas.lib libemlrt.lib libcovrt.lib libut.lib libmwmathutil.lib 
+
+linkobjs = 
+
+# Build Rules
+rule cc
+    command = $cc $cflags $in /Fo$out
+
+rule cxx
+    command = $cxx $cxxflags $in /Fo$out
+
+rule link
+    command = $linker @$out.rsp $linkobjs $ldflags
+    rspfile = $out.rsp
+    rspfile_content = $in
+
+rule linkxx
+    command = $linkerxx $in $linkobjs $ldflags
+
+# Build
+build $builddir\CalculateT1Map_mex_data.obj : cxx $root\CalculateT1Map_mex_data.cpp
+build $builddir\rt_nonfinite.obj : cxx $root\rt_nonfinite.cpp
+build $builddir\CalculateT1Map_mex_initialize.obj : cxx $root\CalculateT1Map_mex_initialize.cpp
+build $builddir\CalculateT1Map_mex_terminate.obj : cxx $root\CalculateT1Map_mex_terminate.cpp
+build $builddir\CalculateT1Map.obj : cxx $root\CalculateT1Map.cpp
+build $builddir\lsqcurvefit.obj : cxx $root\lsqcurvefit.cpp
+build $builddir\all.obj : cxx $root\all.cpp
+build $builddir\checkBounds.obj : cxx $root\checkBounds.cpp
+build $builddir\driver.obj : cxx $root\driver.cpp
+build $builddir\warning.obj : cxx $root\warning.cpp
+build $builddir\xdot.obj : cxx $root\xdot.cpp
+build $builddir\factoryConstruct.obj : cxx $root\factoryConstruct.cpp
+build $builddir\validateattributes.obj : cxx $root\validateattributes.cpp
+build $builddir\norm.obj : cxx $root\norm.cpp
+build $builddir\CalculateT2Map.obj : cxx $root\CalculateT2Map.cpp
+build $builddir\_coder_CalculateT1Map_mex_api.obj : cxx $root\interface\_coder_CalculateT1Map_mex_api.cpp
+build $builddir\_coder_CalculateT1Map_mex_mex.obj : cxx $root\interface\_coder_CalculateT1Map_mex_mex.cpp
+build $builddir\eml_int_forloop_overflow_check.obj : cxx $root\eml_int_forloop_overflow_check.cpp
+build $builddir\checkStoppingCriteria.obj : cxx $root\checkStoppingCriteria.cpp
+build $builddir\hasFiniteBounds.obj : cxx $root\hasFiniteBounds.cpp
+build $builddir\exp.obj : cxx $root\exp.cpp
+build $builddir\checkFinite.obj : cxx $root\checkFinite.cpp
+build $builddir\jacobianFiniteDifference.obj : cxx $root\jacobianFiniteDifference.cpp
+build $builddir\computeFiniteDifferences.obj : cxx $root\computeFiniteDifferences.cpp
+build $builddir\xgemv.obj : cxx $root\xgemv.cpp
+build $builddir\projectBox.obj : cxx $root\projectBox.cpp
+build $builddir\linearLeastSquares.obj : cxx $root\linearLeastSquares.cpp
+build $builddir\xcopy.obj : cxx $root\xcopy.cpp
+build $builddir\fwdFinDiffInsideBnds.obj : cxx $root\fwdFinDiffInsideBnds.cpp
+build $builddir\_coder_CalculateT1Map_mex_info.obj : cxx $root\interface\_coder_CalculateT1Map_mex_info.cpp
+build $builddir\cpp_mexapi_version.obj : cxx $matlabdir\extern\version\cpp_mexapi_version.cpp
+
+# Link
+build $root\CalculateT1Map_mex.mexw64 : linkxx $builddir\CalculateT1Map_mex_data.obj $builddir\rt_nonfinite.obj $builddir\CalculateT1Map_mex_initialize.obj $builddir\CalculateT1Map_mex_terminate.obj $builddir\CalculateT1Map.obj $builddir\lsqcurvefit.obj $builddir\all.obj $builddir\checkBounds.obj $builddir\driver.obj $builddir\warning.obj $builddir\xdot.obj $builddir\factoryConstruct.obj $builddir\validateattributes.obj $builddir\norm.obj $builddir\CalculateT2Map.obj $builddir\_coder_CalculateT1Map_mex_api.obj $builddir\_coder_CalculateT1Map_mex_mex.obj $builddir\eml_int_forloop_overflow_check.obj $builddir\checkStoppingCriteria.obj $builddir\hasFiniteBounds.obj $builddir\exp.obj $builddir\checkFinite.obj $builddir\jacobianFiniteDifference.obj $builddir\computeFiniteDifferences.obj $builddir\xgemv.obj $builddir\projectBox.obj $builddir\linearLeastSquares.obj $builddir\xcopy.obj $builddir\fwdFinDiffInsideBnds.obj $builddir\_coder_CalculateT1Map_mex_info.obj $builddir\cpp_mexapi_version.obj 

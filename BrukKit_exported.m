@@ -183,6 +183,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UITable_VolumetryBrain          matlab.ui.control.Table
         SelectVolumetryDropDown         matlab.ui.control.DropDown
         SelectExperimentForVolumetryLabel  matlab.ui.control.Label
+        UIAxes_Volumetry                matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
         ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
         ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
@@ -2044,7 +2045,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Display sequence
             RefreshImagePreview(app);
-            disableDefaultInteractivity(app.UIAxes_Preview);
+            % disableDefaultInteractivity(app.UIAxes_Preview);
             
             % Set interactions of preview uiaxes
             app.UIAxes_Preview.Interactions = [regionZoomInteraction zoomInteraction];
@@ -4998,6 +4999,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
             % Create BrukKitAlphav0832UIFigure and hide until all components are created
             app.BrukKitAlphav0832UIFigure = uifigure('Visible', 'off');
             app.BrukKitAlphav0832UIFigure.Position = [100 100 1280 720];
@@ -5551,14 +5555,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ConfirmButton
             app.ConfirmButton = uibutton(app.SelectionToolsPanel, 'push');
             app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
-            app.ConfirmButton.Icon = 'check icon.png';
+            app.ConfirmButton.Icon = fullfile(pathToMLAPP, 'resources', 'check icon.png');
             app.ConfirmButton.Position = [46 19 26 22];
             app.ConfirmButton.Text = '';
 
             % Create DeleteButton
             app.DeleteButton = uibutton(app.SelectionToolsPanel, 'push');
             app.DeleteButton.ButtonPushedFcn = createCallbackFcn(app, @DeleteButtonPushed, true);
-            app.DeleteButton.Icon = 'x icon.png';
+            app.DeleteButton.Icon = fullfile(pathToMLAPP, 'resources', 'x icon.png');
             app.DeleteButton.Position = [81 19 27 22];
             app.DeleteButton.Text = '';
 
@@ -5765,6 +5769,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create VolumetryTab
             app.VolumetryTab = uitab(app.TabGroup);
             app.VolumetryTab.Title = 'Volumetry';
+
+            % Create UIAxes_Volumetry
+            app.UIAxes_Volumetry = uiaxes(app.VolumetryTab);
+            app.UIAxes_Volumetry.Toolbar.Visible = 'off';
+            app.UIAxes_Volumetry.XTick = [];
+            app.UIAxes_Volumetry.YTick = [];
+            app.UIAxes_Volumetry.ZTick = [];
+            app.UIAxes_Volumetry.Box = 'on';
+            app.UIAxes_Volumetry.Visible = 'off';
+            app.UIAxes_Volumetry.Position = [12 502 300 185];
 
             % Create SelectExperimentForVolumetryLabel
             app.SelectExperimentForVolumetryLabel = uilabel(app.VolumetryTab);
