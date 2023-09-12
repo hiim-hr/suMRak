@@ -284,6 +284,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        Dim5Spinner_Viewer              matlab.ui.control.Spinner
+        Dim5Spinner_ViewerLabel         matlab.ui.control.Label
+        Dim4Spinner_Viewer              matlab.ui.control.Spinner
+        Dim4Spinner_ViewerLabel         matlab.ui.control.Label
         ColormapImage_Viewer            matlab.ui.control.Image
         AlphamapDropDown_Viewer         matlab.ui.control.DropDown
         AlphamapDropDownLabel_Viewer    matlab.ui.control.Label
@@ -1243,6 +1247,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceRangeHighSpinner_Viewer.Enable = 'off';
             app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
+            app.Dim4Spinner_Viewer.Enable = 'off';
+            app.Dim4Spinner_Viewer.Value = 1;
+            app.Dim5Spinner_Viewer.Enable = 'off';
+            app.Dim5Spinner_Viewer.Value = 1;
         end
     end
 
@@ -3986,7 +3994,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     dim3 = par_instr(2:instr_comma_ind(1)-1);
                     dim4 = par_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
                     dim5 = par_instr(instr_comma_ind(2)+1:end-1);
-                    switch app.FixedNDims
+                    switch app.ParameterNDims
                         case 5
                             parameter_Image_py = py.numpy.array(parameter_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
                         case 4
@@ -4937,6 +4945,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceRangeHighSpinner_Viewer.Enable = 'off';
                 app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
                 app.SliceRangeHighSpinner_Viewer.Value = 1;
+                app.Dim4Spinner_Viewer.Enable = 'off';
+                app.Dim4Spinner_Viewer.Value = 1;
+                app.Dim5Spinner_Viewer.Enable = 'off';
+                app.Dim5Spinner_Viewer.Value = 1;
                 return
             end
             
@@ -4947,7 +4959,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));     
             end
             imdata_size = size(app.ViewerImageData);
-            if numel(imdata_size)~=3
+            if numel(imdata_size)<3
                 app.RenderingStyleDropDown.Enable = 'off';
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
                 app.ColormapDropDown_Viewer.Enable = 'off';
@@ -4963,11 +4975,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceRangeHighSpinner_Viewer.Enable = 'off';
                 app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
                 app.SliceRangeHighSpinner_Viewer.Value = 1;
-                uialert(app.BrukKitAlphav0832UIFigure, 'Selected data cannot be rendered: number of data dimensions must equal 3.', '3D Viewer Data Dimension Error')
+                app.Dim4Spinner_Viewer.Enable = 'off';
+                app.Dim4Spinner_Viewer.Value = 1;
+                app.Dim5Spinner_Viewer.Enable = 'off';
+                app.Dim5Spinner_Viewer.Value = 1;
+                uialert(app.BrukKitAlphav0832UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
                 return
             end
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
-
+            
             % Get dimension scales, create triplet and update edit fields
             try
                 app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
@@ -4995,11 +5011,34 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceRangeHighSpinner_Viewer.Limits = [2, imdata_size(3)];
             app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);       
 
-            % Refresh 3d viewer
             % Create transformation matrix
             T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
             tform = affinetform3d(T);
-            volshow(app.ViewerImageData, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
+
+            % Enable/disable spinners based on number of dims, refresh 3D Viewer
+            switch numel(imdata_size)
+                case 3
+                    app.Dim4Spinner_Viewer.Enable = 'off';
+                    app.Dim4Spinner_Viewer.Value = 1;
+                    app.Dim5Spinner_Viewer.Enable = 'off';
+                    app.Dim5Spinner_Viewer.Value = 1;
+                    volshow(app.ViewerImageData, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
+                case 4
+                    app.Dim4Spinner_Viewer.Enable = 'on';
+                    app.Dim4Spinner_Viewer.Value = 1;
+                    app.Dim4Spinner_Viewer.Limits = [1, imdata_size(4)];
+                    app.Dim5Spinner_Viewer.Enable = 'off';
+                    app.Dim5Spinner_Viewer.Value = 1;
+                    volshow(app.ViewerImageData(:,:,:,1), 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
+                case 5
+                    app.Dim4Spinner_Viewer.Enable = 'on';
+                    app.Dim4Spinner_Viewer.Value = 1;
+                    app.Dim4Spinner_Viewer.Limits = [1, imdata_size(4)];
+                    app.Dim5Spinner_Viewer.Enable = 'on';
+                    app.Dim5Spinner_Viewer.Value = 1;
+                    app.Dim5Spinner_Viewer.Limits = [1, imdata_size(5)];
+                    volshow(app.ViewerImageData(:,:,:,1,1), 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
+            end      
         end
 
         % Value changed function: RenderingStyleDropDown
@@ -5093,8 +5132,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Update spinner limits
             maxBoundary = app.SliceRangeHighSpinner_Viewer.Limits(2);
             app.SliceRangeHighSpinner_Viewer.Limits = [value+1, maxBoundary];
-            % Update 3D Viewer data
-            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
+            % Update 3D Viewer data based on number of dims
+            switch numel(size(app.ViewerImageData))
+                case 3
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
+                case 4
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value);
+                case 5
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
+            end 
         end
 
         % Value changed function: SliceRangeHighSpinner_Viewer
@@ -5104,8 +5150,34 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Update spinner limits
             minBoundary = app.SliceRangeLowSpinner_Viewer.Limits(1);
             app.SliceRangeLowSpinner_Viewer.Limits = [minBoundary, value-1];
+            % Update 3D Viewer data based on number of dims
+            switch numel(size(app.ViewerImageData))
+                case 3
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
+                case 4
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value);
+                case 5
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
+            end
+        end
+
+        % Value changed function: Dim4Spinner_Viewer
+        function Dim4Spinner_ViewerValueChanged(app, event)
+            
+            % Update 3D Viewer data based on number of dims
+            switch numel(size(app.ViewerImageData))
+                case 4
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value);
+                case 5
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
+            end           
+        end
+
+        % Value changed function: Dim5Spinner_Viewer
+        function Dim5Spinner_ViewerValueChanged(app, event)
+            
             % Update 3D Viewer data
-            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value);
+            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
         end
 
         % Close request function: BrukKitAlphav0832UIFigure
@@ -6996,7 +7068,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerPanel.TitlePosition = 'centertop';
             app.ViewerPanel.Title = 'Viewer';
             app.ViewerPanel.BackgroundColor = [1 1 1];
-            app.ViewerPanel.Position = [23 92 903 586];
+            app.ViewerPanel.Position = [23 70 903 608];
 
             % Create Select3DViewerLabel
             app.Select3DViewerLabel = uilabel(app.DViewerTab);
@@ -7016,27 +7088,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
             app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
             app.SliceRangeLowSpinner_Viewer.Enable = 'off';
-            app.SliceRangeLowSpinner_Viewer.Position = [409 24 51 22];
+            app.SliceRangeLowSpinner_Viewer.Position = [344 24 51 22];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
 
             % Create SliceRangeHighSpinner_Viewer
             app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
             app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
             app.SliceRangeHighSpinner_Viewer.Enable = 'off';
-            app.SliceRangeHighSpinner_Viewer.Position = [495 24 51 22];
+            app.SliceRangeHighSpinner_Viewer.Position = [430 24 51 22];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
 
             % Create Label
             app.Label = uilabel(app.DViewerTab);
             app.Label.HorizontalAlignment = 'center';
             app.Label.FontWeight = 'bold';
-            app.Label.Position = [466 23 19 25];
+            app.Label.Position = [401 23 19 25];
             app.Label.Text = '-';
 
             % Create DisplayedSliceRangeLabel
             app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
             app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
-            app.DisplayedSliceRangeLabel.Position = [414 58 126 22];
+            app.DisplayedSliceRangeLabel.Position = [208 24 126 22];
             app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
 
             % Create RenderingStyleDropDownLabel
@@ -7128,6 +7200,32 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapImage_Viewer = uiimage(app.DViewerTab);
             app.ColormapImage_Viewer.Visible = 'off';
             app.ColormapImage_Viewer.Position = [967 431 244 21];
+
+            % Create Dim4Spinner_ViewerLabel
+            app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_ViewerLabel.Position = [514 24 44 22];
+            app.Dim4Spinner_ViewerLabel.Text = 'Dim - 4';
+
+            % Create Dim4Spinner_Viewer
+            app.Dim4Spinner_Viewer = uispinner(app.DViewerTab);
+            app.Dim4Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_ViewerValueChanged, true);
+            app.Dim4Spinner_Viewer.Enable = 'off';
+            app.Dim4Spinner_Viewer.Position = [569 24 51 22];
+            app.Dim4Spinner_Viewer.Value = 1;
+
+            % Create Dim5Spinner_ViewerLabel
+            app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim5Spinner_ViewerLabel.Position = [634 24 44 22];
+            app.Dim5Spinner_ViewerLabel.Text = 'Dim - 5';
+
+            % Create Dim5Spinner_Viewer
+            app.Dim5Spinner_Viewer = uispinner(app.DViewerTab);
+            app.Dim5Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_ViewerValueChanged, true);
+            app.Dim5Spinner_Viewer.Enable = 'off';
+            app.Dim5Spinner_Viewer.Position = [690 24 51 22];
+            app.Dim5Spinner_Viewer.Value = 1;
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0832UIFigure);
