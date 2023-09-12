@@ -286,6 +286,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+<<<<<<< HEAD
         DashLabel                       matlab.ui.control.Label
         SliceRangeHighSpinner_Viewer    matlab.ui.control.Spinner
         SliceRangeLowSpinner_Viewer     matlab.ui.control.Spinner
@@ -294,6 +295,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Dim4Spinner_ViewerLabel         matlab.ui.control.Label
         Dim5Spinner_Viewer              matlab.ui.control.Spinner
         Dim5Spinner_ViewerLabel         matlab.ui.control.Label
+=======
+        Dim5Spinner_Viewer              matlab.ui.control.Spinner
+        Dim5Spinner_ViewerLabel         matlab.ui.control.Label
+        Dim4Spinner_Viewer              matlab.ui.control.Spinner
+        Dim4Spinner_ViewerLabel         matlab.ui.control.Label
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
         ColormapImage_Viewer            matlab.ui.control.Image
         AlphamapDropDown_Viewer         matlab.ui.control.DropDown
         AlphamapDropDownLabel_Viewer    matlab.ui.control.Label
@@ -1249,6 +1256,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceRangeHighSpinner_Viewer.Enable = 'off';
             app.SliceRangeHighSpinner_Viewer.Limits = [1, 2];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
+            app.Dim4Spinner_Viewer.Enable = 'off';
+            app.Dim4Spinner_Viewer.Value = 1;
+            app.Dim5Spinner_Viewer.Enable = 'off';
+            app.Dim5Spinner_Viewer.Value = 1;
         end
         
         function ClickHandlerHelperUp(app, ~, e)
@@ -5035,7 +5046,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.Dim4Spinner_Viewer.Value = 1;
                 app.Dim5Spinner_Viewer.Enable = 'off';
                 app.Dim5Spinner_Viewer.Value = 1;
+<<<<<<< HEAD
                 uialert(app.BrukKitAlphav0842UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
+=======
+                uialert(app.BrukKitAlphav0832UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
                 return
             end
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
@@ -5215,6 +5230,28 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 5
                     app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
             end
+<<<<<<< HEAD
+=======
+        end
+
+        % Value changed function: Dim4Spinner_Viewer
+        function Dim4Spinner_ViewerValueChanged(app, event)
+            
+            % Update 3D Viewer data based on number of dims
+            switch numel(size(app.ViewerImageData))
+                case 4
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value);
+                case 5
+                    app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
+            end           
+        end
+
+        % Value changed function: Dim5Spinner_Viewer
+        function Dim5Spinner_ViewerValueChanged(app, event)
+            
+            % Update 3D Viewer data
+            app.ViewerParentObject.Children.Data = app.ViewerImageData(:,:, app.SliceRangeLowSpinner_Viewer.Value:app.SliceRangeHighSpinner_Viewer.Value, app.Dim4Spinner_Viewer.Value, app.Dim5Spinner_Viewer.Value);
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
         end
 
         % Close request function: BrukKitAlphav0842UIFigure
@@ -7202,6 +7239,36 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Position = [955 611 268 21];
             app.Select3DViewerDropDown.Value = 'None';
 
+<<<<<<< HEAD
+=======
+            % Create SliceRangeLowSpinner_Viewer
+            app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
+            app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+            app.SliceRangeLowSpinner_Viewer.Position = [344 24 51 22];
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
+
+            % Create SliceRangeHighSpinner_Viewer
+            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
+            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+            app.SliceRangeHighSpinner_Viewer.Position = [430 24 51 22];
+            app.SliceRangeHighSpinner_Viewer.Value = 1;
+
+            % Create Label
+            app.Label = uilabel(app.DViewerTab);
+            app.Label.HorizontalAlignment = 'center';
+            app.Label.FontWeight = 'bold';
+            app.Label.Position = [401 23 19 25];
+            app.Label.Text = '-';
+
+            % Create DisplayedSliceRangeLabel
+            app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
+            app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
+            app.DisplayedSliceRangeLabel.Position = [208 24 126 22];
+            app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
+
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
@@ -7292,6 +7359,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapImage_Viewer.Visible = 'off';
             app.ColormapImage_Viewer.Position = [967 431 244 21];
 
+<<<<<<< HEAD
             % Create Dim5Spinner_ViewerLabel
             app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
             app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
@@ -7309,12 +7377,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
             app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
             app.Dim4Spinner_ViewerLabel.Position = [513 23 44 22];
+=======
+            % Create Dim4Spinner_ViewerLabel
+            app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_ViewerLabel.Position = [514 24 44 22];
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
             app.Dim4Spinner_ViewerLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Viewer
             app.Dim4Spinner_Viewer = uispinner(app.DViewerTab);
             app.Dim4Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_ViewerValueChanged, true);
             app.Dim4Spinner_Viewer.Enable = 'off';
+<<<<<<< HEAD
             app.Dim4Spinner_Viewer.Position = [568 23 51 22];
             app.Dim4Spinner_Viewer.Value = 1;
 
@@ -7342,6 +7417,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.DashLabel.FontWeight = 'bold';
             app.DashLabel.Position = [401 22 19 25];
             app.DashLabel.Text = '-';
+=======
+            app.Dim4Spinner_Viewer.Position = [569 24 51 22];
+            app.Dim4Spinner_Viewer.Value = 1;
+
+            % Create Dim5Spinner_ViewerLabel
+            app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim5Spinner_ViewerLabel.Position = [634 24 44 22];
+            app.Dim5Spinner_ViewerLabel.Text = 'Dim - 5';
+
+            % Create Dim5Spinner_Viewer
+            app.Dim5Spinner_Viewer = uispinner(app.DViewerTab);
+            app.Dim5Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_ViewerValueChanged, true);
+            app.Dim5Spinner_Viewer.Enable = 'off';
+            app.Dim5Spinner_Viewer.Position = [690 24 51 22];
+            app.Dim5Spinner_Viewer.Value = 1;
+>>>>>>> eaac5ee4fdba5e42bbb64e5e1c613476bb7f3375
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0842UIFigure);
