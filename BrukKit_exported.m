@@ -201,9 +201,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
-        AtlasPathEditFieldLabel         matlab.ui.control.Label
-        AtlasPathEditField              matlab.ui.control.EditField
-        ImportAtlasButton               matlab.ui.control.Button
+        SelectAtlasDropDown             matlab.ui.control.DropDown
+        ImportReferenceAtlasButton      matlab.ui.control.Button
         SelectparameterDropDown         matlab.ui.control.DropDown
         SelectparameterLabel            matlab.ui.control.Label
         UsedifferentparametermapCheckBox  matlab.ui.control.CheckBox
@@ -352,10 +351,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        
-        % Loading and preview tab properties
+        % General properties
         WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
         ExportFolderPath % Filepath of created export folder
+
+        % Loading and preview tab properties
         PvDatasetsFile % Filepath of selected archive file
         StudyPath % Filepath of selected study directory
         TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
@@ -1159,10 +1159,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Visible = 'on';
             app.SelectfixedLabel.Visible = 'on';
             app.AtlasImageData = [];
-            app.ImportAtlasButton.Visible = 'off';
-            app.AtlasPathEditField.Visible = 'off';
-            app.AtlasPathEditField.Value = "";
-            app.AtlasPathEditFieldLabel.Visible = 'off';
+            app.ImportReferenceAtlasButton.Visible = 'off';
+            app.SelectAtlasDropDown.Visible = 'off';
     
             % Volumetry 
             app.ExportDataButton_Volumetry.Enable = 'off';
@@ -1444,7 +1442,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function StartUpFcn(app)
-
+            
+            % Check for existence of BrukKit working folder in temp,
+            % otherwise create new
+            if exist(app.WorkingFolder, 'dir')
+                rmdir(app.WorkingFolder, "s");
+                mkdir(app.WorkingFolder);
+            else
+                mkdir(app.WorkingFolder);
+            end
             movegui(app.BrukKitAlphav0843UIFigure, 'center');
         end
 
@@ -1492,11 +1498,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                  'Message', "Purging old temporary data");
             drawnow
 
+            % Create new folder for loading operations inside working temp
+            % folder
+            loading_folder = strcat(app.WorkingFolder, filesep, 'Loading');
             % Purge old temporary data
             try
-                rmdir(app.WorkingFolder, "s");
+                rmdir(loading_folder, "s");
             catch
             end
+            mkdir(loading_folder);       
             
             % Select .PvDatasets file, check for cancel and update the edit field text
             progress.Value = 0.2;
@@ -1511,19 +1521,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PvDatasetsFile = fullfile(folder, file);
             app.ArchiveEditField.Value = app.PvDatasetsFile;
             
-            % Extract the archive file to TEMP folder
+            % Extract the archive file to temp loading folder
             progress.Value = 0.4;
             progress.Message = "Unzipping selected archive";
-            unzip(app.PvDatasetsFile, app.WorkingFolder);
-            temp = struct2cell(dir(fullfile(app.WorkingFolder, '*')));
+            unzip(app.PvDatasetsFile, loading_folder);
+            temp = struct2cell(dir(fullfile(loading_folder, '*')));
             
             % Check if selected archive is a study or a subject file
             progress.Value = 0.6;
             progress.Message = "Selecting a study to load";
             if regexp(temp{1,end}, '.*\.study$') == 1
-                app.StudyPath = fullfile(app.WorkingFolder, temp{1,end-1});
+                app.StudyPath = fullfile(loading_folder, temp{1,end-1});
             elseif regexp(temp{1,end}, '.*\.subject$') == 1
-                app.StudyPath = uigetdir(app.WorkingFolder, 'Select a study folder to use');
+                app.StudyPath = uigetdir(loading_folder, 'Select a study folder to use');
                 figure(app.BrukKitAlphav0843UIFigure);
             else
                 uiconfirm(app.BrukKitAlphav0843UIFigure, "Unkown archive type.", "","Options",{'OK'},"DefaultOption",1, "Icon","error");
@@ -3094,7 +3104,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitAlphav0843UIFigure, "External hemisphere mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0843UIFigure, "External hemisphere mask loaded successfully.", "External Hemisphere Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: ResetHemispheresButton
@@ -3134,7 +3144,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitAlphav0843UIFigure, "External ROI pack loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitAlphav0843UIFigure, "External ROI pack loaded successfully.", "External ROI Pack","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: ROIListListBox
@@ -3885,17 +3895,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.TimeSeriesAlignmentPanel.Visible = 'off';
                     app.SelectfixedDropDown.Visible = 'on';
                     app.SelectfixedLabel.Visible = 'on';
-                    app.ImportAtlasButton.Visible = 'off';
-                    app.AtlasPathEditField.Visible = 'off';
-                    app.AtlasPathEditFieldLabel.Visible = 'off';
+                    app.ImportReferenceAtlasButton.Visible = 'off';
+                    app.SelectAtlasDropDown.Visible = 'off';
                 case "Reference Atlas"
                     app.StandardAtlasRegistrationPanel.Visible = 'on';
                     app.TimeSeriesAlignmentPanel.Visible = 'off';
                     app.SelectfixedDropDown.Visible = 'off';
                     app.SelectfixedLabel.Visible = 'off';
-                    app.ImportAtlasButton.Visible = 'on';
-                    app.AtlasPathEditField.Visible = 'on';
-                    app.AtlasPathEditFieldLabel.Visible = 'on';
+                    app.ImportReferenceAtlasButton.Visible = 'on';
+                    app.SelectAtlasDropDown.Visible = 'on';
                 case "Time-Series Alignment"
                     app.StandardAtlasRegistrationPanel.Visible = 'off';
                     app.TimeSeriesAlignmentPanel.Visible = 'on';
@@ -3955,47 +3963,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.Value = '';
         end
 
-        % Button pushed function: ImportAtlasButton
-        function ImportAtlasButtonPushed(app, event)
-            % Draw progress box 
-            progress = uiprogressdlg(app.BrukKitAlphav0843UIFigure,'Title',"Please wait",...
-                 'Message', "Selecting reference atlas");
+        % Button pushed function: ImportReferenceAtlasButton
+        function ImportReferenceAtlasButtonPushed(app, event)
             
-            % Get reference atlas .raw path
-            progress.Value = 0.2;
-            [file, folder] = uigetfile('*.raw', 'Select Reference Atlas .raw File');
-            figure(app.BrukKitAlphav0843UIFigure);
-            if isequal(file, 0)
-                close(progress)
-                return;
-            end
-            atlas_Path = fullfile(folder,file);
-            try
-                progress.Value = 0.3;
-                progress.Message = "Entering dimensions for reshaping";
-                reshape_dims = inputdlg({'X:','Y:', 'Z:'}, 'Enter Atlas Dimensions', [1 40]);
-                reshape_dims = transpose(str2double(reshape_dims));
-                % Open atlas according to allen brain instructions using input dimensions, permute
-                % and pagetranspose to get slices on 3rd dim
-                %[528 320 456]
-                progress.Value = 0.6;
-                progress.Message = "Importing reference atlas";
-                fid = fopen(atlas_Path, 'r', 'l' );
-                atlas = fread( fid, prod(reshape_dims), 'uint8' );
-                fclose(fid);
-                atlas = reshape(atlas, reshape_dims);
-                atlas = permute(atlas, [3 2 1]);
-                app.AtlasImageData = pagetranspose(atlas);
-                app.AtlasPathEditField.Value = atlas_Path;
-                progress.Value = 1.0;
-                progress.Message = "Done!";
-                pause(0.5)
-                close(progress)
-                % Display confirmation figure
-                uiconfirm(app.BrukKitAlphav0843UIFigure, "Reference atlas sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
-            catch
-                close(progress)
-                uialert(app.BrukKitAlphav0843UIFigure, 'No valid reference atlas was found on selected path. Please check manual for detailed atlas loading instructions.', 'No Valid Reference Atlas Found')
+            % Open import options
+            selection = uiconfirm(app.BrukKitAlphav0843UIFigure, "Select import option:", "Reference Atlas Import Options", ...
+                "Options", ["Download New","Load From Directory","Cancel"], "DefaultOption", 1, "CancelOption", 3);
+            switch selection
+                case "Download New"
+                case "Load From Directory"
             end
         end
 
@@ -6675,25 +6651,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.Position = [44 267 264 21];
             app.SelectparameterDropDown.Value = 'None';
 
-            % Create ImportAtlasButton
-            app.ImportAtlasButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
-            app.ImportAtlasButton.ButtonPushedFcn = createCallbackFcn(app, @ImportAtlasButtonPushed, true);
-            app.ImportAtlasButton.Visible = 'off';
-            app.ImportAtlasButton.Position = [134 400 85 23];
-            app.ImportAtlasButton.Text = 'Import Atlas';
+            % Create ImportReferenceAtlasButton
+            app.ImportReferenceAtlasButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
+            app.ImportReferenceAtlasButton.ButtonPushedFcn = createCallbackFcn(app, @ImportReferenceAtlasButtonPushed, true);
+            app.ImportReferenceAtlasButton.Visible = 'off';
+            app.ImportReferenceAtlasButton.Position = [108 398 137 23];
+            app.ImportReferenceAtlasButton.Text = 'Import Reference Atlas';
 
-            % Create AtlasPathEditField
-            app.AtlasPathEditField = uieditfield(app.StandardAtlasRegistrationPanel, 'text');
-            app.AtlasPathEditField.Editable = 'off';
-            app.AtlasPathEditField.Visible = 'off';
-            app.AtlasPathEditField.Position = [117 365 187 22];
-
-            % Create AtlasPathEditFieldLabel
-            app.AtlasPathEditFieldLabel = uilabel(app.StandardAtlasRegistrationPanel);
-            app.AtlasPathEditFieldLabel.HorizontalAlignment = 'right';
-            app.AtlasPathEditFieldLabel.Visible = 'off';
-            app.AtlasPathEditFieldLabel.Position = [49 365 60 22];
-            app.AtlasPathEditFieldLabel.Text = 'Atlas Path';
+            % Create SelectAtlasDropDown
+            app.SelectAtlasDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
+            app.SelectAtlasDropDown.Items = {'None'};
+            app.SelectAtlasDropDown.Visible = 'off';
+            app.SelectAtlasDropDown.Placeholder = 'None';
+            app.SelectAtlasDropDown.Position = [44 366 264 21];
+            app.SelectAtlasDropDown.Value = 'None';
 
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
