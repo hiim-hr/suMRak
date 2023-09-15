@@ -389,7 +389,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % ROI segmentation
         YellowScreen % ROI mask yellow screen
-        VolumeSegmenterWindow % Volume segmenter window
+        ROIVolumeSegmenterWindow % Volume segmenter window
         
         % Saved segmenter data
         SavedBrainMask % Saved brain mask data of current experiment
@@ -411,6 +411,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         MovingNDims % Number of moving image data dimensions
         FixedNDims % Number of fixed image data dimensions
         ParameterNDims % Number of parameter image data dimensions
+        AtlasImporterWindow % Atlas importer window
         AtlasImageData = []; % Loaded reference atlas image data
         RegisteredImageData % Property for storing registered image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
@@ -3234,7 +3235,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 5
                     volume = app.WorkingSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value,app.Dim4Spinner_Segmenter.Value);
             end
-            app.VolumeSegmenterWindow = ROIVolumeSegmenter(app, volume, app.ROIMask, ...
+            app.ROIVolumeSegmenterWindow = ROIVolumeSegmenter(app, volume, app.ROIMask, ...
                 app.ROIIdentifiers, vox_dim_X, vox_dim_Y, slice_Thickness+slice_Gap);
         end
 
@@ -3971,6 +3972,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 "Options", ["Download New","Load From Directory","Cancel"], "DefaultOption", 1, "CancelOption", 3);
             switch selection
                 case "Download New"
+                    % Open atlas importer
+                    app.AtlasImporterWindow = ReferenceAtlasImporter(app);
                 case "Load From Directory"
             end
         end
@@ -5332,6 +5335,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
     
             switch selection
                 case 'Bye!'
+                    delete(app.ROIVolumeSegmenterWindow);
+                    delete(app.AtlasImporterWindow);
                     delete(app.RegistrationViewerWindow);       
                     delete(app.DSCSettingsWindow);
                     delete(app);
