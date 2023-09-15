@@ -4124,7 +4124,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     end
                     % Get parameter slice dimension indexes, create numpy array
                     par_instr = slice_instr((P_ind+1):end);  
-                    instr_comma_ind = strfind(fix_instr, ',');
+                    instr_comma_ind = strfind(par_instr, ',');
                     dim3 = par_instr(2:instr_comma_ind(1)-1);
                     dim4 = par_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
                     dim5 = par_instr(instr_comma_ind(2)+1:end-1);
