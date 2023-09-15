@@ -2,7 +2,17 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                       matlab.ui.Figure
+        ROIVolumeSegmenterUIFigure     matlab.ui.Figure
+        ActiveContourOptionsPanel      matlab.ui.container.Panel
+        SelectModelButtonGroup         matlab.ui.container.ButtonGroup
+        EdgeButton                     matlab.ui.control.RadioButton
+        ChanVeseButton                 matlab.ui.control.RadioButton
+        ContractionBiasEditField       matlab.ui.control.NumericEditField
+        ContractionBiasEditFieldLabel  matlab.ui.control.Label
+        SmoothFactorEditField          matlab.ui.control.NumericEditField
+        SmoothFactorEditFieldLabel     matlab.ui.control.Label
+        MaximumNumberOfIterationsEditField  matlab.ui.control.NumericEditField
+        MaximumNumberOfIterationsEditFieldLabel  matlab.ui.control.Label
         DSuperpixelsOptionsPanel       matlab.ui.container.Panel
         ShowAllSuperpixelsButton       matlab.ui.control.Button
         NumberofIterationsEditField    matlab.ui.control.NumericEditField
@@ -10,8 +20,8 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
         CompactnessEditField           matlab.ui.control.NumericEditField
         CompactnessEditFieldLabel      matlab.ui.control.Label
         SelectAlgorithmButtonGroup     matlab.ui.container.ButtonGroup
-        slicButton                     matlab.ui.control.RadioButton
-        slic0Button                    matlab.ui.control.RadioButton
+        SlicButton                     matlab.ui.control.RadioButton
+        Slic0Button                    matlab.ui.control.RadioButton
         NumberofSuperpixelsEditField   matlab.ui.control.NumericEditField
         NumberofSuperpixelsEditFieldLabel  matlab.ui.control.Label
         RunModelButton                 matlab.ui.control.Button
@@ -19,18 +29,8 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
         SelectROIListBoxLabel          matlab.ui.control.Label
         ChooseMethodDropDown           matlab.ui.control.DropDown
         ChooseMethodDropDownLabel      matlab.ui.control.Label
-        SaveandreturntoBrukkitButton   matlab.ui.control.Button
+        SaveAndReturnSegmentationButton  matlab.ui.control.Button
         ViewerPanel                    matlab.ui.container.Panel
-        ActiveContourOptionsPanel      matlab.ui.container.Panel
-        SelectModelButtonGroup         matlab.ui.container.ButtonGroup
-        edgeButton                     matlab.ui.control.RadioButton
-        ChanVeseButton                 matlab.ui.control.RadioButton
-        ContractionbiasEditField       matlab.ui.control.NumericEditField
-        ContractionbiasEditFieldLabel  matlab.ui.control.Label
-        SmoothfactorEditField          matlab.ui.control.NumericEditField
-        SmoothfactorEditFieldLabel     matlab.ui.control.Label
-        MaximumnumberofiterationsEditField  matlab.ui.control.NumericEditField
-        MaximumnumberofiterationsEditFieldLabel  matlab.ui.control.Label
     end
 
     
@@ -73,6 +73,9 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             %Update ROI identifiers and the list box
             app.ROIIdentifiers = ROIIdentifiers;
             app.SelectROIListBox.Items = app.ROIIdentifiers;
+            
+            % Center on screen
+            movegui(app.ROIVolumeSegmenterUIFigure, 'center');
 
             % Refresh 3d viewer
             % Create transformation matrix
@@ -84,16 +87,6 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             %     app.Mask(:,:,:,app.ROIindex), 'OverlayRenderingStyle', 'LabelOverlay', 'GradientOpacityValue', 0.8, 'Alphamap',alphamap);
             volshow(app.Volume, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', 'GradientOpacity', ...
                 'GradientOpacityValue', 0.8, 'Alphamap', app.AlphaMap);
-
-        end
-
-        % Close request function: UIFigure
-        function UIFigureCloseRequest(app, event)
-            
-            % Close Brukkit progress bar and delete app
-            app.BrukKit.VolROISegmentationToolsButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar);
-            delete(app);
             
         end
 
@@ -119,19 +112,19 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             selection = app.ChooseMethodDropDown.Value;
             switch selection
                 case 'Active Contour'
-                    progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
+                    progress = uiprogressdlg(app.ROIVolumeSegmenterUIFigure,'Title',"Please wait",...
                          'Message', "Reshaping selected ROI using Active Contours...", 'Indeterminate','on');
                     drawnow;
                     method = app.SelectModelButtonGroup.SelectedObject.Text;
                     index = find(strcmp(app.ROIIdentifiers,app.SelectROIListBox.Value));
                     w = warning('error', 'images:activecontour:vanishingContour');
                     try
-                        newROI = activecontour(im2uint8(app.Volume),app.Mask(:,:,:,index),app.MaximumnumberofiterationsEditField.Value,method, ...
-                            "SmoothFactor",app.SmoothfactorEditField.Value,"ContractionBias",app.ContractionbiasEditField.Value);
+                        newROI = activecontour(im2uint8(app.Volume),app.Mask(:,:,:,index),app.MaximumNumberOfIterationsEditField.Value,method, ...
+                            "SmoothFactor",app.SmoothFactorEditField.Value,"ContractionBias",app.ContractionBiasEditField.Value);
                     catch ME
                         switch ME.identifier 
                             case 'images:activecontour:vanishingContour'
-                                uialert(app.UIFigure, 'Active Cotour region collapsed to zero. Consider decreasing contraction bias or maximum number of iterations or increase your seed ROI size.', 'Warning!','Icon','warning');
+                                uialert(app.ROIVolumeSegmenterUIFigure, 'Active Cotour region collapsed to zero. Consider decreasing contraction bias or maximum number of iterations or increase your seed ROI size.', 'Warning!','Icon','warning');
                                 warning(w);
                                 return;
                         end
@@ -148,7 +141,7 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
                     volshow(app.Volume, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', 'GradientOpacity', 'OverlayData', ...
                         app.Mask(:,:,:,index), 'OverlayRenderingStyle', 'LabelOverlay', 'GradientOpacityValue', 0.8, 'Alphamap',app.AlphaMap);
                 case '3D Superpixels'
-                    progress = uiprogressdlg(app.UIFigure,'Title',"Please wait",...
+                    progress = uiprogressdlg(app.ROIVolumeSegmenterUIFigure,'Title',"Please wait",...
                          'Message', "Purging old 3D Superpixels...", 'Indeterminate','on');
                     drawnow;
                     try
@@ -194,53 +187,17 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
 
         end
 
-        % Button pushed function: SaveandreturntoBrukkitButton
-        function SaveandreturntoBrukkitButtonPushed(app, event)
-            
-            superpixelIdx = find(cell2mat(strfind(app.ROIIdentifiers,'3Dsuperpixel')));
-            if ~isempty(superpixelIdx) % There are new superpixels
-                % Prompt user for new ROI name and superpixel array to add
-                % up together.
-                input = inputdlg({'Enter new ROI name:','Enter which superpixels to add together (1,2,3,6:9):'}, ...
-                    'Choose which superpixels to keep', [1 40], {'', strcat('1:',num2str(length(superpixelIdx)))});
-                ROIname = input{1};
-                selectedSuperpixels = str2num(input{2}); %#ok<ST2NM>
-                % Construct new ROI by superpixel addition
-                newROI = zeros(app.VolumeDims,'like',app.Volume);
-                for i = selectedSuperpixels
-                    newROI = newROI + app.Mask(:,:,:,i);
-                end
-                % Flush all superpixel ROIs
-                app.Mask(:,:,:,superpixelIdx) = [];
-                app.ROIIdentifiers(superpixelIdx) = [];
-                % Add the newly created ROI to ROIMask and ROIIdentifiers
-                app.Mask = cat(4, app.Mask, newROI);
-                app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROIname);
-            end
-            
-            % Apply all ROI to Brukkit
-            app.BrukKit.ROIMask = app.Mask;
-            app.BrukKit.ROIIdentifiers = app.ROIIdentifiers;
-            app.BrukKit.ROIListListBox.Items = app.ROIIdentifiers;
-            
-            % Close Brukkit progress bar and delete app
-            app.BrukKit.RefreshImageSegmenter;
-            app.BrukKit.VolROISegmentationToolsButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar);
-            delete(app);
-        end
-
         % Selection changed function: SelectModelButtonGroup
         function SelectModelButtonGroupSelectionChanged(app, event)
             selectedButton = app.SelectModelButtonGroup.SelectedObject;
             
             switch selectedButton.Text
                 case 'Chan-Vese'
-                    app.SmoothfactorEditField.Value = 0;
-                    app.ContractionbiasEditField.Value = 0;
+                    app.SmoothFactorEditField.Value = 0;
+                    app.ContractionBiasEditField.Value = 0;
                 case 'edge'
-                    app.SmoothfactorEditField.Value = 1;
-                    app.ContractionbiasEditField.Value = 0.3;
+                    app.SmoothFactorEditField.Value = 1;
+                    app.ContractionBiasEditField.Value = 0.3;
             end
         end
 
@@ -286,6 +243,51 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             volshow(app.Volume, 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', 'GradientOpacity', 'OverlayData', ...
             app.SuperPixels, 'OverlayRenderingStyle', 'LabelOverlay', 'GradientOpacityValue', 0.8, 'Alphamap',app.AlphaMap);
         end
+
+        % Button pushed function: SaveAndReturnSegmentationButton
+        function SaveAndReturnSegmentationButtonPushed(app, event)
+            
+            superpixelIdx = find(cell2mat(strfind(app.ROIIdentifiers,'3Dsuperpixel')));
+            if ~isempty(superpixelIdx) % There are new superpixels
+                % Prompt user for new ROI name and superpixel array to add
+                % up together.
+                input = inputdlg({'Enter new ROI name:','Enter which superpixels to add together (1,2,3,6:9):'}, ...
+                    'Choose which superpixels to keep', [1 40], {'', strcat('1:',num2str(length(superpixelIdx)))});
+                ROIname = input{1};
+                selectedSuperpixels = str2num(input{2}); %#ok<ST2NM>
+                % Construct new ROI by superpixel addition
+                newROI = zeros(app.VolumeDims,'like',app.Volume);
+                for i = selectedSuperpixels
+                    newROI = newROI + app.Mask(:,:,:,i);
+                end
+                % Flush all superpixel ROIs
+                app.Mask(:,:,:,superpixelIdx) = [];
+                app.ROIIdentifiers(superpixelIdx) = [];
+                % Add the newly created ROI to ROIMask and ROIIdentifiers
+                app.Mask = cat(4, app.Mask, newROI);
+                app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROIname);
+            end
+            
+            % Apply all ROI to Brukkit
+            app.BrukKit.ROIMask = app.Mask;
+            app.BrukKit.ROIIdentifiers = app.ROIIdentifiers;
+            app.BrukKit.ROIListListBox.Items = app.ROIIdentifiers;
+            
+            % Close Brukkit progress bar and delete app
+            app.BrukKit.RefreshImageSegmenter;
+            app.BrukKit.VolROISegmentationToolsButton.Enable = 'on';
+            close(app.BrukKit.ProgressBar);
+            delete(app);
+        end
+
+        % Close request function: ROIVolumeSegmenterUIFigure
+        function ROIVolumeSegmenterUIFigureCloseRequest(app, event)
+            
+            % Close Brukkit progress bar and delete app
+            app.BrukKit.VolROISegmentationToolsButton.Enable = 'on';
+            close(app.BrukKit.ProgressBar);
+            delete(app);            
+        end
     end
 
     % Component initialization
@@ -294,117 +296,54 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 854 480];
-            app.UIFigure.Name = 'MATLAB App';
-            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
-
-            % Create ActiveContourOptionsPanel
-            app.ActiveContourOptionsPanel = uipanel(app.UIFigure);
-            app.ActiveContourOptionsPanel.BorderType = 'none';
-            app.ActiveContourOptionsPanel.TitlePosition = 'centertop';
-            app.ActiveContourOptionsPanel.Title = 'Active Contour Options';
-            app.ActiveContourOptionsPanel.Position = [631 99 218 186];
-
-            % Create MaximumnumberofiterationsEditFieldLabel
-            app.MaximumnumberofiterationsEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
-            app.MaximumnumberofiterationsEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaximumnumberofiterationsEditFieldLabel.Position = [31 87 166 22];
-            app.MaximumnumberofiterationsEditFieldLabel.Text = 'Maximum number of iterations';
-
-            % Create MaximumnumberofiterationsEditField
-            app.MaximumnumberofiterationsEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
-            app.MaximumnumberofiterationsEditField.LowerLimitInclusive = 'off';
-            app.MaximumnumberofiterationsEditField.Limits = [0 Inf];
-            app.MaximumnumberofiterationsEditField.RoundFractionalValues = 'on';
-            app.MaximumnumberofiterationsEditField.Position = [64 64 100 22];
-            app.MaximumnumberofiterationsEditField.Value = 100;
-
-            % Create SmoothfactorEditFieldLabel
-            app.SmoothfactorEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
-            app.SmoothfactorEditFieldLabel.HorizontalAlignment = 'right';
-            app.SmoothfactorEditFieldLabel.Position = [12 34 80 22];
-            app.SmoothfactorEditFieldLabel.Text = 'Smooth factor';
-
-            % Create SmoothfactorEditField
-            app.SmoothfactorEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
-            app.SmoothfactorEditField.Limits = [0 Inf];
-            app.SmoothfactorEditField.Position = [119 34 94 22];
-
-            % Create ContractionbiasEditFieldLabel
-            app.ContractionbiasEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
-            app.ContractionbiasEditFieldLabel.HorizontalAlignment = 'right';
-            app.ContractionbiasEditFieldLabel.Position = [12 5 92 22];
-            app.ContractionbiasEditFieldLabel.Text = 'Contraction bias';
-
-            % Create ContractionbiasEditField
-            app.ContractionbiasEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
-            app.ContractionbiasEditField.Limits = [-1 1];
-            app.ContractionbiasEditField.Position = [119 5 94 22];
-
-            % Create SelectModelButtonGroup
-            app.SelectModelButtonGroup = uibuttongroup(app.ActiveContourOptionsPanel);
-            app.SelectModelButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SelectModelButtonGroupSelectionChanged, true);
-            app.SelectModelButtonGroup.BorderType = 'none';
-            app.SelectModelButtonGroup.BorderWidth = 0;
-            app.SelectModelButtonGroup.TitlePosition = 'centertop';
-            app.SelectModelButtonGroup.Title = 'Select Model';
-            app.SelectModelButtonGroup.Position = [16 114 188 47];
-
-            % Create ChanVeseButton
-            app.ChanVeseButton = uiradiobutton(app.SelectModelButtonGroup);
-            app.ChanVeseButton.Text = 'Chan-Vese';
-            app.ChanVeseButton.Position = [21 5 81 22];
-            app.ChanVeseButton.Value = true;
-
-            % Create edgeButton
-            app.edgeButton = uiradiobutton(app.SelectModelButtonGroup);
-            app.edgeButton.Text = 'edge';
-            app.edgeButton.Position = [109 5 65 22];
+            % Create ROIVolumeSegmenterUIFigure and hide until all components are created
+            app.ROIVolumeSegmenterUIFigure = uifigure('Visible', 'off');
+            app.ROIVolumeSegmenterUIFigure.Position = [100 100 854 480];
+            app.ROIVolumeSegmenterUIFigure.Name = 'ROI Volume Segmenter';
+            app.ROIVolumeSegmenterUIFigure.CloseRequestFcn = createCallbackFcn(app, @ROIVolumeSegmenterUIFigureCloseRequest, true);
 
             % Create ViewerPanel
-            app.ViewerPanel = uipanel(app.UIFigure);
+            app.ViewerPanel = uipanel(app.ROIVolumeSegmenterUIFigure);
             app.ViewerPanel.BorderType = 'none';
             app.ViewerPanel.TitlePosition = 'centertop';
             app.ViewerPanel.Title = 'Viewer';
             app.ViewerPanel.BackgroundColor = [1 1 1];
             app.ViewerPanel.Position = [13 12 605 459];
 
-            % Create SaveandreturntoBrukkitButton
-            app.SaveandreturntoBrukkitButton = uibutton(app.UIFigure, 'push');
-            app.SaveandreturntoBrukkitButton.ButtonPushedFcn = createCallbackFcn(app, @SaveandreturntoBrukkitButtonPushed, true);
-            app.SaveandreturntoBrukkitButton.Position = [664 20 154 23];
-            app.SaveandreturntoBrukkitButton.Text = 'Save and return to Brukkit';
+            % Create SaveAndReturnSegmentationButton
+            app.SaveAndReturnSegmentationButton = uibutton(app.ROIVolumeSegmenterUIFigure, 'push');
+            app.SaveAndReturnSegmentationButton.ButtonPushedFcn = createCallbackFcn(app, @SaveAndReturnSegmentationButtonPushed, true);
+            app.SaveAndReturnSegmentationButton.Position = [650 20 183 23];
+            app.SaveAndReturnSegmentationButton.Text = 'Save And Return Segmentation';
 
             % Create ChooseMethodDropDownLabel
-            app.ChooseMethodDropDownLabel = uilabel(app.UIFigure);
+            app.ChooseMethodDropDownLabel = uilabel(app.ROIVolumeSegmenterUIFigure);
             app.ChooseMethodDropDownLabel.HorizontalAlignment = 'center';
             app.ChooseMethodDropDownLabel.Position = [690 449 93 22];
             app.ChooseMethodDropDownLabel.Text = 'Choose Method:';
 
             % Create ChooseMethodDropDown
-            app.ChooseMethodDropDown = uidropdown(app.UIFigure);
+            app.ChooseMethodDropDown = uidropdown(app.ROIVolumeSegmenterUIFigure);
             app.ChooseMethodDropDown.Items = {'Active Contour', '3D Superpixels'};
             app.ChooseMethodDropDown.ValueChangedFcn = createCallbackFcn(app, @ChooseMethodDropDownValueChanged, true);
             app.ChooseMethodDropDown.Position = [663 427 154 22];
             app.ChooseMethodDropDown.Value = 'Active Contour';
 
             % Create SelectROIListBoxLabel
-            app.SelectROIListBoxLabel = uilabel(app.UIFigure);
+            app.SelectROIListBoxLabel = uilabel(app.ROIVolumeSegmenterUIFigure);
             app.SelectROIListBoxLabel.HorizontalAlignment = 'center';
             app.SelectROIListBoxLabel.Position = [708 391 63 22];
             app.SelectROIListBoxLabel.Text = 'Select ROI';
 
             % Create SelectROIListBox
-            app.SelectROIListBox = uilistbox(app.UIFigure);
+            app.SelectROIListBox = uilistbox(app.ROIVolumeSegmenterUIFigure);
             app.SelectROIListBox.Items = {};
             app.SelectROIListBox.ValueChangedFcn = createCallbackFcn(app, @SelectROIListBoxValueChanged, true);
             app.SelectROIListBox.Position = [646 305 188 86];
             app.SelectROIListBox.Value = {};
 
             % Create RunModelButton
-            app.RunModelButton = uibutton(app.UIFigure, 'push');
+            app.RunModelButton = uibutton(app.ROIVolumeSegmenterUIFigure, 'push');
             app.RunModelButton.ButtonPushedFcn = createCallbackFcn(app, @RunModelButtonPushed, true);
             app.RunModelButton.Enable = 'off';
             app.RunModelButton.Tooltip = {'Please select a seed ROI first.'};
@@ -412,7 +351,7 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             app.RunModelButton.Text = 'Run Model';
 
             % Create DSuperpixelsOptionsPanel
-            app.DSuperpixelsOptionsPanel = uipanel(app.UIFigure);
+            app.DSuperpixelsOptionsPanel = uipanel(app.ROIVolumeSegmenterUIFigure);
             app.DSuperpixelsOptionsPanel.BorderType = 'none';
             app.DSuperpixelsOptionsPanel.TitlePosition = 'centertop';
             app.DSuperpixelsOptionsPanel.Title = '3D Superpixels Options';
@@ -442,16 +381,16 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             app.SelectAlgorithmButtonGroup.Title = 'Select Algorithm';
             app.SelectAlgorithmButtonGroup.Position = [33 87 152 45];
 
-            % Create slic0Button
-            app.slic0Button = uiradiobutton(app.SelectAlgorithmButtonGroup);
-            app.slic0Button.Text = 'slic0';
-            app.slic0Button.Position = [29 3 45 22];
-            app.slic0Button.Value = true;
+            % Create Slic0Button
+            app.Slic0Button = uiradiobutton(app.SelectAlgorithmButtonGroup);
+            app.Slic0Button.Text = 'Slic0';
+            app.Slic0Button.Position = [29 3 48 22];
+            app.Slic0Button.Value = true;
 
-            % Create slicButton
-            app.slicButton = uiradiobutton(app.SelectAlgorithmButtonGroup);
-            app.slicButton.Text = 'slic';
-            app.slicButton.Position = [92 3 46 22];
+            % Create SlicButton
+            app.SlicButton = uiradiobutton(app.SelectAlgorithmButtonGroup);
+            app.SlicButton.Text = 'Slic';
+            app.SlicButton.Position = [92 3 46 22];
 
             % Create CompactnessEditFieldLabel
             app.CompactnessEditFieldLabel = uilabel(app.DSuperpixelsOptionsPanel);
@@ -485,11 +424,74 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
             app.ShowAllSuperpixelsButton = uibutton(app.DSuperpixelsOptionsPanel, 'push');
             app.ShowAllSuperpixelsButton.ButtonPushedFcn = createCallbackFcn(app, @ShowAllSuperpixelsButtonPushed, true);
             app.ShowAllSuperpixelsButton.Enable = 'off';
-            app.ShowAllSuperpixelsButton.Position = [51 4 127 23];
+            app.ShowAllSuperpixelsButton.Position = [46 2 127 23];
             app.ShowAllSuperpixelsButton.Text = 'Show All Superpixels';
 
+            % Create ActiveContourOptionsPanel
+            app.ActiveContourOptionsPanel = uipanel(app.ROIVolumeSegmenterUIFigure);
+            app.ActiveContourOptionsPanel.BorderType = 'none';
+            app.ActiveContourOptionsPanel.TitlePosition = 'centertop';
+            app.ActiveContourOptionsPanel.Title = 'Active Contour Options';
+            app.ActiveContourOptionsPanel.Position = [631 99 218 186];
+
+            % Create MaximumNumberOfIterationsEditFieldLabel
+            app.MaximumNumberOfIterationsEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
+            app.MaximumNumberOfIterationsEditFieldLabel.HorizontalAlignment = 'right';
+            app.MaximumNumberOfIterationsEditFieldLabel.Position = [25 89 172 22];
+            app.MaximumNumberOfIterationsEditFieldLabel.Text = 'Maximum Number Of Iterations';
+
+            % Create MaximumNumberOfIterationsEditField
+            app.MaximumNumberOfIterationsEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
+            app.MaximumNumberOfIterationsEditField.LowerLimitInclusive = 'off';
+            app.MaximumNumberOfIterationsEditField.Limits = [0 Inf];
+            app.MaximumNumberOfIterationsEditField.RoundFractionalValues = 'on';
+            app.MaximumNumberOfIterationsEditField.Position = [64 64 100 22];
+            app.MaximumNumberOfIterationsEditField.Value = 100;
+
+            % Create SmoothFactorEditFieldLabel
+            app.SmoothFactorEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
+            app.SmoothFactorEditFieldLabel.HorizontalAlignment = 'right';
+            app.SmoothFactorEditFieldLabel.Position = [8 34 84 22];
+            app.SmoothFactorEditFieldLabel.Text = 'Smooth Factor';
+
+            % Create SmoothFactorEditField
+            app.SmoothFactorEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
+            app.SmoothFactorEditField.Limits = [0 Inf];
+            app.SmoothFactorEditField.Position = [119 34 94 22];
+
+            % Create ContractionBiasEditFieldLabel
+            app.ContractionBiasEditFieldLabel = uilabel(app.ActiveContourOptionsPanel);
+            app.ContractionBiasEditFieldLabel.HorizontalAlignment = 'right';
+            app.ContractionBiasEditFieldLabel.Position = [8 5 93 22];
+            app.ContractionBiasEditFieldLabel.Text = 'Contraction Bias';
+
+            % Create ContractionBiasEditField
+            app.ContractionBiasEditField = uieditfield(app.ActiveContourOptionsPanel, 'numeric');
+            app.ContractionBiasEditField.Limits = [-1 1];
+            app.ContractionBiasEditField.Position = [119 5 94 22];
+
+            % Create SelectModelButtonGroup
+            app.SelectModelButtonGroup = uibuttongroup(app.ActiveContourOptionsPanel);
+            app.SelectModelButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SelectModelButtonGroupSelectionChanged, true);
+            app.SelectModelButtonGroup.BorderType = 'none';
+            app.SelectModelButtonGroup.BorderWidth = 0;
+            app.SelectModelButtonGroup.TitlePosition = 'centertop';
+            app.SelectModelButtonGroup.Title = 'Select Model';
+            app.SelectModelButtonGroup.Position = [16 114 188 47];
+
+            % Create ChanVeseButton
+            app.ChanVeseButton = uiradiobutton(app.SelectModelButtonGroup);
+            app.ChanVeseButton.Text = 'Chan-Vese';
+            app.ChanVeseButton.Position = [21 5 81 22];
+            app.ChanVeseButton.Value = true;
+
+            % Create EdgeButton
+            app.EdgeButton = uiradiobutton(app.SelectModelButtonGroup);
+            app.EdgeButton.Text = 'Edge';
+            app.EdgeButton.Position = [109 5 65 22];
+
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.ROIVolumeSegmenterUIFigure.Visible = 'on';
         end
     end
 
@@ -508,14 +510,14 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
                 createComponents(app)
 
                 % Register the app with App Designer
-                registerApp(app, app.UIFigure)
+                registerApp(app, app.ROIVolumeSegmenterUIFigure)
 
                 % Execute the startup function
                 runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
             else
 
                 % Focus the running singleton app
-                figure(runningApp.UIFigure)
+                figure(runningApp.ROIVolumeSegmenterUIFigure)
 
                 app = runningApp;
             end
@@ -529,7 +531,7 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.ROIVolumeSegmenterUIFigure)
         end
     end
 end

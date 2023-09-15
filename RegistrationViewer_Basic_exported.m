@@ -293,20 +293,6 @@ classdef RegistrationViewer_Basic_exported < matlab.apps.AppBase
             end
         end
 
-        % Menu selected function: ResetInstructionsMenu
-        function ResetInstructionsMenuSelected(app, event)
-            app.RegistrationInstructionsTextArea.Value = '';
-        end
-
-        % Close request function: RegistrationViewerUIFigure
-        function RegistrationViewerUIFigureCloseRequest(app, event)
-
-            % Turn on viewer button, delete app
-            app.BrukKit.RegistrationViewerButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
-            delete(app) 
-        end
-
         % Button pushed function: ReturnInstructionsButton
         function ReturnInstructionsButtonPushed(app, event)
             % Return registration instructions
@@ -316,6 +302,11 @@ classdef RegistrationViewer_Basic_exported < matlab.apps.AppBase
             app.BrukKit.RegistrationViewerButton.Enable = 'on';
             close(app.BrukKit.ProgressBar)
             delete(app) 
+        end
+
+        % Menu selected function: ResetInstructionsMenu
+        function ResetInstructionsMenuSelected(app, event)
+            app.RegistrationInstructionsTextArea.Value = '';
         end
 
         % Menu selected function: ResetViewMenu_Moving
@@ -330,6 +321,15 @@ classdef RegistrationViewer_Basic_exported < matlab.apps.AppBase
             % Reset zoom
             app.UIAxes_Fixed.XLim = [-inf inf];
             app.UIAxes_Fixed.YLim = [-inf inf];
+        end
+
+        % Close request function: RegistrationViewerUIFigure
+        function RegistrationViewerUIFigureCloseRequest(app, event)
+
+            % Turn on viewer button, delete app
+            app.BrukKit.RegistrationViewerButton.Enable = 'on';
+            close(app.BrukKit.ProgressBar)
+            delete(app) 
         end
     end
 

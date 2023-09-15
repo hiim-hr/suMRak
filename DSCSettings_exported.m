@@ -2,7 +2,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                       matlab.ui.Figure
+        DSCMappingAdvancedSettingsUIFigure  matlab.ui.Figure
         ApplySettingsButton            matlab.ui.control.Button
         ResetToDefaultButton           matlab.ui.control.Button
         ConcentrationPanel             matlab.ui.container.Panel
@@ -120,7 +120,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.SavecSVDResidualsCheckBox.Value = loadedOptions.deconv.cSVD.residual;
             app.SaveoSVDResidualsCheckBox.Value = loadedOptions.deconv.oSVD.residual;
 
-            movegui(app.UIFigure, 'center');
+            movegui(app.DSCMappingAdvancedSettingsUIFigure, 'center');
         end
 
         % Button pushed function: ResetToDefaultButton
@@ -214,8 +214,8 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             delete(app) 
         end
 
-        % Close request function: UIFigure
-        function UIFigureCloseRequest(app, event)
+        % Close request function: DSCMappingAdvancedSettingsUIFigure
+        function DSCMappingAdvancedSettingsUIFigureCloseRequest(app, event)
 
             % Turn on settings button, delete app
             app.BrukKit.AdvancedSettingsButton.Enable = 'on';
@@ -230,14 +230,14 @@ classdef DSCSettings_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 569 720];
-            app.UIFigure.Name = 'MATLAB App';
-            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
+            % Create DSCMappingAdvancedSettingsUIFigure and hide until all components are created
+            app.DSCMappingAdvancedSettingsUIFigure = uifigure('Visible', 'off');
+            app.DSCMappingAdvancedSettingsUIFigure.Position = [100 100 569 720];
+            app.DSCMappingAdvancedSettingsUIFigure.Name = 'DSC Mapping Advanced Settings';
+            app.DSCMappingAdvancedSettingsUIFigure.CloseRequestFcn = createCallbackFcn(app, @DSCMappingAdvancedSettingsUIFigureCloseRequest, true);
 
             % Create ImageValueButtonGroup
-            app.ImageValueButtonGroup = uibuttongroup(app.UIFigure);
+            app.ImageValueButtonGroup = uibuttongroup(app.DSCMappingAdvancedSettingsUIFigure);
             app.ImageValueButtonGroup.BorderType = 'none';
             app.ImageValueButtonGroup.TitlePosition = 'centertop';
             app.ImageValueButtonGroup.Title = 'Image Value';
@@ -255,17 +255,17 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.ConcentrationButton.Position = [71 3 97 22];
 
             % Create MaskNrVoxelsEditFieldLabel
-            app.MaskNrVoxelsEditFieldLabel = uilabel(app.UIFigure);
+            app.MaskNrVoxelsEditFieldLabel = uilabel(app.DSCMappingAdvancedSettingsUIFigure);
             app.MaskNrVoxelsEditFieldLabel.HorizontalAlignment = 'right';
             app.MaskNrVoxelsEditFieldLabel.Position = [60 621 91 22];
             app.MaskNrVoxelsEditFieldLabel.Text = 'Mask Nr. Voxels';
 
             % Create MaskNrVoxelsEditField
-            app.MaskNrVoxelsEditField = uieditfield(app.UIFigure, 'numeric');
+            app.MaskNrVoxelsEditField = uieditfield(app.DSCMappingAdvancedSettingsUIFigure, 'numeric');
             app.MaskNrVoxelsEditField.Position = [166 621 65 22];
 
             % Create AIFPanel
-            app.AIFPanel = uipanel(app.UIFigure);
+            app.AIFPanel = uipanel(app.DSCMappingAdvancedSettingsUIFigure);
             app.AIFPanel.BorderType = 'none';
             app.AIFPanel.TitlePosition = 'centertop';
             app.AIFPanel.Title = 'AIF';
@@ -355,7 +355,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.ClusterThresholdPeakTTPEditField.Position = [220 13 53 22];
 
             % Create S0Panel
-            app.S0Panel = uipanel(app.UIFigure);
+            app.S0Panel = uipanel(app.DSCMappingAdvancedSettingsUIFigure);
             app.S0Panel.BorderType = 'none';
             app.S0Panel.TitlePosition = 'centertop';
             app.S0Panel.Title = 'S0';
@@ -389,7 +389,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.S0MaxVoxNrEditField.Position = [131 13 53 22];
 
             % Create DeconvolutionPanel
-            app.DeconvolutionPanel = uipanel(app.UIFigure);
+            app.DeconvolutionPanel = uipanel(app.DSCMappingAdvancedSettingsUIFigure);
             app.DeconvolutionPanel.TitlePosition = 'centertop';
             app.DeconvolutionPanel.Title = 'Deconvolution';
             app.DeconvolutionPanel.Position = [91 48 386 149];
@@ -446,7 +446,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.oSVDCounterEditField.Position = [150 16 53 22];
 
             % Create ProportionalityConstantsPanel
-            app.ProportionalityConstantsPanel = uipanel(app.UIFigure);
+            app.ProportionalityConstantsPanel = uipanel(app.DSCMappingAdvancedSettingsUIFigure);
             app.ProportionalityConstantsPanel.BorderType = 'none';
             app.ProportionalityConstantsPanel.TitlePosition = 'centertop';
             app.ProportionalityConstantsPanel.Title = 'Proportionality Constants';
@@ -480,7 +480,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.KhEditField.Position = [94 71 53 22];
 
             % Create ConcentrationPanel
-            app.ConcentrationPanel = uipanel(app.UIFigure);
+            app.ConcentrationPanel = uipanel(app.DSCMappingAdvancedSettingsUIFigure);
             app.ConcentrationPanel.BorderType = 'none';
             app.ConcentrationPanel.TitlePosition = 'centertop';
             app.ConcentrationPanel.Title = 'Concentration';
@@ -519,19 +519,19 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.rEditField.Position = [90 17 53 22];
 
             % Create ResetToDefaultButton
-            app.ResetToDefaultButton = uibutton(app.UIFigure, 'push');
+            app.ResetToDefaultButton = uibutton(app.DSCMappingAdvancedSettingsUIFigure, 'push');
             app.ResetToDefaultButton.ButtonPushedFcn = createCallbackFcn(app, @ResetToDefaultButtonPushed, true);
             app.ResetToDefaultButton.Position = [152 10 128 22];
             app.ResetToDefaultButton.Text = 'Reset To Default';
 
             % Create ApplySettingsButton
-            app.ApplySettingsButton = uibutton(app.UIFigure, 'push');
+            app.ApplySettingsButton = uibutton(app.DSCMappingAdvancedSettingsUIFigure, 'push');
             app.ApplySettingsButton.ButtonPushedFcn = createCallbackFcn(app, @ApplySettingsButtonPushed, true);
             app.ApplySettingsButton.Position = [291 10 128 22];
             app.ApplySettingsButton.Text = 'Apply Settings';
 
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.DSCMappingAdvancedSettingsUIFigure.Visible = 'on';
         end
     end
 
@@ -545,7 +545,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.UIFigure)
+            registerApp(app, app.DSCMappingAdvancedSettingsUIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -559,7 +559,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.DSCMappingAdvancedSettingsUIFigure)
         end
     end
 end
