@@ -145,7 +145,7 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
                          'Message', "Purging old 3D Superpixels...", 'Indeterminate','on');
                     drawnow;
                     try
-                        superpixelIdx = find(cell2mat(strfind(app.ROIIdentifiers,'3Dsuperpixel')));
+                        superpixelIdx = find(contains(app.ROIIdentifiers,'3Dsuperpixel'));
                         app.Mask(:,:,:,superpixelIdx) = [];
                         app.MaskDims = size(app.Mask);
                         app.ROIIdentifiers(superpixelIdx) = [];
@@ -247,18 +247,28 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
         % Button pushed function: SaveAndReturnSegmentationButton
         function SaveAndReturnSegmentationButtonPushed(app, event)
             
-            superpixelIdx = find(cell2mat(strfind(app.ROIIdentifiers,'3Dsuperpixel')));
+            superpixelIdx = find(contains(app.ROIIdentifiers,'3Dsuperpixel'));
             if ~isempty(superpixelIdx) % There are new superpixels
                 % Prompt user for new ROI name and superpixel array to add
                 % up together.
                 input = inputdlg({'Enter new ROI name:','Enter which superpixels to add together (1,2,3,6:9):'}, ...
-                    'Choose which superpixels to keep', [1 40], {'', strcat('1:',num2str(length(superpixelIdx)))});
+                    'Choose which superpixels to keep', [1 40], {'', strcat(num2str(min(superpixelIdx)),':',num2str(length(superpixelIdx)))});
                 ROIname = input{1};
                 selectedSuperpixels = str2num(input{2}); %#ok<ST2NM>
+                % Check for empty or duplicate ROI name
+                if isequal(ROIname, '') || any(strcmp(app.ROIIdentifiers,ROIname))
+                    uialert(app.ROIVolumeSegmenterUIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error');
+                    return
+                end
+                % Check for empty or non-existant superpixel selections
+                if isempty(selectedSuperpixels) || all(~any(selectedSuperpixels,superpixelIdx))
+                    uialert(app.ROIVolumeSegmenterUIFigure, 'Selected superpixels empty or out of bounds.', 'Superpixel Selection Error');
+                    return
+                end
                 % Construct new ROI by superpixel addition
                 newROI = zeros(app.VolumeDims,'like',app.Volume);
                 for i = selectedSuperpixels
-                    newROI = newROI + app.Mask(:,:,:,i);
+                    newROI = newROI + app.Mask(:,:,:,superpixelIdx(i));
                 end
                 % Flush all superpixel ROIs
                 app.Mask(:,:,:,superpixelIdx) = [];
