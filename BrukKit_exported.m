@@ -286,6 +286,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        DataDimensionsPanel             matlab.ui.container.Panel
+        ZEditField_Viewer               matlab.ui.control.NumericEditField
+        ZEditFieldLabel_Viewer          matlab.ui.control.Label
+        XEditField_Viewer               matlab.ui.control.NumericEditField
+        XEditFieldLabel_Viewer          matlab.ui.control.Label
+        YEditField_Viewer               matlab.ui.control.NumericEditField
+        YEditFieldLabel_Viewer          matlab.ui.control.Label
         OverlayButton                   matlab.ui.control.StateButton
         DashLabel                       matlab.ui.control.Label
         SliceRangeHighSpinner_Viewer    matlab.ui.control.Spinner
@@ -300,13 +307,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         AlphamapDropDownLabel_Viewer    matlab.ui.control.Label
         ColormapDropDown_Viewer         matlab.ui.control.DropDown
         ColormapDropDownLabel_Viewer    matlab.ui.control.Label
-        DataDimensionsPanel             matlab.ui.container.Panel
-        ZEditField_Viewer               matlab.ui.control.NumericEditField
-        ZEditFieldLabel_Viewer          matlab.ui.control.Label
-        XEditField_Viewer               matlab.ui.control.NumericEditField
-        XEditFieldLabel_Viewer          matlab.ui.control.Label
-        YEditField_Viewer               matlab.ui.control.NumericEditField
-        YEditFieldLabel_Viewer          matlab.ui.control.Label
         RenderingStyleDropDown          matlab.ui.control.DropDown
         RenderingStyleDropDownLabel     matlab.ui.control.Label
         Select3DViewerDropDown          matlab.ui.control.DropDown
@@ -353,9 +353,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        % General properties
-        WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
-        ExportFolderPath % Filepath of created export folder
 
         % Loading and preview tab properties
         PvDatasetsFile % Filepath of selected archive file
@@ -420,7 +417,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         FixedNDims % Number of fixed image data dimensions
         ParameterNDims % Number of parameter image data dimensions
         AtlasImporterWindow % Atlas importer window
-        AtlasImageData = []; % Loaded reference atlas image data
+        ChosenAtlas % Property for storing selected reference atlas
         RegisteredImageData % Property for storing registered image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
         
@@ -446,12 +443,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
     end
     
     properties (Access = public)
+        % General properties
+        WorkingFolder = strcat(tempdir, 'Brukkit'); % Filepath to working folder
+        ExportFolderPath % Filepath of created export folder
         ProgressBar % Property for storing progress dialogues when opening new windows
-        DSCOptions = DSC_mri_getOptions; % DSC map calculation options
 
         % ROI segmentation properties 
         ROIIdentifiers = {}; % Matrix containing added ROI Names
         ROIMask = [];% 4D Matrix containing added ROI masks for each slice
+
+        % Registration Atlas properties
+        AtlasCollection = struct(); % Struct containing all imported reference atlases
+
+        % DSC Parameter map properties
+        DSCOptions = DSC_mri_getOptions; % DSC map calculation options
     end
     
     methods (Access = private)
@@ -1090,7 +1095,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Items = {'None'};
     
             % Disable and reset components in different tabs
-    
+            
             % Main
             app.ExportEnvironmentButton.Enable = 'off';
             app.CreateBrukKitFolderButton.Enable = 'off';
@@ -1172,9 +1177,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TimeSeriesAlignmentPanel.Visible = 'off';
             app.SelectfixedDropDown.Visible = 'on';
             app.SelectfixedLabel.Visible = 'on';
-            app.AtlasImageData = [];
             app.ImportReferenceAtlasButton.Visible = 'off';
             app.SelectAtlasDropDown.Visible = 'off';
+            app.AtlasCollection = struct();
+            app.SelectAtlasDropDown.Items = {'None'};
     
             % Volumetry 
             cla(app.UIAxes_Volumetry);
@@ -4058,22 +4064,130 @@ classdef BrukKit_exported < matlab.apps.AppBase
             switch selection
                 case "Download New"
                     % Open atlas importer
+                    app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
+                    'Message', "Importing Reference Atlases...", 'Indeterminate','on');
+                    drawnow
+                    app.ImportReferenceAtlasButton.Enable = 'off';
                     app.AtlasImporterWindow = ReferenceAtlasImporter(app);
                 case "Load From Directory"
+                    progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
+                    'Message', "Selecting reference atlas folder");
+                    drawnow
+                    progress.Value = 0.2;
+                    % Get directory
+                    selected_directory = uigetdir;
+                    figure(app.BrukKitAlphav0850UIFigure);
+
+                    loadedCollection = struct();
+                    dropdown_items = {'None'};
+
+                    % Check for atlases and import found 
+                    waxholm_t2_atlas_Path = strcat(selected_directory, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
+                    if exist(waxholm_t2_atlas_Path, 'dir')
+                        progress.Value = 0.4;
+                        progress.Message = 'Found T2w Waxholm Space Atlas - C57BL6J Mouse: Importing...';
+                        pause(0.5)
+                        % Update atlas path
+                        waxholm_t2_atlas_Path = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii');
+                        % Load atlas using niftiread, permute dims,
+                        % pagetranspose and flipud
+                        waxholm_t2_atlas.ImageData = niftiread(waxholm_t2_atlas_Path);
+                        waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
+                        waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
+                        waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
+
+                        % Save to loaded atlas collection struct, update
+                        % drop down items
+                        loadedCollection.T2WaxholmMouse = waxholm_t2_atlas;
+                        dropdown_items = cat(1, dropdown_items, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
+                    end
+                    
+                    waxholm_t1_atlas_Path = strcat(selected_directory, filesep, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
+                    if exist(waxholm_t1_atlas_Path, 'dir')
+                        progress.Value = 0.6;
+                        progress.Message = 'Found T1w Waxholm Space Atlas - C57BL6J Mouse: Importing...';
+                        pause(0.5)
+                        % Update atlas path
+                        waxholm_t1_atlas_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii');
+                        % Load atlas using niftiread, permute dims,
+                        % pagetranspose and flipud
+                        waxholm_t1_atlas.ImageData = niftiread(waxholm_t1_atlas_Path);
+                        waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
+                        waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
+                        waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
+
+                        % Save to loaded atlas collection struct, update
+                        % drop down items
+                        loadedCollection.T1WaxholmMouse = waxholm_t1_atlas;
+                        dropdown_items = cat(1, dropdown_items, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
+                    end
+
+                    allen_atlas_Path = strcat(selected_directory, filesep, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale'); 
+                    if exist(allen_atlas_Path, 'dir')
+                        progress.Value = 0.8;
+                        progress.Message = 'Found Allen Brain Atlas - Adult Mouse Nissl Grayscale; Importing...';
+                        pause(0.5)
+                        % Update atlas path
+                        allen_atlas_Path = strcat(allen_atlas_Path, filesep, 'atlasVolume.raw');
+                        % Load atlas per Allen Brain Atlas instructions
+                        fid = fopen(allen_atlas_Path, 'r', 'l' );
+                        allen_atlas.ImageData = fread( fid, prod([528 320 456]), 'uint8');
+                        fclose( fid );
+                        allen_atlas.ImageData = reshape(allen_atlas.ImageData, [528 320 456]);
+                        % Permute and transpose image
+                        allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
+                        allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
+                        
+                        % Save to loaded atlas collection struct, update
+                        % drop down items
+                        loadedCollection.AllenAdultMouseNissl = allen_atlas;
+                        dropdown_items = cat(1, dropdown_items, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
+                    end
+
+                    if isequal(dropdown_items, {'None'})
+                        close(progress);
+                        uialert(app.BrukKitAlphav0850UIFigure, 'No reference atlases were found in selected directory.', 'No Reference Atlas Found')
+                    else
+                        % Update loaded atlas collection, update drop down
+                        app.AtlasCollection = loadedCollection;
+                        app.SelectAtlasDropDown.Items = dropdown_items;
+                        
+                        progress.Value = 1;
+                        progress.Message = 'Done!';
+                        pause(0.5)
+                        close(progress);
+
+                        % Display confirmation
+                        uiconfirm(app.BrukKitAlphav0850UIFigure, "Reference atlases sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+                    end
+            end
+        end
+
+        % Value changed function: SelectAtlasDropDown
+        function SelectAtlasDropDownValueChanged(app, event)
+            
+            value = app.SelectAtlasDropDown.Value;
+            switch value
+                case "T2w Waxholm Space Atlas - C57BL6J Mouse"
+                    app.ChosenAtlas = app.AtlasCollection.T2WaxholmMouse;
+                case "T1w Waxholm Space Atlas - C57BL6J Mouse"
+                    app.ChosenAtlas = app.AtlasCollection.T1WaxholmMouse;
+                case "Allen Brain Atlas - Adult Mouse Nissl Grayscale"
+                    app.ChosenAtlas = app.AtlasCollection.AllenAdultMouseNissl;
             end
         end
 
         % Button pushed function: RegistrationViewerButton
         function RegistrationViewerButtonPushed(app, event)
+            
             % Check for valid selections
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0850UIFigure, 'Cannot open Registration Viewer; please select valid registration data.', 'Registration Viewer Error.')
                 return
-            elseif app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & isequal(app.AtlasImageData, []) %#ok<AND2>
-                uialert(app.BrukKitAlphav0850UIFigure, 'Cannot open Registration Viewer; please import valid reference atlas.', 'Registration Viewer Error.')
+            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
+                uialert(app.BrukKitAlphav0850UIFigure, 'Cannot open Registration Viewer; please import and select valid reference atlas.', 'Registration Viewer Error.')
                 return
             end
-
             
             % Get registration image data based on registration type
             moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
@@ -4081,7 +4195,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case "Standard"
                     fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
                 case "Reference Atlas"
-                    fixed_Image = app.AtlasImageData;
+                    fixed_Image = app.ChosenAtlas.ImageData;
             end
             
             % Open Registration Viewer 
@@ -4118,9 +4232,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Check for valid selections, registration instructions
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
-                return
-            elseif app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & isequal(app.AtlasImageData, []) %#ok<AND2>
-                uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; please import valid reference atlas.', 'Registration Error.')
                 return
             elseif app.RegistrationInstructionsTextArea.Value == ""
                 uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
@@ -4289,7 +4400,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             ExportImageData(app, 'Registration');
             
-            % Update last action label
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
@@ -6755,6 +6865,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create SelectAtlasDropDown
             app.SelectAtlasDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
             app.SelectAtlasDropDown.Items = {'None'};
+            app.SelectAtlasDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectAtlasDropDownValueChanged, true);
             app.SelectAtlasDropDown.Visible = 'off';
             app.SelectAtlasDropDown.Placeholder = 'None';
             app.SelectAtlasDropDown.Position = [44 366 264 21];
@@ -7307,7 +7418,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_AlphaMap.YTick = [];
             app.UIAxes_AlphaMap.ZTick = [];
             app.UIAxes_AlphaMap.Box = 'on';
-            app.UIAxes_AlphaMap.Position = [960 26 291 239];
+            app.UIAxes_AlphaMap.Position = [974 17 263 218];
 
             % Create ViewerPanel
             app.ViewerPanel = uipanel(app.DViewerTab);
@@ -7320,7 +7431,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Select3DViewerLabel
             app.Select3DViewerLabel = uilabel(app.DViewerTab);
             app.Select3DViewerLabel.HorizontalAlignment = 'right';
-            app.Select3DViewerLabel.Position = [1031 652 147 22];
+            app.Select3DViewerLabel.Position = [1031 636 147 22];
             app.Select3DViewerLabel.Text = 'Select Experiment To View';
 
             % Create Select3DViewerDropDown
@@ -7328,13 +7439,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Items = {'None'};
             app.Select3DViewerDropDown.ValueChangedFcn = createCallbackFcn(app, @Select3DViewerDropDownValueChanged, true);
             app.Select3DViewerDropDown.Placeholder = 'None';
-            app.Select3DViewerDropDown.Position = [971 622 268 21];
+            app.Select3DViewerDropDown.Position = [971 606 268 21];
             app.Select3DViewerDropDown.Value = 'None';
 
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [1060 481 90 22];
+            app.RenderingStyleDropDownLabel.Position = [1060 457 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
@@ -7343,15 +7454,109 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [1007 453 196 22];
+            app.RenderingStyleDropDown.Position = [1007 429 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
+
+            % Create ColormapDropDownLabel_Viewer
+            app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
+            app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
+            app.ColormapDropDownLabel_Viewer.Position = [1077 387 57 22];
+            app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
+
+            % Create ColormapDropDown_Viewer
+            app.ColormapDropDown_Viewer = uidropdown(app.DViewerTab);
+            app.ColormapDropDown_Viewer.Items = {'Greyscale', 'Turbo', 'Hot', 'Jet', 'Parula', 'Sky', 'Cool', 'Copper', 'Bone'};
+            app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
+            app.ColormapDropDown_Viewer.Enable = 'off';
+            app.ColormapDropDown_Viewer.Tooltip = {''};
+            app.ColormapDropDown_Viewer.Position = [1007 359 196 22];
+            app.ColormapDropDown_Viewer.Value = 'Greyscale';
+
+            % Create AlphamapDropDownLabel_Viewer
+            app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
+            app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
+            app.AlphamapDropDownLabel_Viewer.Position = [1076 279 59 22];
+            app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
+
+            % Create AlphamapDropDown_Viewer
+            app.AlphamapDropDown_Viewer = uidropdown(app.DViewerTab);
+            app.AlphamapDropDown_Viewer.Items = {'Linear', 'MRI', 'MRI-mip'};
+            app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
+            app.AlphamapDropDown_Viewer.Enable = 'off';
+            app.AlphamapDropDown_Viewer.Tooltip = {''};
+            app.AlphamapDropDown_Viewer.Position = [1007 251 196 22];
+            app.AlphamapDropDown_Viewer.Value = 'Linear';
+
+            % Create ColormapImage_Viewer
+            app.ColormapImage_Viewer = uiimage(app.DViewerTab);
+            app.ColormapImage_Viewer.Visible = 'off';
+            app.ColormapImage_Viewer.Position = [983 328 244 21];
+
+            % Create Dim5Spinner_ViewerLabel
+            app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim5Spinner_ViewerLabel.Position = [571 23 44 22];
+            app.Dim5Spinner_ViewerLabel.Text = 'Dim - 5';
+
+            % Create Dim5Spinner_Viewer
+            app.Dim5Spinner_Viewer = uispinner(app.DViewerTab);
+            app.Dim5Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_ViewerValueChanged, true);
+            app.Dim5Spinner_Viewer.Enable = 'off';
+            app.Dim5Spinner_Viewer.Position = [627 23 51 22];
+            app.Dim5Spinner_Viewer.Value = 1;
+
+            % Create Dim4Spinner_ViewerLabel
+            app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
+            app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_ViewerLabel.Position = [442 23 44 22];
+            app.Dim4Spinner_ViewerLabel.Text = 'Dim - 4';
+
+            % Create Dim4Spinner_Viewer
+            app.Dim4Spinner_Viewer = uispinner(app.DViewerTab);
+            app.Dim4Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_ViewerValueChanged, true);
+            app.Dim4Spinner_Viewer.Enable = 'off';
+            app.Dim4Spinner_Viewer.Position = [497 23 51 22];
+            app.Dim4Spinner_Viewer.Value = 1;
+
+            % Create DisplayedSliceRangeLabel
+            app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
+            app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
+            app.DisplayedSliceRangeLabel.Position = [137 23 126 22];
+            app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
+
+            % Create SliceRangeLowSpinner_Viewer
+            app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
+            app.SliceRangeLowSpinner_Viewer.Enable = 'off';
+            app.SliceRangeLowSpinner_Viewer.Position = [273 23 51 22];
+            app.SliceRangeLowSpinner_Viewer.Value = 1;
+
+            % Create SliceRangeHighSpinner_Viewer
+            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
+            app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
+            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
+            app.SliceRangeHighSpinner_Viewer.Position = [359 23 51 22];
+            app.SliceRangeHighSpinner_Viewer.Value = 1;
+
+            % Create DashLabel
+            app.DashLabel = uilabel(app.DViewerTab);
+            app.DashLabel.HorizontalAlignment = 'center';
+            app.DashLabel.FontWeight = 'bold';
+            app.DashLabel.Position = [330 22 19 25];
+            app.DashLabel.Text = '-';
+
+            % Create OverlayButton
+            app.OverlayButton = uibutton(app.DViewerTab, 'state');
+            app.OverlayButton.Enable = 'off';
+            app.OverlayButton.Text = 'Overlay';
+            app.OverlayButton.Position = [712 23 100 23];
 
             % Create DataDimensionsPanel
             app.DataDimensionsPanel = uipanel(app.DViewerTab);
             app.DataDimensionsPanel.BorderType = 'none';
             app.DataDimensionsPanel.TitlePosition = 'centertop';
             app.DataDimensionsPanel.Title = 'Data Dimensions';
-            app.DataDimensionsPanel.Position = [992 527 221 80];
+            app.DataDimensionsPanel.Position = [995 502 221 80];
 
             % Create YEditFieldLabel_Viewer
             app.YEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
@@ -7385,100 +7590,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ZEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
             app.ZEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @ZEditField_ViewerValueChanged, true);
             app.ZEditField_Viewer.Position = [158 9 59 22];
-
-            % Create ColormapDropDownLabel_Viewer
-            app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
-            app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.ColormapDropDownLabel_Viewer.Position = [1077 414 57 22];
-            app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
-
-            % Create ColormapDropDown_Viewer
-            app.ColormapDropDown_Viewer = uidropdown(app.DViewerTab);
-            app.ColormapDropDown_Viewer.Items = {'Greyscale', 'Turbo', 'Hot', 'Jet', 'Parula', 'Sky', 'Cool', 'Copper', 'Bone'};
-            app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
-            app.ColormapDropDown_Viewer.Enable = 'off';
-            app.ColormapDropDown_Viewer.Tooltip = {''};
-            app.ColormapDropDown_Viewer.Position = [1007 386 196 22];
-            app.ColormapDropDown_Viewer.Value = 'Greyscale';
-
-            % Create AlphamapDropDownLabel_Viewer
-            app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
-            app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.AlphamapDropDownLabel_Viewer.Position = [1076 307 59 22];
-            app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
-
-            % Create AlphamapDropDown_Viewer
-            app.AlphamapDropDown_Viewer = uidropdown(app.DViewerTab);
-            app.AlphamapDropDown_Viewer.Items = {'Linear', 'MRI', 'MRI-mip'};
-            app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
-            app.AlphamapDropDown_Viewer.Enable = 'off';
-            app.AlphamapDropDown_Viewer.Tooltip = {''};
-            app.AlphamapDropDown_Viewer.Position = [1007 279 196 22];
-            app.AlphamapDropDown_Viewer.Value = 'Linear';
-
-            % Create ColormapImage_Viewer
-            app.ColormapImage_Viewer = uiimage(app.DViewerTab);
-            app.ColormapImage_Viewer.Visible = 'off';
-            app.ColormapImage_Viewer.Position = [983 352 244 21];
-
-            % Create Dim5Spinner_ViewerLabel
-            app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
-            app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_ViewerLabel.Position = [573 29 44 22];
-            app.Dim5Spinner_ViewerLabel.Text = 'Dim - 5';
-
-            % Create Dim5Spinner_Viewer
-            app.Dim5Spinner_Viewer = uispinner(app.DViewerTab);
-            app.Dim5Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_ViewerValueChanged, true);
-            app.Dim5Spinner_Viewer.Enable = 'off';
-            app.Dim5Spinner_Viewer.Position = [629 29 51 22];
-            app.Dim5Spinner_Viewer.Value = 1;
-
-            % Create Dim4Spinner_ViewerLabel
-            app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
-            app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_ViewerLabel.Position = [444 29 44 22];
-            app.Dim4Spinner_ViewerLabel.Text = 'Dim - 4';
-
-            % Create Dim4Spinner_Viewer
-            app.Dim4Spinner_Viewer = uispinner(app.DViewerTab);
-            app.Dim4Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_ViewerValueChanged, true);
-            app.Dim4Spinner_Viewer.Enable = 'off';
-            app.Dim4Spinner_Viewer.Position = [499 29 51 22];
-            app.Dim4Spinner_Viewer.Value = 1;
-
-            % Create DisplayedSliceRangeLabel
-            app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
-            app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
-            app.DisplayedSliceRangeLabel.Position = [139 29 126 22];
-            app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
-
-            % Create SliceRangeLowSpinner_Viewer
-            app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
-            app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
-            app.SliceRangeLowSpinner_Viewer.Enable = 'off';
-            app.SliceRangeLowSpinner_Viewer.Position = [275 29 51 22];
-            app.SliceRangeLowSpinner_Viewer.Value = 1;
-
-            % Create SliceRangeHighSpinner_Viewer
-            app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
-            app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
-            app.SliceRangeHighSpinner_Viewer.Enable = 'off';
-            app.SliceRangeHighSpinner_Viewer.Position = [361 29 51 22];
-            app.SliceRangeHighSpinner_Viewer.Value = 1;
-
-            % Create DashLabel
-            app.DashLabel = uilabel(app.DViewerTab);
-            app.DashLabel.HorizontalAlignment = 'center';
-            app.DashLabel.FontWeight = 'bold';
-            app.DashLabel.Position = [332 28 19 25];
-            app.DashLabel.Text = '-';
-
-            % Create OverlayButton
-            app.OverlayButton = uibutton(app.DViewerTab, 'state');
-            app.OverlayButton.Enable = 'off';
-            app.OverlayButton.Text = 'Overlay';
-            app.OverlayButton.Position = [710 28 100 23];
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0850UIFigure);

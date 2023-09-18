@@ -81,12 +81,11 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            CurrentSlice = im2uint8((CurrentSlice - min(CurrentSlice(:))) / (max(CurrentSlice(:)) - min(CurrentSlice(:)))); % Scale image to [0 1]
             switch app.TurboButton_Moving.Value
                 case true
-                    mov = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Moving, Colormap = turbo);
+                    mov = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Moving, Colormap = turbo);
                 otherwise
-                    mov = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Moving);
+                    mov = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Moving);
             end
             mov.ContextMenu = app.ContextMenu_Moving;
         end
@@ -106,12 +105,11 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            CurrentSlice = im2uint8((CurrentSlice - min(CurrentSlice(:))) / (max(CurrentSlice(:)) - min(CurrentSlice(:)))); % Scale image to [0 1]
             switch app.TurboButton_Fixed.Value
                 case true
-                    fix = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Fixed, Colormap = turbo);
+                    fix = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Fixed, Colormap = turbo);
                 otherwise
-                    fix = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Fixed);
+                    fix = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Fixed);
             end
             fix.ContextMenu = app.ContextMenu_Fixed;
         end
@@ -131,12 +129,11 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            CurrentSlice = im2uint8((CurrentSlice - min(CurrentSlice(:))) / (max(CurrentSlice(:)) - min(CurrentSlice(:)))); % Scale image to [0 1]
             switch app.TurboButton_Parameter.Value
                 case true
-                    par = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Parameter, Colormap = turbo);
+                    par = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Parameter, Colormap = turbo);
                 otherwise
-                    par = imshow(CurrentSlice, 'DisplayRange', [0 255], 'Parent', app.UIAxes_Parameter);
+                    par = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Parameter);
             end
             par.ContextMenu = app.ContextMenu_Parameter;
         end
