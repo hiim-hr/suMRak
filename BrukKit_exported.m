@@ -418,7 +418,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ParameterNDims % Number of parameter image data dimensions
         AtlasImporterWindow % Atlas importer window
         ChosenAtlas % Property for storing selected reference atlas
+        ResizedAtlasProperties % Stored atlas properties after resizing operations
         RegisteredImageData % Property for storing registered image data
+        PreRegistrationImage % Property for storing before-registration image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
         
         % Parameter Maps tab
@@ -495,9 +497,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExpDimsRegistration = size(app.RegisteredImageData);
             switch numel(app.ExpDimsRegistration)
                 case 2
-                    app.CurrentSlice = app.RegisteredImageData(:,:);
+                    if app.ImageshownSwitch_Registration.Value == "After"
+                        app.CurrentSlice = app.RegisteredImageData(:,:);
+                    else
+                        app.CurrentSlice = app.PreRegistrationImage(:,:);
+                    end
                 otherwise
-                    app.CurrentSlice = app.RegisteredImageData(:,:,app.SliceSpinner_Registration.Value);
+                    if app.ImageshownSwitch_Registration.Value == "After"
+                        app.CurrentSlice = app.RegisteredImageData(:,:,app.SliceSpinner_Registration.Value);
+                    else
+                        app.CurrentSlice = app.PreRegistrationImage(:,:,app.SliceSpinner_Registration.Value);
+                    end
             end
             app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
             switch app.TurboButton_Registration.Value
@@ -854,25 +864,41 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
                     exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
                     image_Data = app.RegisteredImageData;
-                    selection = uiconfirm(app.BrukKitAlphav0850UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
-                        ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
-                    switch selection
-                        case 'Save Mask'
-                            saved_BrainMask = app.RegisteredMask;
-                        case 'Save without Mask'
+                    switch app.ChooseRegistrationTypeDropDown.Value
+                        case "Standard"
+                            selection = uiconfirm(app.BrukKitAlphav0850UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                            ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
+                            switch selection
+                                case 'Save Mask'
+                                    saved_BrainMask = app.RegisteredMask;
+                                case 'Save without Mask'
+                                    saved_BrainMask = false(size(image_Data));
+                            end
+                            hemi_Mask = false(1);
+                            roi.Mask = false(1);
+                            roi.ID = {'None'};
+                            TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
+                            TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
+                            vox_dim_X = app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value); 
+                            vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
+                            slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
+                            slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
+                            units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
+                            RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
+                        case "Reference Atlas"
                             saved_BrainMask = false(size(image_Data));
-                    end
-                    hemi_Mask = false(1);
-                    roi.Mask = false(1);
-                    roi.ID = {'None'};
-                    TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
-                    TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
-                    vox_dim_X = app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value); 
-                    vox_dim_Y = app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value);
-                    slice_Thickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
-                    slice_Gap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
-                    units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
-                    RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
+                            hemi_Mask = false(1);
+                            roi.Mask = false(1);
+                            roi.ID = {'None'};
+                            TE = app.SavedTable.TE(app.SelectmovingDropDown.Value);
+                            TR = app.SavedTable.TR(app.SelectmovingDropDown.Value);
+                            vox_dim_X = app.ResizedAtlasProperties.VoxDimX; 
+                            vox_dim_Y = app.ResizedAtlasProperties.VoxDimY;
+                            slice_Thickness = app.ResizedAtlasProperties.SliceThickness;
+                            slice_Gap = app.ResizedAtlasProperties.SliceGap;
+                            units = app.ChosenAtlas.Units;
+                            RotMat = {app.ResizedAtlasProperties.RotMat};
+                    end                    
                 case 'Map'
                     exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
                     image_Data = app.PostMapImageData;
@@ -961,116 +987,214 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end 
         end
         
-        function ExportImageData(app, tab)
+        function ExportImageData(app, tab, special_case)
             % Draw progress box
             progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
-            drawnow    
-            switch tab
-                case 'Preview'
-                    ImageData = app.PreviewImageData;
-                    DropDownValue = app.PreviewDropDown.Value;
-                    Suffix = ".nii";
-                case 'Segmenter'
-                    ImageData = app.WorkingSegmenterImageData;
-                    DropDownValue = app.SegmentDropDown.Value;
-                    Suffix = "_segmented.nii";
-                case 'Registration'
-                    ImageData = app.RegisteredImageData;
-                    DropDownValue = app.SelectmovingDropDown.Value;
-                    Suffix = "_registered.nii";
-                case 'Map'
-                    ImageData = app.PostMapImageData;
-                    DropDownValue = app.SelectPreMapDropDown.Value;
-                    switch app.ChooseMapTypeDropDown.Value
-                        case 'DSC'
-                            Suffix = "_DSC_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
-                        otherwise
-                            Suffix = "_" + convertCharsToStrings(app.ChooseMapTypeDropDown.Value) + ".nii";
-                    end
-            progress.Value = 0.2;
-            progress.Message = "Writing NIfTI data information...";
-            pause(0.5);
-            end
-
-            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
-            info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
-            info.Description = 'Image file generated in Brukkit 0.8';
-            switch numel(size(ImageData))
+            drawnow
+            switch nargin
+                % No special case
                 case 2
-                    DimPadding = [];
-                    SliceThickness = [];
-                    SliceGap = [];
-                case 3
-                    DimPadding = [];
-                    try
-                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                    catch
-                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                    % Get image data, dropdown value and suffix based on tab
+                    switch tab
+                        case 'Preview'
+                            ImageData = app.PreviewImageData;
+                            DropDownValue = app.PreviewDropDown.Value;
+                            Suffix = ".nii";
+                        case 'Segmenter'
+                            ImageData = app.WorkingSegmenterImageData;
+                            DropDownValue = app.SegmentDropDown.Value;
+                            Suffix = "_segmented.nii";
+                        case 'Map'
+                            ImageData = app.PostMapImageData;
+                            DropDownValue = app.SelectPreMapDropDown.Value;
+                            switch app.ChooseMapTypeDropDown.Value
+                                case 'DSC'
+                                    Suffix = "_DSC_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
+                                otherwise
+                                    Suffix = "_" + convertCharsToStrings(app.ChooseMapTypeDropDown.Value) + ".nii";
+                            end
                     end
-                case 4
-                    DimPadding = 1;
-                    try
-                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                    catch
-                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
-                    end
-                case 5
-                    DimPadding = [1,1];
-                    try
-                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                    catch
-                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
-                    end
-            end
-            
-            try
-                info.PixelDimensions = [app.SavedTable.VoxDimX(DropDownValue), ...
-                    app.SavedTable.VoxDimY(DropDownValue), ...
-                    SliceThickness + SliceGap, DimPadding];
-                temp = split(app.SavedTable.Units(DropDownValue));
-                rotm = cell2mat(app.SavedTable.RotMat(DropDownValue));
-            catch
-                info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
-                    table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
-                    SliceThickness + SliceGap, DimPadding];
-                temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
-                rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
-            end
 
-            switch temp(1)
-                case "mm"
-                    info.SpaceUnits = 'Millimeter';
-                case "um"
-                    info.SpaceUnits = 'Micron';
-                case "m"
-                    info.SpaceUnits = 'Meter';
-            end
-            progress.Value = 0.6;
-            progress.Message = "Exporting image data";
-            pause(0.5);
-           
-            info.Transform.T(1:3,1:3) = rotm;
-            info.TransformName = 'Qform';
-            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
-            if  strcmp(tab, 'Segmenter')
-                try
-                progress.Value = 0.8;
-                progress.Message = "Exporting segmenter mask data";
-                pause(0.5);
-                niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
-                niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
-                niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
-                roi_id = app.ROIIdentifiers;
-                save(app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_identifiers_ROI.mat", "roi_id")
-                catch
-                end
+                    progress.Value = 0.2;
+                    progress.Message = "Writing NIfTI data information...";
+                    pause(0.5);
+                    % Write initial nifti file for header updating
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
+                    info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
+                    info.Description = 'Image file generated in Brukkit';
+                    % Get dimension padding and slice thickness/gap
+                    switch numel(size(ImageData))
+                        case 2
+                            DimPadding = [];
+                            SliceThickness = [];
+                            SliceGap = [];
+                        case 3
+                            DimPadding = [];
+                            try
+                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                            catch
+                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                            end
+                        case 4
+                            DimPadding = 1;
+                            try
+                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                            catch
+                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                            end
+                        case 5
+                            DimPadding = [1,1];
+                            try
+                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                            catch
+                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                            end
+                    end
+                    % Get other voxel dimensions, update header
+                    try
+                        info.PixelDimensions = [app.SavedTable.VoxDimX(DropDownValue), ...
+                            app.SavedTable.VoxDimY(DropDownValue), ...
+                            SliceThickness + SliceGap, DimPadding];
+                        temp = split(app.SavedTable.Units(DropDownValue));
+                        rotm = cell2mat(app.SavedTable.RotMat(DropDownValue));
+                    catch
+                        info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
+                            table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
+                            SliceThickness + SliceGap, DimPadding];
+                        temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
+                        rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
+                    end
+                    % Update header units
+                    switch temp(1)
+                        case "mm"
+                            info.SpaceUnits = 'Millimeter';
+                        case "um"
+                            info.SpaceUnits = 'Micron';
+                        case "m"
+                            info.SpaceUnits = 'Meter';
+                    end
+                    progress.Value = 0.6;
+                    progress.Message = "Exporting image data";
+                    pause(0.5);
+                    % Update header transformation
+                    info.Transform.T(1:3,1:3) = rotm;
+                    info.TransformName = 'Qform';
+                    % Write final nifti
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
+                    if  strcmp(tab, 'Segmenter')
+                        try
+                        progress.Value = 0.8;
+                        progress.Message = "Exporting segmenter mask data";
+                        pause(0.5);
+                        niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
+                        niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
+                        niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
+                        roi_id = app.ROIIdentifiers;
+                        save(app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_identifiers_ROI.mat", "roi_id")
+                        catch
+                        end
+                    end
+
+                % Special cases
+                case 3
+                    switch special_case
+                        % Standard registration (moving/fixed)
+                        case 'Standard Registration'
+                            ImageData = app.RegisteredImageData;
+                            Suffix = "_registered.nii";
+
+                            progress.Value = 0.2;
+                            progress.Message = "Writing NIfTI data information...";
+                            pause(0.5);
+                            % Write initial nifti file for header updating
+                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                            info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                            info.Description = 'Image file generated in Brukkit';
+                            % Get voxel dimensions, update header
+                            switch numel(size(ImageData))
+                                case 2
+                                    SliceThickness = [];
+                                    SliceGap = [];
+                                case 3
+                                    SliceThickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
+                                    SliceGap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
+                            end
+                            DimPadding = [];
+                            info.PixelDimensions = [app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value), ...
+                                app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value), ...
+                                SliceThickness + SliceGap, DimPadding];
+                            % Update header units
+                            temp = split(app.SavedTable.Units(app.SelectfixedDropDown.Value));
+                            switch temp(1)
+                                case "mm"
+                                    info.SpaceUnits = 'Millimeter';
+                                case "um"
+                                    info.SpaceUnits = 'Micron';
+                                case "m"
+                                    info.SpaceUnits = 'Meter';
+                            end
+                            progress.Value = 0.6;
+                            progress.Message = "Exporting image data";
+                            pause(0.5);
+                            % Update header transform
+                            rotm = cell2mat(app.SavedTable.RotMat(app.SelectfixedDropDown.Value));
+                            info.Transform.T(1:3,1:3) = rotm;
+                            info.TransformName = 'Qform';
+                            % Write final nifti
+                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
+                        
+                            % Reference Atlas registration
+                        case 'Atlas Registration'
+                            ImageData = app.RegisteredImageData;
+                            Suffix = "_atlas_registered.nii";
+
+                            progress.Value = 0.2;
+                            progress.Message = "Writing NIfTI data information...";
+                            pause(0.5);
+                            % Write initial nifti file for header updating
+                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                            info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                            info.Description = 'Image file generated in Brukkit';
+                            % Get voxel dimensions, update header
+                            switch numel(size(ImageData))
+                                case 2
+                                    SliceThickness = [];
+                                    SliceGap = [];
+                                case 3
+                                    SliceThickness = app.ResizedAtlasProperties.SliceThickness;
+                                    SliceGap = app.ResizedAtlasProperties.SliceGap;
+                            end
+                            DimPadding = [];
+                            info.PixelDimensions = [app.ResizedAtlasProperties.VoxDimX, ...
+                                app.ResizedAtlasProperties.VoxDimY, ...
+                                SliceThickness + SliceGap, DimPadding];
+                            % Update header units
+                            temp = split(app.ChosenAtlas.Units);
+                            switch temp(1)
+                                case "mm"
+                                    info.SpaceUnits = 'Millimeter';
+                                case "um"
+                                    info.SpaceUnits = 'Micron';
+                                case "m"
+                                    info.SpaceUnits = 'Meter';
+                            end
+                            progress.Value = 0.6;
+                            progress.Message = "Exporting image data";
+                            pause(0.5);
+                            % Update header transform
+                            rotm = app.ResizedAtlasProperties.RotMat;
+                            info.Transform.T(1:3,1:3) = rotm;
+                            info.TransformName = 'Qform';
+                            % Write final nifti
+                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
+                    end
             end
 
             % close the dialog box
@@ -4111,6 +4235,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
                         waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
                         waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
+                        waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
+                        waxholm_t2_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceGap = 0;
+                        waxholm_t2_atlas.Units = "mm mm mm";
+                        waxholm_t2_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -4131,6 +4266,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
                         waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
                         waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
+                        waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
+                        waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceGap = 0;
+                        waxholm_t1_atlas.Units = "mm mm mm";
+                        waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -4154,6 +4300,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
                         allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
                         
+                        % Set atlas dimensions, rotation matrix
+                        allen_atlas.VoxDimX = 0.025;
+                        allen_atlas.VoxDimY = 0.025;
+                        allen_atlas.SliceThickness = 0.025;
+                        allen_atlas.SliceGap = 0;
+                        allen_atlas.Units = "mm mm mm";
+                        allen_atlas.RotMat = diag([1,1,1]);
+
                         % Save to loaded atlas collection struct, update
                         % drop down items
                         loadedCollection.AllenAdultMouseNissl = allen_atlas;
@@ -4221,6 +4375,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 drawnow
                 app.RegistrationViewerButton.Enable = 'off';
                 app.RegistrationViewerWindow = RegistrationViewer_Basic(app, moving_Image, fixed_Image);
+                if app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas"
+                    app.RegistrationViewerWindow.FixedImageLabel.Text = "Reference Atlas";
+                end
             elseif app.UsedifferentparametermapCheckBox.Value == 1
                 parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
                 app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
@@ -4228,6 +4385,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 drawnow
                 app.RegistrationViewerButton.Enable = 'off';
                 app.RegistrationViewerWindow = RegistrationViewer_Parameter(app, moving_Image, fixed_Image, parameter_Image);
+                if app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas"
+                    app.RegistrationViewerWindow.FixedImageLabel.Text = "Reference Atlas";
+                end
             end
         end
 
@@ -4249,6 +4409,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UsedifferentparametermapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
                 return
+            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
+                uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; please import and select valid reference atlas.', 'Registration Error.')
+                return
             elseif app.RegistrationInstructionsTextArea.Value == ""
                 uialert(app.BrukKitAlphav0850UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
                 return
@@ -4262,22 +4425,44 @@ classdef BrukKit_exported < matlab.apps.AppBase
             split_instr =  split_instr(~cellfun('isempty',split_instr));
 
             app.RegisteredImageData = [];
+            app.PreRegistrationImage = [];
             app.RegisteredMask = [];
             
-            % Get moving, fixed and parameter image data alongside fixed mask data
+            % Get moving, fixed/atlas and parameter image data
             moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
-            fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
-            fixed_Mask = cell2mat(app.SavedTable.BrainMask(app.SelectfixedDropDown.Value)); 
-
+            switch app.ChooseRegistrationTypeDropDown.Value
+                case "Standard"
+                    fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+                case "Reference Atlas"
+                    fixed_Image = app.ChosenAtlas.ImageData;
+                    % Resize Atlas image data using moving/atlas larger dimension ratio
+                    moving_dims = size(moving_Image);
+                    moving_dims = moving_dims(1:2);
+                    atlas_dims = size(fixed_Image);
+                    atlas_dims = atlas_dims(1:2);
+                    resizing_factor = max(moving_dims)/max(atlas_dims);
+                    fixed_Image = imresize(fixed_Image, resizing_factor, 'Method', 'bilinear');
+                    % Calculate resized atlas properties
+                    app.ResizedAtlasProperties.VoxDimX = app.ChosenAtlas.VoxDimX/resizing_factor;
+                    app.ResizedAtlasProperties.VoxDimY = app.ChosenAtlas.VoxDimY/resizing_factor;
+                    app.ResizedAtlasProperties.SliceThickness = app.ChosenAtlas.SliceThickness/resizing_factor;
+                    app.ResizedAtlasProperties.SliceGap = app.ChosenAtlas.SliceGap/resizing_factor;
+                    app.ResizedAtlasProperties.RotMat = app.ChosenAtlas.RotMat/resizing_factor;
+            end
             if app.UsedifferentparametermapCheckBox.Value == 1
                 parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
+            end
+            
+            % In case of standard registration, get fixed mask data
+            if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                fixed_Mask = cell2mat(app.SavedTable.BrainMask(app.SelectfixedDropDown.Value));
             end
             
             % Work along the specified registration instructions slice by slice
             for i=1:length(split_instr)
                 slice_instr = cell2mat(split_instr(i));
                 
-                % Get moving slice dimension indexes, create numpy array
+                % Get moving slice dimension indexes, create numpy array, cat to pre-registration image 
                 F_ind = strfind(slice_instr, 'f');
                 mov_instr = slice_instr(2:(F_ind-1)); 
                 instr_comma_ind = strfind(mov_instr, ',');
@@ -4287,10 +4472,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 switch app.MovingNDims
                     case 5
                         moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
+                        app.PreRegistrationImage = cat(3, app.PreRegistrationImage, moving_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
                     case 4
                         moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3),str2double(dim4)));
+                        app.PreRegistrationImage = cat(3, app.PreRegistrationImage, moving_Image(:,:,str2double(dim3),str2double(dim4)));
                     otherwise
                         moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3)));
+                        app.PreRegistrationImage = cat(3, app.PreRegistrationImage, moving_Image(:,:,str2double(dim3)));
                 end
 
                 if ~contains(slice_instr, 'p') == 1
@@ -4300,24 +4488,31 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     dim3 = fix_instr(2:instr_comma_ind(1)-1);
                     dim4 = fix_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
                     dim5 = fix_instr(instr_comma_ind(2)+1:end-1);
-                    switch app.FixedNDims
-                        case 5
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
-                        case 4
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4)));
-                        otherwise
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
+                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                        switch app.FixedNDims
+                            case 5
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
+                            case 4
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4)));
+                            otherwise
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
+                        end
+                    else
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
                     end
     	            
                     % Register moving onto fixed
                     basic = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "parameterMapVector = sitk.VectorOfParameterMap();", "parameterMapVector.append(sitk.GetDefaultParameterMap('affine'));", "parameterMapVector.append(sitk.GetDefaultParameterMap('bspline'));", "elastixImageFilter.SetParameterMap(parameterMapVector);", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
                     resultImage_py = pyrun(basic, "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
-                    resultImage = single(resultImage_py);
+                    resultImage = double(resultImage_py);
 
-                    % Concatenate to registered data and mask
+                    % Concatenate to registered data
                     app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
-                    app.RegisteredMask = cat(3, app.RegisteredMask, fixed_Mask(:,:,str2double(dim3)));
-
+                    
+                    % In case of standard registration, concatenate mask
+                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                        app.RegisteredMask = cat(3, app.RegisteredMask, fixed_Mask(:,:,str2double(dim3)));
+                    end
                 else
                     % Get fixed slice dimension indexes, create numpy array
                     P_ind = strfind(slice_instr, 'p');
@@ -4326,13 +4521,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     dim3_fix = fix_instr(2:instr_comma_ind(1)-1);
                     dim4 = fix_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
                     dim5 = fix_instr(instr_comma_ind(2)+1:end-1);
-                    switch app.FixedNDims
-                        case 5
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4),str2double(dim5)));
-                        case 4
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4)));
-                        otherwise
-                            fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix)));
+                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                        switch app.FixedNDims
+                            case 5
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4),str2double(dim5)));
+                            case 4
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4)));
+                            otherwise
+                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix)));
+                        end
+                    else
+                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix)));
                     end
                     % Get parameter slice dimension indexes, create numpy array
                     par_instr = slice_instr((P_ind+1):end);  
@@ -4353,11 +4552,15 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     advanced = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(paramIm));", "parameterMapVector = sitk.VectorOfParameterMap();", "parameterMapVector.append(sitk.GetDefaultParameterMap('affine'));", "parameterMapVector.append(sitk.GetDefaultParameterMap('bspline'));", "elastixImageFilter.SetParameterMap(parameterMapVector);", "elastixImageFilter.Execute();", "transformParameterMap = elastixImageFilter.GetTransformParameterMap();", "transformix = sitk.TransformixImageFilter();", "transformix.SetTransformParameterMap(transformParameterMap);", "transformix.SetMovingImage(sitk.GetImageFromArray(movIm));", "transformix.Execute();", "resultArray = sitk.GetArrayFromImage(transformix.GetResultImage());"];
 
                     resultImage_py = pyrun(advanced, "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
-                    resultImage = single(resultImage_py);
+                    resultImage = double(resultImage_py);
 
                     % Concatenate to registered data and mask
                     app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
-                    app.RegisteredMask = cat(3,app.RegisteredMask, fixed_Mask(:,:,str2double(dim3_fix)));
+
+                    % In case of standard registration, concatenate mask
+                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                        app.RegisteredMask = cat(3,app.RegisteredMask, fixed_Mask(:,:,str2double(dim3_fix)));
+                    end
                 end
             end
 
@@ -4378,6 +4581,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             app.TurboButton_Registration.Enable = 'on';
             app.GreyscaleButton_Registration.Enable = 'on';
+            app.ImageshownSwitch_Registration.Enable = 'on';
 
             RefreshImageRegistration(app); 
 
@@ -4411,11 +4615,21 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageRegistration(app);
         end
 
+        % Value changed function: ImageshownSwitch_Registration
+        function ImageshownSwitch_RegistrationValueChanged(app, event)
+            
+            RefreshImageRegistration(app);
+        end
+
         % Button pushed function: ExportDataButton_Registration
         function ExportDataButton_RegistrationPushed(app, event)
-            
-            ExportImageData(app, 'Registration');
-            
+            switch app.ChooseRegistrationTypeDropDown.Value
+                case "Standard"
+                    ExportImageData(app, 'Registration', 'Standard Registration');
+                case "Reference Atlas"
+                    ExportImageData(app, 'Registration', 'Atlas Registration');
+            end
+ 
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
@@ -6987,6 +7201,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create ImageshownSwitch_Registration
             app.ImageshownSwitch_Registration = uiswitch(app.RegistrationTab, 'slider');
             app.ImageshownSwitch_Registration.Items = {'Before', 'After'};
+            app.ImageshownSwitch_Registration.ValueChangedFcn = createCallbackFcn(app, @ImageshownSwitch_RegistrationValueChanged, true);
             app.ImageshownSwitch_Registration.Enable = 'off';
             app.ImageshownSwitch_Registration.Position = [700 26 45 20];
             app.ImageshownSwitch_Registration.Value = 'After';
