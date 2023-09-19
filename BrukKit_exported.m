@@ -1018,7 +1018,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % Write initial nifti file for header updating
                     niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
                     info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
-                    info.Description = 'Image file generated in Brukkit 0.8';
+                    info.Description = 'Image file generated in Brukkit';
                     % Get dimension padding and slice thickness/gap
                     switch numel(size(ImageData))
                         case 2
@@ -1112,7 +1112,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             % Write initial nifti file for header updating
                             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
                             info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info.Description = 'Image file generated in Brukkit 0.8';
+                            info.Description = 'Image file generated in Brukkit';
                             % Get voxel dimensions, update header
                             switch numel(size(ImageData))
                                 case 2
@@ -1157,7 +1157,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             % Write initial nifti file for header updating
                             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
                             info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info.Description = 'Image file generated in Brukkit 0.8';
+                            info.Description = 'Image file generated in Brukkit';
                             % Get voxel dimensions, update header
                             switch numel(size(ImageData))
                                 case 2
