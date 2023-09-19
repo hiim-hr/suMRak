@@ -668,7 +668,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
 
             % Create FixedImageLabel
             app.FixedImageLabel = uilabel(app.RegistrationViewerUIFigure);
-            app.FixedImageLabel.Position = [969 440 71 22];
+            app.FixedImageLabel.HorizontalAlignment = 'center';
+            app.FixedImageLabel.Position = [871 440 267 22];
             app.FixedImageLabel.Text = 'Fixed Image';
 
             % Create ReturnInstructionsButton

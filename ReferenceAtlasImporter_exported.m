@@ -153,6 +153,17 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
                         waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
                         waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
+                        waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
+                        waxholm_t2_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceGap = 0;
+                        waxholm_t2_atlas.Units = "mm mm mm";
+                        waxholm_t2_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -189,6 +200,17 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
                         waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
                         waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
+                        waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
+                        waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceGap = 0;
+                        waxholm_t1_atlas.Units = "mm mm mm";
+                        waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -224,6 +246,14 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         % Permute and transpose image
                         allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
                         allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
+
+                        % Set atlas dimensions, rotation matrix
+                        allen_atlas.VoxDimX = 0.025;
+                        allen_atlas.VoxDimY = 0.025;
+                        allen_atlas.SliceThickness = 0.025;
+                        allen_atlas.SliceGap = 0;
+                        allen_atlas.Units = "mm mm mm";
+                        allen_atlas.RotMat = diag([1,1,1]);
                         
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -281,7 +311,6 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         % Delete downloaded .nii.gz
                         delete(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"));
                         
-
                         progress.Value = progress.Value + step_size;
                         progress.Message = 'Importing T2w Waxholm Space Atlas - C57BL6J Mouse';
                         % Update atlas path
@@ -292,6 +321,17 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
                         waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
                         waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
+                        waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
+                        waxholm_t2_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t2_atlas.SliceGap = 0;
+                        waxholm_t2_atlas.Units = "mm mm mm";
+                        waxholm_t2_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -328,6 +368,17 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
                         waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
                         waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
+                        waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
+                        waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                        waxholm_t1_atlas.SliceGap = 0;
+                        waxholm_t1_atlas.Units = "mm mm mm";
+                        waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -363,6 +414,14 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         % Permute and transpose image
                         allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
                         allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
+
+                        % Set atlas dimensions, rotation matrix
+                        allen_atlas.VoxDimX = 0.025;
+                        allen_atlas.VoxDimY = 0.025;
+                        allen_atlas.SliceThickness = 0.025;
+                        allen_atlas.SliceGap = 0;
+                        allen_atlas.Units = "mm mm mm";
+                        allen_atlas.RotMat = diag([1,1,1]);
                         
                         % Save to loaded atlas collection struct, update
                         % drop down items
