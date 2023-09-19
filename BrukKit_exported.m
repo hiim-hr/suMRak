@@ -436,9 +436,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExpDimsPostMap % Dimensions of currently displayed parameter map
 
         % 3D Viewer Tab
-        ViewerParentObject % Property for storing viewer3d object
         ViewerImageData % Property for storing currently matrix of currently selected experiment in 3D Viewer
+        ViewerImageDataDims % Dimension sizes of the currently loaded experiment
         ViewerDimTriplet % Property for storing dimension triplet for 
+        OverlayPickerWindow % Overlay picker window
 
     end
     
@@ -457,6 +458,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % DSC Parameter map properties
         DSCOptions = DSC_mri_getOptions; % DSC map calculation options
+        
+        % 3D Viewer Tab
+        ViewerParentObject % Property for storing viewer3d object
     end
     
     methods (Access = private)
@@ -3006,7 +3010,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.BrainMask(:,:,min:max) = repmat(app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value),[1 1 max-min+1]);
                     % Get clusters on masked image, calculate best overlap using sorensen dice coefficient and
                     % select best cluster
-                    clusters = imsegkmeans3(single(app.OriginalSegmenterImageData(:,:,min:max)).*app.BrainMask(:,:,min:max),2,'NumAttempts',2);
+                    switch numel(app.ExpDimsSegmenter)
+                        case 2
+                            uialert(app.BrukKitAlphav0850UIFigure, ...
+                                'Data needs to have at least 3 dimensions to be eligible for 3D clustering.', ...
+                                'Dimension mismatch')
+                        case 3
+                            CurrentVolume = app.OriginalSegmenterImageData;
+                        case 4
+                            CurrentVolume = app.OriginalSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value);
+                        case 5
+                            CurrentVolume = app.OriginalSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value,app.Dim5Spinner_Segmenter.Value);
+                    end
+                    clusters = imsegkmeans3(single(CurrentVolume(:,:,min:max)).*app.BrainMask(:,:,min:max),2,'NumAttempts',2);
                     cluster_1_dice = dice(clusters==1, logical(app.BrainMask(:,:,min:max)));
                     cluster_2_dice = dice(clusters==2, logical(app.BrainMask(:,:,min:max)));
                     if cluster_1_dice > cluster_2_dice
@@ -5288,8 +5304,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             catch
                 app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));     
             end
-            imdata_size = size(app.ViewerImageData);
-            if numel(imdata_size)<3
+            app.ViewerImageData = (app.ViewerImageData - min(app.ViewerImageData(:))) / (max(app.ViewerImageData(:)) - min(app.ViewerImageData(:)));
+            app.ViewerImageDataDims = size(app.ViewerImageData);
+            if numel(app.ViewerImageDataDims)<3
                 app.RenderingStyleDropDown.Enable = 'off';
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
                 app.ColormapDropDown_Viewer.Enable = 'off';
@@ -5337,18 +5354,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.OverlayButton.Enable = 'on';
             % Set slice slider limits and values
             app.SliceRangeLowSpinner_Viewer.Enable = 'on';
-            app.SliceRangeLowSpinner_Viewer.Limits = [1, imdata_size(3)-1];
+            app.SliceRangeLowSpinner_Viewer.Limits = [1, app.ViewerImageDataDims(3)-1];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
             app.SliceRangeHighSpinner_Viewer.Enable = 'on';
-            app.SliceRangeHighSpinner_Viewer.Limits = [2, imdata_size(3)];
-            app.SliceRangeHighSpinner_Viewer.Value = imdata_size(3);       
+            app.SliceRangeHighSpinner_Viewer.Limits = [2, app.ViewerImageDataDims(3)];
+            app.SliceRangeHighSpinner_Viewer.Value = app.ViewerImageDataDims(3);       
 
             % Create transformation matrix
             T = [app.ViewerDimTriplet(1) 0 0 0; 0 app.ViewerDimTriplet(2) 0 0; 0 0 app.ViewerDimTriplet(3) 0; 0 0 0 1];
             tform = affinetform3d(T);
 
             % Enable/disable spinners based on number of dims, refresh 3D Viewer
-            switch numel(imdata_size)
+            switch numel(app.ViewerImageDataDims)
                 case 3
                     app.Dim4Spinner_Viewer.Enable = 'off';
                     app.Dim4Spinner_Viewer.Value = 1;
@@ -5358,17 +5375,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 case 4
                     app.Dim4Spinner_Viewer.Enable = 'on';
                     app.Dim4Spinner_Viewer.Value = 1;
-                    app.Dim4Spinner_Viewer.Limits = [1, imdata_size(4)];
+                    app.Dim4Spinner_Viewer.Limits = [1, app.ViewerImageDataDims(4)];
                     app.Dim5Spinner_Viewer.Enable = 'off';
                     app.Dim5Spinner_Viewer.Value = 1;
                     volshow(app.ViewerImageData(:,:,:,1), 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
                 case 5
                     app.Dim4Spinner_Viewer.Enable = 'on';
                     app.Dim4Spinner_Viewer.Value = 1;
-                    app.Dim4Spinner_Viewer.Limits = [1, imdata_size(4)];
+                    app.Dim4Spinner_Viewer.Limits = [1, app.ViewerImageDataDims(4)];
                     app.Dim5Spinner_Viewer.Enable = 'on';
                     app.Dim5Spinner_Viewer.Value = 1;
-                    app.Dim5Spinner_Viewer.Limits = [1, imdata_size(5)];
+                    app.Dim5Spinner_Viewer.Limits = [1, app.ViewerImageDataDims(5)];
                     volshow(app.ViewerImageData(:,:,:,1,1), 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
             end      
         end
@@ -5385,6 +5402,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     renderingStyle = 'MinimumIntensityProjection';
                 case "Slice Planes"
                     renderingStyle = 'SlicePlanes';
+                case "Gradient Opacity"
+                    renderingStyle = 'GradientOpacity';
+                case "Isosurface"
+                    renderingStyle = 'Isosurface';
             end
             app.ViewerParentObject.Children.RenderingStyle = renderingStyle;
         end
@@ -5542,6 +5563,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     return
             end
             
+        end
+
+        % Value changed function: OverlayButton
+        function OverlayButtonValueChanged(app, event)
+            value = app.OverlayButton.Value;
+            
+            switch value
+                case 1
+                    app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
+                 'Message', "Selecting a volume to overlay in 3D Viewer...", 'Indeterminate','on');
+                    drawnow
+            
+                    app.OverlayButton.Enable = 'off';
+
+                    app.OverlayPickerWindow = OverlayPicker(app, app.DropDownItemsCombined, app.ExperimentPropertyTable, ...
+                        app.SavedTable, app.ViewerImageDataDims);
+                case 0
+                    Select3DViewerDropDownValueChanged(app);
+            end
         end
     end
 
@@ -7450,7 +7490,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create RenderingStyleDropDown
             app.RenderingStyleDropDown = uidropdown(app.DViewerTab);
-            app.RenderingStyleDropDown.Items = {'Volume Rendering', 'Maximum Intensity Projection', 'Minimum Intensity Projection', 'Slice Planes'};
+            app.RenderingStyleDropDown.Items = {'Volume Rendering', 'Maximum Intensity Projection', 'Minimum Intensity Projection', 'Slice Planes', 'Gradient Opacity', 'Isosurface'};
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
@@ -7547,6 +7587,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create OverlayButton
             app.OverlayButton = uibutton(app.DViewerTab, 'state');
+            app.OverlayButton.ValueChangedFcn = createCallbackFcn(app, @OverlayButtonValueChanged, true);
             app.OverlayButton.Enable = 'off';
             app.OverlayButton.Text = 'Overlay';
             app.OverlayButton.Position = [712 23 100 23];
