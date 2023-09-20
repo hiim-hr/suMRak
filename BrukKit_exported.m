@@ -219,20 +219,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
         FAIRpASLMappingoptionsPanel     matlab.ui.container.Panel
-        CalculatepASLmapButton          matlab.ui.control.Button
+        CalculatepASLMapButton          matlab.ui.control.Button
         ExperimentorderButtonGroup      matlab.ui.container.ButtonGroup
-        NonselectivefirstButton         matlab.ui.control.RadioButton
-        SliceselectivefirstButton       matlab.ui.control.RadioButton
+        NonSelectiveFirstButton         matlab.ui.control.RadioButton
+        SliceSelectiveFirstButton       matlab.ui.control.RadioButton
         BloodT1sEditField               matlab.ui.control.NumericEditField
         BloodT1sEditFieldLabel          matlab.ui.control.Label
         T1OptionsPanel                  matlab.ui.container.Panel
         TIvaluesText                    matlab.ui.control.TextArea
         TIvaluesLabel                   matlab.ui.control.Label
-        CalculateT1mapButton            matlab.ui.control.Button
+        CalculateT1MapButton            matlab.ui.control.Button
         TRvaluesText                    matlab.ui.control.TextArea
         TRvaluesLabel                   matlab.ui.control.Label
         T2OptionsPanel                  matlab.ui.container.Panel
-        CalculateT2mapButton            matlab.ui.control.Button
+        CalculateT2MapButton            matlab.ui.control.Button
         TEvaluesText                    matlab.ui.control.TextArea
         TEvaluesLabel                   matlab.ui.control.Label
         OptimizationOptionsPanel        matlab.ui.container.Panel
@@ -252,7 +252,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ExportDataButton_Map            matlab.ui.control.Button
         SaveDataButton_Map              matlab.ui.control.Button
         SliceSlider_PostMap             matlab.ui.control.Slider
-        SliceLabel_ParameterMaps_2      matlab.ui.control.Label
+        SliceLabel_ParameterMaps_PostMap  matlab.ui.control.Label
         SliceSpinner_PostMap            matlab.ui.control.Spinner
         DSCMappingOptionsPanel          matlab.ui.container.Panel
         AIFExtractionSliceSpinner       matlab.ui.control.Spinner
@@ -279,7 +279,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         Dim4Spinner_PreMap              matlab.ui.control.Spinner
         Dim4Spinner_Label_ParameterMaps  matlab.ui.control.Label
         SliceSlider_PreMap              matlab.ui.control.Slider
-        SliceLabel_ParameterMaps        matlab.ui.control.Label
+        SliceLabel_ParameterMaps_PreMap  matlab.ui.control.Label
         SelectPreMapDropDown            matlab.ui.control.DropDown
         SelectDSCvolumetricdataformapcalculationLabel  matlab.ui.control.Label
         SliceSpinner_PreMap             matlab.ui.control.Spinner
@@ -460,7 +460,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % DSC Parameter map properties
         DSCOptions = DSC_mri_getOptions; % DSC map calculation options
-        
+
         % 3D Viewer Tab
         ViewerParentObject % Property for storing viewer3d object
     end
@@ -987,91 +987,159 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end 
         end
         
-        function ExportImageData(app, tab, special_case)
+        function ExportImageDataGeneral(app, tab)
             % Draw progress box
             progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
-            drawnow
-            switch nargin
-                % No special case
-                case 2
-                    % Get image data, dropdown value and suffix based on tab
-                    switch tab
-                        case 'Preview'
-                            ImageData = app.PreviewImageData;
-                            DropDownValue = app.PreviewDropDown.Value;
-                            Suffix = ".nii";
-                        case 'Segmenter'
-                            ImageData = app.WorkingSegmenterImageData;
-                            DropDownValue = app.SegmentDropDown.Value;
-                            Suffix = "_segmented.nii";
-                        case 'Map'
-                            ImageData = app.PostMapImageData;
-                            DropDownValue = app.SelectPreMapDropDown.Value;
-                            switch app.ChooseMapTypeDropDown.Value
-                                case 'DSC'
-                                    Suffix = "_DSC_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
-                                otherwise
-                                    Suffix = "_" + convertCharsToStrings(app.ChooseMapTypeDropDown.Value) + ".nii";
-                            end
+            drawnow    
+            switch tab
+                % Get image data, dropdown value and suffix based on tab
+                case 'Preview'
+                    ImageData = app.PreviewImageData;
+                    DropDownValue = app.PreviewDropDown.Value;
+                    Suffix = ".nii";
+                case 'Segmenter'
+                    ImageData = app.WorkingSegmenterImageData;
+                    DropDownValue = app.SegmentDropDown.Value;
+                    Suffix = "_segmented.nii";
+                case 'Map'
+                    ImageData = app.PostMapImageData;
+                    DropDownValue = app.SelectPreMapDropDown.Value;
+                    switch app.ChooseMapTypeDropDown.Value
+                        case 'DSC'
+                            Suffix = "_DSC_" + convertCharsToStrings(app.DSCMapDropDown.Value) + ".nii";
+                        otherwise
+                            Suffix = "_" + convertCharsToStrings(app.ChooseMapTypeDropDown.Value) + ".nii";
                     end
+            progress.Value = 0.2;
+            progress.Message = "Writing NIfTI data information...";
+            pause(0.5);
+            end
+            % Write initial nifti file for header updating
+            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
+            info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
+            info.Description = 'Image file generated in BrukKit';
+            % Get dimension padding and slice thickness/gap
+            switch numel(size(ImageData))
+                case 2
+                    DimPadding = [];
+                    SliceThickness = [];
+                    SliceGap = [];
+                case 3
+                    DimPadding = [];
+                    try
+                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                    catch
+                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                    end
+                case 4
+                    DimPadding = 1;
+                    try
+                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                    catch
+                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                    end
+                case 5
+                    DimPadding = [1,1];
+                    try
+                        SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
+                        SliceGap = app.SavedTable.SliceGap(DropDownValue);
+                    catch
+                        SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
+                        SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
+                    end
+            end
+            % Get other voxel dimensions, update header
+            try
+                info.PixelDimensions = [app.SavedTable.VoxDimX(DropDownValue), ...
+                    app.SavedTable.VoxDimY(DropDownValue), ...
+                    SliceThickness + SliceGap, DimPadding];
+                temp = split(app.SavedTable.Units(DropDownValue));
+                rotm = cell2mat(app.SavedTable.RotMat(DropDownValue));
+            catch
+                info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
+                    table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
+                    SliceThickness + SliceGap, DimPadding];
+                temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
+                rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
+            end
+            % Update header units
+            switch temp(1)
+                case "mm"
+                    info.SpaceUnits = 'Millimeter';
+                case "um"
+                    info.SpaceUnits = 'Micron';
+                case "m"
+                    info.SpaceUnits = 'Meter';
+            end
+            progress.Value = 0.6;
+            progress.Message = "Exporting image data";
+            pause(0.5);
+            % Update header transformation
+            info.Transform.T(1:3,1:3) = rotm;
+            info.TransformName = 'Qform';
+            % Write final nifti
+            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
+            if  strcmp(tab, 'Segmenter')
+                try
+                progress.Value = 0.8;
+                progress.Message = "Exporting segmenter mask data";
+                pause(0.5);
+                % Write nifti files for segmentation masks
+                niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
+                niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
+                niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
+                roi_id = app.ROIIdentifiers;
+                % Save ROI identifiers
+                save(app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_identifiers_ROI.mat", "roi_id")
+                catch
+                end
+            end
+
+            % close the dialog box
+            progress.Value = 1;
+            progress.Message = "Done!";
+            pause(0.5);
+            close(progress);
+        end
+
+        function ExportImageDataRegistration(app, registration)
+            % Draw progress box
+            progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
+                 'Message', "Retrieving data for export");
+            drawnow  
+            switch registration
+                % Standard registration (moving/fixed)
+                case 'Standard Registration'
+                    ImageData = app.RegisteredImageData;
+                    Suffix = "_registered.nii";
 
                     progress.Value = 0.2;
                     progress.Message = "Writing NIfTI data information...";
                     pause(0.5);
                     % Write initial nifti file for header updating
-                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
-                    info = niftiinfo(app.ExportFolderPath + filesep + DropDownValue + Suffix);
-                    info.Description = 'Image file generated in Brukkit';
-                    % Get dimension padding and slice thickness/gap
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                    info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                    info.Description = 'Image file generated in BrukKit';
+                    % Get voxel dimensions, update header
                     switch numel(size(ImageData))
                         case 2
-                            DimPadding = [];
                             SliceThickness = [];
                             SliceGap = [];
                         case 3
-                            DimPadding = [];
-                            try
-                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                            catch
-                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
-                            end
-                        case 4
-                            DimPadding = 1;
-                            try
-                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                            catch
-                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
-                            end
-                        case 5
-                            DimPadding = [1,1];
-                            try
-                                SliceThickness = app.SavedTable.SliceThickness(DropDownValue);
-                                SliceGap = app.SavedTable.SliceGap(DropDownValue);
-                            catch
-                                SliceThickness = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Thickness"));
-                                SliceGap = table2array(app.ExperimentPropertyTable(DropDownValue, "Slice Gap"));
-                            end
+                            SliceThickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
+                            SliceGap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
                     end
-                    % Get other voxel dimensions, update header
-                    try
-                        info.PixelDimensions = [app.SavedTable.VoxDimX(DropDownValue), ...
-                            app.SavedTable.VoxDimY(DropDownValue), ...
-                            SliceThickness + SliceGap, DimPadding];
-                        temp = split(app.SavedTable.Units(DropDownValue));
-                        rotm = cell2mat(app.SavedTable.RotMat(DropDownValue));
-                    catch
-                        info.PixelDimensions = [table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension X")), ...
-                            table2array(app.ExperimentPropertyTable(DropDownValue, "Voxel dimension Y")), ...
-                            SliceThickness + SliceGap, DimPadding];
-                        temp = split(table2array(app.ExperimentPropertyTable(DropDownValue,'Dimension Units')));
-                        rotm = cell2mat(table2array(app.ExperimentPropertyTable(DropDownValue,"Rotation Matrix")));
-                    end
+                    DimPadding = [];
+                    info.PixelDimensions = [app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value), ...
+                        app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value), ...
+                        SliceThickness + SliceGap, DimPadding];
                     % Update header units
+                    temp = split(app.SavedTable.Units(app.SelectfixedDropDown.Value));
                     switch temp(1)
                         case "mm"
                             info.SpaceUnits = 'Millimeter';
@@ -1083,120 +1151,58 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     progress.Value = 0.6;
                     progress.Message = "Exporting image data";
                     pause(0.5);
-                    % Update header transformation
+                    % Update header transform
+                    rotm = cell2mat(app.SavedTable.RotMat(app.SelectfixedDropDown.Value));
                     info.Transform.T(1:3,1:3) = rotm;
                     info.TransformName = 'Qform';
                     % Write final nifti
-                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix, info);
-                    if  strcmp(tab, 'Segmenter')
-                        try
-                        progress.Value = 0.8;
-                        progress.Message = "Exporting segmenter mask data";
-                        pause(0.5);
-                        niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
-                        niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
-                        niftiwrite(pagetranspose(double(app.ROIMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_ROI.nii");
-                        roi_id = app.ROIIdentifiers;
-                        save(app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_identifiers_ROI.mat", "roi_id")
-                        catch
-                        end
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
+                
+                % Reference Atlas registration
+                case 'Atlas Registration'
+                    ImageData = app.RegisteredImageData;
+                    Suffix = "_atlas_registered.nii";
+
+                    progress.Value = 0.2;
+                    progress.Message = "Writing NIfTI data information...";
+                    pause(0.5);
+                    % Write initial nifti file for header updating
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                    info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
+                    info.Description = 'Image file generated in BrukKit';
+                    % Get voxel dimensions, update header
+                    switch numel(size(ImageData))
+                        case 2
+                            SliceThickness = [];
+                            SliceGap = [];
+                        case 3
+                            SliceThickness = app.ResizedAtlasProperties.SliceThickness;
+                            SliceGap = app.ResizedAtlasProperties.SliceGap;
                     end
-
-                % Special cases
-                case 3
-                    switch special_case
-                        % Standard registration (moving/fixed)
-                        case 'Standard Registration'
-                            ImageData = app.RegisteredImageData;
-                            Suffix = "_registered.nii";
-
-                            progress.Value = 0.2;
-                            progress.Message = "Writing NIfTI data information...";
-                            pause(0.5);
-                            % Write initial nifti file for header updating
-                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info.Description = 'Image file generated in Brukkit';
-                            % Get voxel dimensions, update header
-                            switch numel(size(ImageData))
-                                case 2
-                                    SliceThickness = [];
-                                    SliceGap = [];
-                                case 3
-                                    SliceThickness = app.SavedTable.SliceThickness(app.SelectfixedDropDown.Value);
-                                    SliceGap = app.SavedTable.SliceGap(app.SelectfixedDropDown.Value);
-                            end
-                            DimPadding = [];
-                            info.PixelDimensions = [app.SavedTable.VoxDimX(app.SelectfixedDropDown.Value), ...
-                                app.SavedTable.VoxDimY(app.SelectfixedDropDown.Value), ...
-                                SliceThickness + SliceGap, DimPadding];
-                            % Update header units
-                            temp = split(app.SavedTable.Units(app.SelectfixedDropDown.Value));
-                            switch temp(1)
-                                case "mm"
-                                    info.SpaceUnits = 'Millimeter';
-                                case "um"
-                                    info.SpaceUnits = 'Micron';
-                                case "m"
-                                    info.SpaceUnits = 'Meter';
-                            end
-                            progress.Value = 0.6;
-                            progress.Message = "Exporting image data";
-                            pause(0.5);
-                            % Update header transform
-                            rotm = cell2mat(app.SavedTable.RotMat(app.SelectfixedDropDown.Value));
-                            info.Transform.T(1:3,1:3) = rotm;
-                            info.TransformName = 'Qform';
-                            % Write final nifti
-                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
-                        
-                            % Reference Atlas registration
-                        case 'Atlas Registration'
-                            ImageData = app.RegisteredImageData;
-                            Suffix = "_atlas_registered.nii";
-
-                            progress.Value = 0.2;
-                            progress.Message = "Writing NIfTI data information...";
-                            pause(0.5);
-                            % Write initial nifti file for header updating
-                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
-                            info.Description = 'Image file generated in Brukkit';
-                            % Get voxel dimensions, update header
-                            switch numel(size(ImageData))
-                                case 2
-                                    SliceThickness = [];
-                                    SliceGap = [];
-                                case 3
-                                    SliceThickness = app.ResizedAtlasProperties.SliceThickness;
-                                    SliceGap = app.ResizedAtlasProperties.SliceGap;
-                            end
-                            DimPadding = [];
-                            info.PixelDimensions = [app.ResizedAtlasProperties.VoxDimX, ...
-                                app.ResizedAtlasProperties.VoxDimY, ...
-                                SliceThickness + SliceGap, DimPadding];
-                            % Update header units
-                            temp = split(app.ChosenAtlas.Units);
-                            switch temp(1)
-                                case "mm"
-                                    info.SpaceUnits = 'Millimeter';
-                                case "um"
-                                    info.SpaceUnits = 'Micron';
-                                case "m"
-                                    info.SpaceUnits = 'Meter';
-                            end
-                            progress.Value = 0.6;
-                            progress.Message = "Exporting image data";
-                            pause(0.5);
-                            % Update header transform
-                            rotm = app.ResizedAtlasProperties.RotMat;
-                            info.Transform.T(1:3,1:3) = rotm;
-                            info.TransformName = 'Qform';
-                            % Write final nifti
-                            niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
+                    DimPadding = [];
+                    info.PixelDimensions = [app.ResizedAtlasProperties.VoxDimX, ...
+                        app.ResizedAtlasProperties.VoxDimY, ...
+                        SliceThickness + SliceGap, DimPadding];
+                    % Update header units
+                    temp = split(app.ChosenAtlas.Units);
+                    switch temp(1)
+                        case "mm"
+                            info.SpaceUnits = 'Millimeter';
+                        case "um"
+                            info.SpaceUnits = 'Micron';
+                        case "m"
+                            info.SpaceUnits = 'Meter';
                     end
+                    progress.Value = 0.6;
+                    progress.Message = "Exporting image data";
+                    pause(0.5);
+                    % Update header transform
+                    rotm = app.ResizedAtlasProperties.RotMat;
+                    info.Transform.T(1:3,1:3) = rotm;
+                    info.TransformName = 'Qform';
+                    % Write final nifti
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
             end
-
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
@@ -2337,7 +2343,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: ExportDataButton_Preview
         function ExportDataButton_PreviewPushed(app, event)
-            ExportImageData(app, 'Preview');
+            ExportImageDataGeneral(app, 'Preview');
 
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
@@ -3138,7 +3144,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case 2
                             uialert(app.BrukKitAlphav0850UIFigure, ...
                                 'Data needs to have at least 3 dimensions to be eligible for 3D clustering.', ...
-                                'Dimension mismatch')
+                                'Auto Cluster Dimension Mismatch')
                         case 3
                             CurrentVolume = app.OriginalSegmenterImageData;
                         case 4
@@ -3672,7 +3678,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: ExportDataButton_Segmenter
         function ExportDataButton_SegmenterPushed(app, event)
             
-            ExportImageData(app, 'Segmenter');
+            ExportImageDataGeneral(app, 'Segmenter');
             
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
@@ -4623,11 +4629,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: ExportDataButton_Registration
         function ExportDataButton_RegistrationPushed(app, event)
+            
             switch app.ChooseRegistrationTypeDropDown.Value
                 case "Standard"
-                    ExportImageData(app, 'Registration', 'Standard Registration');
+                    ExportImageDataRegistration(app, 'Standard Registration');
                 case "Reference Atlas"
-                    ExportImageData(app, 'Registration', 'Atlas Registration');
+                    ExportImageDataRegistration(app, 'Atlas Registration');
             end
  
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
@@ -4674,7 +4681,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'on';
                     app.T2OptionsPanel.Visible = 'off';
-                    app.CalculateT1mapButton.Visible = 'on';
+                    app.CalculateT1MapButton.Visible = 'on';
                     % app.OptimizationOptionsPanel.Visible = 'on';
                     app.FAIRpASLMappingoptionsPanel.Visible = 'off';
                     % t1Position = app.T1OptionsPanel.Position;
@@ -4685,7 +4692,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.DSCMappingOptionsPanel.Visible = 'off';
                     app.T1OptionsPanel.Visible = 'on';
                     app.T2OptionsPanel.Visible = 'off';
-                    app.CalculateT1mapButton.Visible = 'off';
+                    app.CalculateT1MapButton.Visible = 'off';
                     % app.OptimizationOptionsPanel.Visible = 'on';
                     t1Position = app.T1OptionsPanel.Position;
                     pASLPosition = app.OptimizationOptionsPanel.Position;
@@ -5080,8 +5087,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.MaxNrofIterationsEditField.Value = 1.0e+1;
         end
 
-        % Button pushed function: CalculateT1mapButton
-        function CalculateT1mapButtonPushed(app, event)
+        % Button pushed function: CalculateT1MapButton
+        function CalculateT1MapButtonPushed(app, event)
             
             tvalues = str2double(split(app.TRvaluesText.Value, ";")');
             ivalues = str2double(split(app.TIvaluesText.Value, ";")');
@@ -5181,8 +5188,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImagePostMap(app);
         end
 
-        % Button pushed function: CalculateT2mapButton
-        function CalculateT2mapButtonPushed(app, event)
+        % Button pushed function: CalculateT2MapButton
+        function CalculateT2MapButtonPushed(app, event)
 
             tvalues = str2double(split(app.TEvaluesText.Value, ";")');
 
@@ -5262,8 +5269,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImagePostMap(app);
         end
 
-        % Button pushed function: CalculatepASLmapButton
-        function CalculatepASLmapButtonPushed(app, event)
+        % Button pushed function: CalculatepASLMapButton
+        function CalculatepASLMapButtonPushed(app, event)
             
             tvalues = str2double(split(app.TRvaluesText.Value, ";")');
             tvalues = tvalues(1:2:end);
@@ -5281,7 +5288,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             switch numel(size(app.PreMapImageData))
                 case 4
-                    switch app.SliceselectivefirstButton.Value
+                    switch app.SliceSelectiveFirstButton.Value
                         case true
                             T1rawSS = app.PreMapImageData(:,:,1,:);
                             T1rawNS = app.PreMapImageData(:,:,2,:);
@@ -5290,7 +5297,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             T1rawNS = app.PreMapImageData(:,:,1,:);
                     end
                 case 5
-                    switch app.SliceselectivefirstButton.Value
+                    switch app.SliceSelectiveFirstButton.Value
                         case true
                             T1rawSS = squeeze(app.PreMapImageData(:,:,:,1,:));
                             T1rawNS = squeeze(app.PreMapImageData(:,:,:,2,:));
@@ -5474,7 +5481,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: ExportDataButton_Map
         function ExportDataButton_MapPushed(app, event)
 
-            ExportImageData(app, 'Map');
+            ExportImageDataGeneral(app, 'Map');
 
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
@@ -5601,7 +5608,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_Viewer.Value = 1;
                     app.Dim5Spinner_Viewer.Limits = [1, app.ViewerImageDataDims(5)];
                     volshow(app.ViewerImageData(:,:,:,1,1), 'Parent', app.ViewerParentObject, 'Transformation', tform, 'RenderingStyle', "VolumeRendering");
-            end      
+            end     
         end
 
         % Value changed function: RenderingStyleDropDown
@@ -5748,6 +5755,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
         end
 
+        % Value changed function: OverlayButton
+        function OverlayButtonValueChanged(app, event)
+            value = app.OverlayButton.Value;
+            
+            switch value
+                case 1
+                    app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
+                 'Message', "Selecting a volume to overlay in 3D Viewer...", 'Indeterminate','on');
+                    drawnow
+            
+                    app.OverlayButton.Enable = 'off';
+
+                    app.OverlayPickerWindow = OverlayPicker(app, app.DropDownItemsCombined, app.ExperimentPropertyTable, ...
+                        app.SavedTable, app.ViewerImageDataDims);
+                case 0
+                    Select3DViewerDropDownValueChanged(app);
+            end           
+        end
+
         % Close request function: BrukKitAlphav0850UIFigure
         function BrukKitAlphav0850UIFigureCloseRequest(app, event)
             
@@ -5777,25 +5803,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     return
             end
             
-        end
-
-        % Value changed function: OverlayButton
-        function OverlayButtonValueChanged(app, event)
-            value = app.OverlayButton.Value;
-            
-            switch value
-                case 1
-                    app.ProgressBar = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title',"Please wait",...
-                 'Message', "Selecting a volume to overlay in 3D Viewer...", 'Indeterminate','on');
-                    drawnow
-            
-                    app.OverlayButton.Enable = 'off';
-
-                    app.OverlayPickerWindow = OverlayPicker(app, app.DropDownItemsCombined, app.ExperimentPropertyTable, ...
-                        app.SavedTable, app.ViewerImageDataDims);
-                case 0
-                    Select3DViewerDropDownValueChanged(app);
-            end
         end
     end
 
@@ -7255,11 +7262,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectPreMapDropDown.Position = [133 574 284 21];
             app.SelectPreMapDropDown.Value = 'None';
 
-            % Create SliceLabel_ParameterMaps
-            app.SliceLabel_ParameterMaps = uilabel(app.ParameterMapsTab);
-            app.SliceLabel_ParameterMaps.HorizontalAlignment = 'right';
-            app.SliceLabel_ParameterMaps.Position = [100 97 31 22];
-            app.SliceLabel_ParameterMaps.Text = 'Slice';
+            % Create SliceLabel_ParameterMaps_PreMap
+            app.SliceLabel_ParameterMaps_PreMap = uilabel(app.ParameterMapsTab);
+            app.SliceLabel_ParameterMaps_PreMap.HorizontalAlignment = 'right';
+            app.SliceLabel_ParameterMaps_PreMap.Position = [100 97 31 22];
+            app.SliceLabel_ParameterMaps_PreMap.Text = 'Slice';
 
             % Create SliceSlider_PreMap
             app.SliceSlider_PreMap = uislider(app.ParameterMapsTab);
@@ -7443,11 +7450,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_PostMap.Position = [1080 97 57 22];
             app.SliceSpinner_PostMap.Value = 1;
 
-            % Create SliceLabel_ParameterMaps_2
-            app.SliceLabel_ParameterMaps_2 = uilabel(app.ParameterMapsTab);
-            app.SliceLabel_ParameterMaps_2.HorizontalAlignment = 'right';
-            app.SliceLabel_ParameterMaps_2.Position = [787 97 31 22];
-            app.SliceLabel_ParameterMaps_2.Text = 'Slice';
+            % Create SliceLabel_ParameterMaps_PostMap
+            app.SliceLabel_ParameterMaps_PostMap = uilabel(app.ParameterMapsTab);
+            app.SliceLabel_ParameterMaps_PostMap.HorizontalAlignment = 'right';
+            app.SliceLabel_ParameterMaps_PostMap.Position = [787 97 31 22];
+            app.SliceLabel_ParameterMaps_PostMap.Text = 'Slice';
 
             % Create SliceSlider_PostMap
             app.SliceSlider_PostMap = uislider(app.ParameterMapsTab);
@@ -7572,17 +7579,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TEvaluesLabel = uilabel(app.T2OptionsPanel);
             app.TEvaluesLabel.HorizontalAlignment = 'center';
             app.TEvaluesLabel.Position = [71 121 59 22];
-            app.TEvaluesLabel.Text = 'TE values';
+            app.TEvaluesLabel.Text = 'TE Values';
 
             % Create TEvaluesText
             app.TEvaluesText = uitextarea(app.T2OptionsPanel);
             app.TEvaluesText.Position = [26 53 150 60];
 
-            % Create CalculateT2mapButton
-            app.CalculateT2mapButton = uibutton(app.T2OptionsPanel, 'push');
-            app.CalculateT2mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2mapButtonPushed, true);
-            app.CalculateT2mapButton.Position = [46 15 109 22];
-            app.CalculateT2mapButton.Text = 'Calculate T2 map';
+            % Create CalculateT2MapButton
+            app.CalculateT2MapButton = uibutton(app.T2OptionsPanel, 'push');
+            app.CalculateT2MapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT2MapButtonPushed, true);
+            app.CalculateT2MapButton.Position = [46 15 109 22];
+            app.CalculateT2MapButton.Text = 'Calculate T2 Map';
 
             % Create T1OptionsPanel
             app.T1OptionsPanel = uipanel(app.ParameterMapsTab);
@@ -7596,23 +7603,23 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TRvaluesLabel = uilabel(app.T1OptionsPanel);
             app.TRvaluesLabel.HorizontalAlignment = 'center';
             app.TRvaluesLabel.Position = [71 216 60 22];
-            app.TRvaluesLabel.Text = 'TR values';
+            app.TRvaluesLabel.Text = 'TR Values';
 
             % Create TRvaluesText
             app.TRvaluesText = uitextarea(app.T1OptionsPanel);
             app.TRvaluesText.Position = [26 148 150 60];
 
-            % Create CalculateT1mapButton
-            app.CalculateT1mapButton = uibutton(app.T1OptionsPanel, 'push');
-            app.CalculateT1mapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT1mapButtonPushed, true);
-            app.CalculateT1mapButton.Position = [48 14 109 22];
-            app.CalculateT1mapButton.Text = 'Calculate T1 map';
+            % Create CalculateT1MapButton
+            app.CalculateT1MapButton = uibutton(app.T1OptionsPanel, 'push');
+            app.CalculateT1MapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateT1MapButtonPushed, true);
+            app.CalculateT1MapButton.Position = [48 14 109 22];
+            app.CalculateT1MapButton.Text = 'Calculate T1 Map';
 
             % Create TIvaluesLabel
             app.TIvaluesLabel = uilabel(app.T1OptionsPanel);
             app.TIvaluesLabel.HorizontalAlignment = 'center';
             app.TIvaluesLabel.Position = [74 117 54 22];
-            app.TIvaluesLabel.Text = 'TI values';
+            app.TIvaluesLabel.Text = 'TI Values';
 
             % Create TIvaluesText
             app.TIvaluesText = uitextarea(app.T1OptionsPanel);
@@ -7644,22 +7651,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExperimentorderButtonGroup.Title = 'Experiment order';
             app.ExperimentorderButtonGroup.Position = [28 75 143 79];
 
-            % Create SliceselectivefirstButton
-            app.SliceselectivefirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
-            app.SliceselectivefirstButton.Text = {'Slice selective first'; ''};
-            app.SliceselectivefirstButton.Position = [11 34 121 22];
-            app.SliceselectivefirstButton.Value = true;
+            % Create SliceSelectiveFirstButton
+            app.SliceSelectiveFirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
+            app.SliceSelectiveFirstButton.Text = 'Slice Selective First';
+            app.SliceSelectiveFirstButton.Position = [11 34 127 22];
+            app.SliceSelectiveFirstButton.Value = true;
 
-            % Create NonselectivefirstButton
-            app.NonselectivefirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
-            app.NonselectivefirstButton.Text = 'Non-selective first';
-            app.NonselectivefirstButton.Position = [11 12 117 22];
+            % Create NonSelectiveFirstButton
+            app.NonSelectiveFirstButton = uiradiobutton(app.ExperimentorderButtonGroup);
+            app.NonSelectiveFirstButton.Text = 'Non-Selective First';
+            app.NonSelectiveFirstButton.Position = [11 12 123 22];
 
-            % Create CalculatepASLmapButton
-            app.CalculatepASLmapButton = uibutton(app.FAIRpASLMappingoptionsPanel, 'push');
-            app.CalculatepASLmapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculatepASLmapButtonPushed, true);
-            app.CalculatepASLmapButton.Position = [38 14 124 22];
-            app.CalculatepASLmapButton.Text = 'Calculate pASL map';
+            % Create CalculatepASLMapButton
+            app.CalculatepASLMapButton = uibutton(app.FAIRpASLMappingoptionsPanel, 'push');
+            app.CalculatepASLMapButton.ButtonPushedFcn = createCallbackFcn(app, @CalculatepASLMapButtonPushed, true);
+            app.CalculatepASLMapButton.Position = [38 13 124 23];
+            app.CalculatepASLMapButton.Text = 'Calculate pASL Map';
 
             % Create DViewerTab
             app.DViewerTab = uitab(app.TabGroup);
