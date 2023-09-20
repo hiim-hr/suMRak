@@ -189,17 +189,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         VolumeEditFieldLabel_Brain      matlab.ui.control.Label
         UITable_VolumetryBrain          matlab.ui.control.Table
         RegistrationTab                 matlab.ui.container.Tab
-        ImageshownSwitch_Registration   matlab.ui.control.Switch
-        ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
-        ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
-        SliceSlider_Registration        matlab.ui.control.Slider
-        SliceSliderLabel_Registration   matlab.ui.control.Label
-        SliceSpinner_Registration       matlab.ui.control.Spinner
-        ColormapButtonGroup_Registration  matlab.ui.container.ButtonGroup
-        TurboButton_Registration        matlab.ui.control.RadioButton
-        GreyscaleButton_Registration    matlab.ui.control.RadioButton
-        ExportDataButton_Registration   matlab.ui.control.Button
-        SaveRegisteredDataButton        matlab.ui.control.Button
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
         SelectAtlasDropDown             matlab.ui.control.DropDown
         ImportReferenceAtlasButton      matlab.ui.control.Button
@@ -215,7 +204,26 @@ classdef BrukKit_exported < matlab.apps.AppBase
         RegistrationViewerButton        matlab.ui.control.Button
         ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
         RegisterButton                  matlab.ui.control.Button
+        ImageshownSwitch_Registration   matlab.ui.control.Switch
+        ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
+        ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
+        SliceSlider_Registration        matlab.ui.control.Slider
+        SliceSliderLabel_Registration   matlab.ui.control.Label
+        SliceSpinner_Registration       matlab.ui.control.Spinner
+        ColormapButtonGroup_Registration  matlab.ui.container.ButtonGroup
+        TurboButton_Registration        matlab.ui.control.RadioButton
+        GreyscaleButton_Registration    matlab.ui.control.RadioButton
+        ExportDataButton_Registration   matlab.ui.control.Button
+        SaveRegisteredDataButton        matlab.ui.control.Button
         TimeSeriesAlignmentPanel        matlab.ui.container.Panel
+        ReferenceDataPointLabel         matlab.ui.control.Label
+        Dim5Spinner_TimeAlignment       matlab.ui.control.Spinner
+        Dim5Spinner_TimeAlignmentLabel  matlab.ui.control.Label
+        Dim4Spinner_TimeAlignment       matlab.ui.control.Spinner
+        Dim4Spinner_TimeAlignmentLabel  matlab.ui.control.Label
+        AlignDataButton                 matlab.ui.control.Button
+        SelectTimeAlignmentDropDown     matlab.ui.control.DropDown
+        SelectTimeAlignmentLabel        matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
         FAIRpASLMappingoptionsPanel     matlab.ui.container.Panel
@@ -945,6 +953,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Update Combined drop down
                 app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, exp_ID);
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
                 app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
 
@@ -1225,6 +1234,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Items = {'None'};
             app.SelectmovingDropDown.Items = {'None'};
             app.SelectparameterDropDown.Items = {'None'};
+            app.SelectTimeAlignmentDropDown.Items = {'None'};
             app.SelectPreMapDropDown.Items = {'None'};
             app.Select3DViewerDropDown.Items = {'None'};
     
@@ -1315,6 +1325,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.Visible = 'off';
             app.AtlasCollection = struct();
             app.SelectAtlasDropDown.Items = {'None'};
+            app.Dim4Spinner_TimeAlignment.Enable = 'off';
+            app.Dim4Spinner_TimeAlignment.Value = 1;
+            app.Dim5Spinner_TimeAlignment.Enable = 'off';
+            app.Dim5Spinner_TimeAlignment.Value = 1;
+            app.AlignDataButton.Enable = 'off';
     
             % Volumetry 
             cla(app.UIAxes_Volumetry);
@@ -1867,6 +1882,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = exp_ID;
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
+            app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
             app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
@@ -1916,6 +1932,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 % Update app drop down menus
                 app.PreviewDropDown.Items = LoadedProps.PreviewDropDownItems;
                 app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
                 app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
                 app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
                 app.SelectVolumetryDropDown.Items = app.DropDownItemsSavedOnly;
@@ -2108,6 +2125,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PreviewDropDown.Items = exp_ID;
             app.DropDownItemsCombined = exp_ID;
             app.SegmentDropDown.Items = app.DropDownItemsCombined;
+            app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
             app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
             app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
             app.CreateBrukKitFolderButton.Enable = 'on';
@@ -4600,6 +4618,97 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress)
         end
 
+        % Value changed function: SelectTimeAlignmentDropDown
+        function SelectTimeAlignmentDropDownValueChanged(app, event)
+            
+            if app.SelectTimeAlignmentDropDown.Value == "None"
+                app.Dim4Spinner_TimeAlignment.Enable = 'off';
+                app.Dim4Spinner_TimeAlignment.Value = 1;
+                app.Dim5Spinner_TimeAlignment.Enable = 'off';
+                app.Dim5Spinner_TimeAlignment.Value = 1;
+                app.AlignDataButton.Enable = 'off';
+                return
+            end
+            % Get image date
+            try
+                working_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
+            catch
+                working_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
+            end
+            data_dims = size(working_data);
+            switch numel(data_dims)
+                case 4
+                    dim4_size = data_dims(4);
+                    app.Dim4Spinner_TimeAlignment.Enable = 'on';
+                    app.Dim4Spinner_TimeAlignment.Limits = [1, dim4_size];
+                    app.Dim4Spinner_TimeAlignment.Value = 1;
+                    app.Dim5Spinner_TimeAlignment.Enable = 'off';
+                    app.AlignDataButton.Enable = 'on';
+                case 5
+                    dim4_size = data_dims(4);
+                    app.Dim4Spinner_TimeAlignment.Enable = 'on';
+                    app.Dim4Spinner_TimeAlignment.Limits = [1, dim4_size];
+                    app.Dim4Spinner_TimeAlignment.Value = 1;
+                    dim5_size = data_dims(5);
+                    app.Dim5Spinner_TimeAlignment.Enable = 'on';
+                    app.Dim5Spinner_TimeAlignment.Limits = [1, dim5_size];
+                    app.Dim5Spinner_TimeAlignment.Value = 1;
+                    app.AlignDataButton.Enable = 'on';
+                otherwise
+                    % Disable alignment
+                    app.Dim4Spinner_TimeAlignment.Enable = 'off';
+                    app.Dim4Spinner_TimeAlignment.Value = 1;
+                    app.Dim5Spinner_TimeAlignment.Enable = 'off';
+                    app.Dim5Spinner_TimeAlignment.Value = 1;
+                    app.AlignDataButton.Enable = 'off';
+                    uialert(app.BrukKitAlphav0850UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
+
+            end
+        end
+
+        % Button pushed function: AlignDataButton
+        function AlignDataButtonPushed(app, event)
+            
+            % Draw progress bar
+            progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
+            drawnow
+
+            % Get image data
+            try
+                working_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
+            catch
+                working_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
+            end
+            data_dims = size(working_data);
+            % Set before data
+            app.PreRegistrationImage = working_data;
+            % Align data
+            rigid_alignment = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap('rigid'));", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
+            switch numel(data_dims)
+                case 4
+                    for i=1:data_dims(3)
+                        for j=1:data_dims(4)
+                            if j~=app.Dim4Spinner_TimeAlignment.Value
+                                progress.Message = sprintf("Aligning slice %d, 4th dimension %d", i, j);
+                                base = working_data(:,:,i,app.Dim4Spinner_TimeAlignment.Value);
+                                displaced = working_data(:,:,i,j);
+                                resultImage_py = pyrun(rigid_alignment, "resultArray", fixIm = py.numpy.array(base), movIm = py.numpy.array(displaced));
+                                resultImage = double(resultImage_py);
+                                % Update working data matrix with aligned data
+                                working_data(:,:,i,j) = resultImage;
+                            else
+                            end
+                        end
+                    end
+                case 5
+            end
+            % Set working data as registration data
+            app.RegisteredImageData = working_data;
+            
+            % Close the dialog box
+            close(progress)
+        end
+
         % Value changing function: SliceSlider_Registration
         function SliceSlider_RegistrationValueChanging(app, event)
             event.Source.Value = round(event.Value);
@@ -7031,6 +7140,131 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.TimeSeriesAlignmentPanel.Visible = 'off';
             app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
 
+            % Create SelectTimeAlignmentLabel
+            app.SelectTimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.SelectTimeAlignmentLabel.HorizontalAlignment = 'center';
+            app.SelectTimeAlignmentLabel.Position = [85 475 181 22];
+            app.SelectTimeAlignmentLabel.Text = 'Select Image Data For Alignment';
+
+            % Create SelectTimeAlignmentDropDown
+            app.SelectTimeAlignmentDropDown = uidropdown(app.TimeSeriesAlignmentPanel);
+            app.SelectTimeAlignmentDropDown.Items = {'None'};
+            app.SelectTimeAlignmentDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectTimeAlignmentDropDownValueChanged, true);
+            app.SelectTimeAlignmentDropDown.Tooltip = {''};
+            app.SelectTimeAlignmentDropDown.Placeholder = 'None';
+            app.SelectTimeAlignmentDropDown.Position = [44 444 264 21];
+            app.SelectTimeAlignmentDropDown.Value = 'None';
+
+            % Create AlignDataButton
+            app.AlignDataButton = uibutton(app.TimeSeriesAlignmentPanel, 'push');
+            app.AlignDataButton.ButtonPushedFcn = createCallbackFcn(app, @AlignDataButtonPushed, true);
+            app.AlignDataButton.Enable = 'off';
+            app.AlignDataButton.Position = [126 279 100 23];
+            app.AlignDataButton.Text = 'Align Data';
+
+            % Create Dim4Spinner_TimeAlignmentLabel
+            app.Dim4Spinner_TimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.Dim4Spinner_TimeAlignmentLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_TimeAlignmentLabel.Position = [121 361 47 22];
+            app.Dim4Spinner_TimeAlignmentLabel.Text = 'Dim - 4 ';
+
+            % Create Dim4Spinner_TimeAlignment
+            app.Dim4Spinner_TimeAlignment = uispinner(app.TimeSeriesAlignmentPanel);
+            app.Dim4Spinner_TimeAlignment.Enable = 'off';
+            app.Dim4Spinner_TimeAlignment.Position = [179 361 51 22];
+            app.Dim4Spinner_TimeAlignment.Value = 1;
+
+            % Create Dim5Spinner_TimeAlignmentLabel
+            app.Dim5Spinner_TimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.Dim5Spinner_TimeAlignmentLabel.HorizontalAlignment = 'right';
+            app.Dim5Spinner_TimeAlignmentLabel.Position = [122 323 44 22];
+            app.Dim5Spinner_TimeAlignmentLabel.Text = 'Dim - 5';
+
+            % Create Dim5Spinner_TimeAlignment
+            app.Dim5Spinner_TimeAlignment = uispinner(app.TimeSeriesAlignmentPanel);
+            app.Dim5Spinner_TimeAlignment.Enable = 'off';
+            app.Dim5Spinner_TimeAlignment.Position = [178 323 51 22];
+            app.Dim5Spinner_TimeAlignment.Value = 1;
+
+            % Create ReferenceDataPointLabel
+            app.ReferenceDataPointLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.ReferenceDataPointLabel.HorizontalAlignment = 'center';
+            app.ReferenceDataPointLabel.Position = [111 395 129 29];
+            app.ReferenceDataPointLabel.Text = 'Reference Data Point';
+
+            % Create SaveRegisteredDataButton
+            app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
+            app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
+            app.SaveRegisteredDataButton.Enable = 'off';
+            app.SaveRegisteredDataButton.Position = [1021 56 140 22];
+            app.SaveRegisteredDataButton.Text = 'Save Registered Data';
+
+            % Create ExportDataButton_Registration
+            app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
+            app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
+            app.ExportDataButton_Registration.Enable = 'off';
+            app.ExportDataButton_Registration.Position = [1021 24 140 22];
+            app.ExportDataButton_Registration.Text = 'Export Registered Data';
+
+            % Create ColormapButtonGroup_Registration
+            app.ColormapButtonGroup_Registration = uibuttongroup(app.RegistrationTab);
+            app.ColormapButtonGroup_Registration.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_RegistrationSelectionChanged, true);
+            app.ColormapButtonGroup_Registration.BorderType = 'none';
+            app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
+            app.ColormapButtonGroup_Registration.Title = 'Colormap';
+            app.ColormapButtonGroup_Registration.Position = [466 17 167 38];
+
+            % Create GreyscaleButton_Registration
+            app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
+            app.GreyscaleButton_Registration.Enable = 'off';
+            app.GreyscaleButton_Registration.Text = 'Greyscale';
+            app.GreyscaleButton_Registration.Position = [94 -3 76 22];
+            app.GreyscaleButton_Registration.Value = true;
+
+            % Create TurboButton_Registration
+            app.TurboButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
+            app.TurboButton_Registration.Enable = 'off';
+            app.TurboButton_Registration.Text = 'Turbo';
+            app.TurboButton_Registration.Position = [2 -3 65 22];
+
+            % Create SliceSpinner_Registration
+            app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
+            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
+            app.SliceSpinner_Registration.Enable = 'off';
+            app.SliceSpinner_Registration.Position = [391 24 51 22];
+            app.SliceSpinner_Registration.Value = 1;
+
+            % Create SliceSliderLabel_Registration
+            app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
+            app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
+            app.SliceSliderLabel_Registration.Position = [136 25 32 22];
+            app.SliceSliderLabel_Registration.Text = 'Slice';
+
+            % Create SliceSlider_Registration
+            app.SliceSlider_Registration = uislider(app.RegistrationTab);
+            app.SliceSlider_Registration.Limits = [1 100];
+            app.SliceSlider_Registration.MajorTicks = [];
+            app.SliceSlider_Registration.MajorTickLabels = {};
+            app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
+            app.SliceSlider_Registration.MinorTicks = [];
+            app.SliceSlider_Registration.Enable = 'off';
+            app.SliceSlider_Registration.Position = [197 33 183 3];
+            app.SliceSlider_Registration.Value = 1;
+
+            % Create ChooseRegistrationTypeDropDownLabel
+            app.ChooseRegistrationTypeDropDownLabel = uilabel(app.RegistrationTab);
+            app.ChooseRegistrationTypeDropDownLabel.HorizontalAlignment = 'center';
+            app.ChooseRegistrationTypeDropDownLabel.Position = [1021 642 143 22];
+            app.ChooseRegistrationTypeDropDownLabel.Text = 'Choose Registration Type';
+
+            % Create ChooseRegistrationTypeDropDown
+            app.ChooseRegistrationTypeDropDown = uidropdown(app.RegistrationTab);
+            app.ChooseRegistrationTypeDropDown.Items = {'Standard', 'Reference Atlas', 'Time-Series Alignment'};
+            app.ChooseRegistrationTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ChooseRegistrationTypeDropDownValueChanged, true);
+            app.ChooseRegistrationTypeDropDown.Tooltip = {''};
+            app.ChooseRegistrationTypeDropDown.Position = [981 614 222 22];
+            app.ChooseRegistrationTypeDropDown.Value = 'Standard';
+
             % Create StandardAtlasRegistrationPanel
             app.StandardAtlasRegistrationPanel = uipanel(app.RegistrationTab);
             app.StandardAtlasRegistrationPanel.BorderType = 'none';
@@ -7131,79 +7365,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.Placeholder = 'None';
             app.SelectAtlasDropDown.Position = [44 366 264 21];
             app.SelectAtlasDropDown.Value = 'None';
-
-            % Create SaveRegisteredDataButton
-            app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
-            app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
-            app.SaveRegisteredDataButton.Enable = 'off';
-            app.SaveRegisteredDataButton.Position = [1021 56 140 22];
-            app.SaveRegisteredDataButton.Text = 'Save Registered Data';
-
-            % Create ExportDataButton_Registration
-            app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
-            app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
-            app.ExportDataButton_Registration.Enable = 'off';
-            app.ExportDataButton_Registration.Position = [1021 24 140 22];
-            app.ExportDataButton_Registration.Text = 'Export Registered Data';
-
-            % Create ColormapButtonGroup_Registration
-            app.ColormapButtonGroup_Registration = uibuttongroup(app.RegistrationTab);
-            app.ColormapButtonGroup_Registration.SelectionChangedFcn = createCallbackFcn(app, @ColormapButtonGroup_RegistrationSelectionChanged, true);
-            app.ColormapButtonGroup_Registration.BorderType = 'none';
-            app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
-            app.ColormapButtonGroup_Registration.Title = 'Colormap';
-            app.ColormapButtonGroup_Registration.Position = [466 17 167 38];
-
-            % Create GreyscaleButton_Registration
-            app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
-            app.GreyscaleButton_Registration.Enable = 'off';
-            app.GreyscaleButton_Registration.Text = 'Greyscale';
-            app.GreyscaleButton_Registration.Position = [94 -3 76 22];
-            app.GreyscaleButton_Registration.Value = true;
-
-            % Create TurboButton_Registration
-            app.TurboButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
-            app.TurboButton_Registration.Enable = 'off';
-            app.TurboButton_Registration.Text = 'Turbo';
-            app.TurboButton_Registration.Position = [2 -3 65 22];
-
-            % Create SliceSpinner_Registration
-            app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
-            app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
-            app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [391 24 51 22];
-            app.SliceSpinner_Registration.Value = 1;
-
-            % Create SliceSliderLabel_Registration
-            app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
-            app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
-            app.SliceSliderLabel_Registration.Position = [136 25 32 22];
-            app.SliceSliderLabel_Registration.Text = 'Slice';
-
-            % Create SliceSlider_Registration
-            app.SliceSlider_Registration = uislider(app.RegistrationTab);
-            app.SliceSlider_Registration.Limits = [1 100];
-            app.SliceSlider_Registration.MajorTicks = [];
-            app.SliceSlider_Registration.MajorTickLabels = {};
-            app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
-            app.SliceSlider_Registration.MinorTicks = [];
-            app.SliceSlider_Registration.Enable = 'off';
-            app.SliceSlider_Registration.Position = [197 33 183 3];
-            app.SliceSlider_Registration.Value = 1;
-
-            % Create ChooseRegistrationTypeDropDownLabel
-            app.ChooseRegistrationTypeDropDownLabel = uilabel(app.RegistrationTab);
-            app.ChooseRegistrationTypeDropDownLabel.HorizontalAlignment = 'center';
-            app.ChooseRegistrationTypeDropDownLabel.Position = [1021 642 143 22];
-            app.ChooseRegistrationTypeDropDownLabel.Text = 'Choose Registration Type';
-
-            % Create ChooseRegistrationTypeDropDown
-            app.ChooseRegistrationTypeDropDown = uidropdown(app.RegistrationTab);
-            app.ChooseRegistrationTypeDropDown.Items = {'Standard', 'Reference Atlas', 'Time-Series Alignment'};
-            app.ChooseRegistrationTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ChooseRegistrationTypeDropDownValueChanged, true);
-            app.ChooseRegistrationTypeDropDown.Tooltip = {''};
-            app.ChooseRegistrationTypeDropDown.Position = [981 614 222 22];
-            app.ChooseRegistrationTypeDropDown.Value = 'Standard';
 
             % Create ImageshownSwitch_Registration
             app.ImageshownSwitch_Registration = uiswitch(app.RegistrationTab, 'slider');
