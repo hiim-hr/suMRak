@@ -4176,17 +4176,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Cell selection callback: UITable_VolumetryHemisphere
         function UITable_VolumetryHemisphereCellSelection(app, event)
             indices = event.Indices;
+            data_dims = size(app.VolumetryBrainMask);
             try
                 selectedSlice = table2array(app.UITable_VolumetryHemisphere.Data(indices(1),1));
                 switch app.SelectHemisphereDropDown.Value
                     case 'Left'
                         selectedHemisphere = 1;
+                        color_Overlay = cat(3, zeros(data_dims(1:2)), zeros(data_dims(1:2)), ones(data_dims(1:2)));
                     case 'Right'
                         selectedHemisphere = 2;
+                        color_Overlay = cat(3, ones(data_dims(1:2)), zeros(data_dims(1:2)), zeros(data_dims(1:2)));
                 end
-                maskPreview = app.VolumetryHemiMask(:,:,selectedSlice,selectedHemisphere);
+                maskPreview = app.VolumetryBrainMask(:,:,selectedSlice);
                 app.UIAxes_Volumetry_Container.Visible = "on";
                 imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
+                hold(app.UIAxes_Volumetry, "on")
+                shown_hemi = imshow(color_Overlay, 'Parent', app.UIAxes_Volumetry);
+                hold(app.UIAxes_Volumetry, "off")
+                shown_hemi.AlphaData = app.VolumetryHemiMask(:,:,selectedSlice,selectedHemisphere)-0.3;
                 
                 app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
                 app.UIAxes_Volumetry_Container.Position = [795,234,300,185];
@@ -4199,13 +4206,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Cell selection callback: UITable_VolumetryROI
         function UITable_VolumetryROICellSelection(app, event)
             indices = event.Indices;
+            data_dims = size(app.VolumetryBrainMask);
+            color_Overlay = cat(3, ones(data_dims(1:2)), ones(data_dims(1:2)), zeros(data_dims(1:2)));
+            color_Overlay(:,:,1) = 0.9290;
+            color_Overlay(:,:,2) = 0.6940;
+            color_Overlay(:,:,3) = 0.1250;
             try
                 selectedSlice = table2array(app.UITable_VolumetryROI.Data(indices(1),1));
                 selectedROI = find(contains(app.VolumetryROI.ID, app.SelectROIDropDown.Value));
-                maskPreview = app.VolumetryROI.Mask(:,:,selectedSlice,selectedROI);
+                maskPreview = app.VolumetryBrainMask(:,:,selectedSlice);
                 app.UIAxes_Volumetry_Container.Visible = "on";
                 imshow(maskPreview, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Volumetry);
-                
+                hold(app.UIAxes_Volumetry, "on")
+                shown_roi = imshow(color_Overlay, 'Parent', app.UIAxes_Volumetry);
+                hold(app.UIAxes_Volumetry, "off")
+                shown_roi.AlphaData = app.VolumetryROI.Mask(:,:,selectedSlice,selectedROI)-0.3;
+
                 app.UIAxes_Volumetry.Interactions = [regionZoomInteraction zoomInteraction];
                 app.UIAxes_Volumetry_Container.Position = [611,234,300,185];
                 app.UIAxes_Volumetry.PositionConstraint = 'innerposition';
