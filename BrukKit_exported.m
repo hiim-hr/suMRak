@@ -189,6 +189,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         VolumeEditFieldLabel_Brain      matlab.ui.control.Label
         UITable_VolumetryBrain          matlab.ui.control.Table
         RegistrationTab                 matlab.ui.container.Tab
+        ImageshownSwitch_Registration   matlab.ui.control.Switch
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
         SelectAtlasDropDown             matlab.ui.control.DropDown
         ImportReferenceAtlasButton      matlab.ui.control.Button
@@ -204,7 +205,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
         RegistrationViewerButton        matlab.ui.control.Button
         ManualinstructioninputCheckBox  matlab.ui.control.CheckBox
         RegisterButton                  matlab.ui.control.Button
-        ImageshownSwitch_Registration   matlab.ui.control.Switch
+        TimeSeriesAlignmentPanel        matlab.ui.container.Panel
+        AdditionalDimensionControlsPanel  matlab.ui.container.Panel
+        Dim5Slider_TimeAlignmentControl  matlab.ui.control.Slider
+        Dim5SliderLabel_TimeAlignmentControl  matlab.ui.control.Label
+        Dim5Spinner_TimeAlignmentControl  matlab.ui.control.Spinner
+        Dim4Slider_TimeAlignmentControl  matlab.ui.control.Slider
+        Dim4SliderLabel_TimeAlignmentControl  matlab.ui.control.Label
+        Dim4Spinner_TimeAlignmentControl  matlab.ui.control.Spinner
+        ReferenceDataPointLabel         matlab.ui.control.Label
+        Dim5Spinner_TimeAlignmentReference  matlab.ui.control.Spinner
+        Dim5Spinner_TimeAlignmentReferenceLabel  matlab.ui.control.Label
+        Dim4Spinner_TimeAlignmentReference  matlab.ui.control.Spinner
+        Dim4Spinner_TimeAlignmentReferenceLabel  matlab.ui.control.Label
+        AlignDataButton                 matlab.ui.control.Button
+        SelectTimeAlignmentDropDown     matlab.ui.control.DropDown
+        SelectTimeAlignmentLabel        matlab.ui.control.Label
         ChooseRegistrationTypeDropDown  matlab.ui.control.DropDown
         ChooseRegistrationTypeDropDownLabel  matlab.ui.control.Label
         SliceSlider_Registration        matlab.ui.control.Slider
@@ -215,15 +231,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         GreyscaleButton_Registration    matlab.ui.control.RadioButton
         ExportDataButton_Registration   matlab.ui.control.Button
         SaveRegisteredDataButton        matlab.ui.control.Button
-        TimeSeriesAlignmentPanel        matlab.ui.container.Panel
-        ReferenceDataPointLabel         matlab.ui.control.Label
-        Dim5Spinner_TimeAlignment       matlab.ui.control.Spinner
-        Dim5Spinner_TimeAlignmentLabel  matlab.ui.control.Label
-        Dim4Spinner_TimeAlignment       matlab.ui.control.Spinner
-        Dim4Spinner_TimeAlignmentLabel  matlab.ui.control.Label
-        AlignDataButton                 matlab.ui.control.Button
-        SelectTimeAlignmentDropDown     matlab.ui.control.DropDown
-        SelectTimeAlignmentLabel        matlab.ui.control.Label
         UIAxes_Registration             matlab.ui.control.UIAxes
         ParameterMapsTab                matlab.ui.container.Tab
         FAIRpASLMappingoptionsPanel     matlab.ui.container.Panel
@@ -502,20 +509,22 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Registration UIAxes image updating
         function RefreshImageRegistration(app)
+            % Get chosen image based on image shown switch
+            if app.ImageshownSwitch_Registration.Value == "After"
+                chosen_Image = app.RegisteredImageData;
+            else
+                chosen_Image = app.PreRegistrationImage;
+            end
             app.ExpDimsRegistration = size(app.RegisteredImageData);
             switch numel(app.ExpDimsRegistration)
                 case 2
-                    if app.ImageshownSwitch_Registration.Value == "After"
-                        app.CurrentSlice = app.RegisteredImageData(:,:);
-                    else
-                        app.CurrentSlice = app.PreRegistrationImage(:,:);
-                    end
-                otherwise
-                    if app.ImageshownSwitch_Registration.Value == "After"
-                        app.CurrentSlice = app.RegisteredImageData(:,:,app.SliceSpinner_Registration.Value);
-                    else
-                        app.CurrentSlice = app.PreRegistrationImage(:,:,app.SliceSpinner_Registration.Value);
-                    end
+                    app.CurrentSlice = chosen_Image(:,:);
+                case 3
+                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value);
+                case 4
+                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
+                case 5
+                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
             end
             app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
             switch app.TurboButton_Registration.Value
@@ -869,11 +878,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         end
                     end
                 case 'Registration'
-                    OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
-                    exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
                     image_Data = app.RegisteredImageData;
                     switch app.ChooseRegistrationTypeDropDown.Value
                         case "Standard"
+                            OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
+                            exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
                             selection = uiconfirm(app.BrukKitAlphav0850UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
                             ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
                             switch selection
@@ -894,6 +903,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             units = app.SavedTable.Units(app.SelectfixedDropDown.Value);
                             RotMat = app.SavedTable.RotMat(app.SelectfixedDropDown.Value);
                         case "Reference Atlas"
+                            OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
+                            exp_ID = append(app.SelectmovingDropDown.Value, '_Atlas_Registered');
                             saved_BrainMask = false(size(image_Data));
                             hemi_Mask = false(1);
                             roi.Mask = false(1);
@@ -906,6 +917,36 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             slice_Gap = app.ResizedAtlasProperties.SliceGap;
                             units = app.ChosenAtlas.Units;
                             RotMat = {app.ResizedAtlasProperties.RotMat};
+                        case "Time-Series Alignment"
+                            exp_ID = append(app.SelectTimeAlignmentDropDown.Value, '_Aligned');
+                            saved_BrainMask = false(size(image_Data));
+                            hemi_Mask = false(1);
+                            roi.Mask = false(1);
+                            roi.ID = {'None'};                 
+                            try
+                                OrigIndex = app.SavedTable.OrigIndex(app.SelectTimeAlignmentDropDown.Value);
+                                TE = app.SavedTable.TE(app.SelectTimeAlignmentDropDown.Value);
+                                TR = app.SavedTable.TR(app.SelectTimeAlignmentDropDown.Value);
+                                vox_dim_X = app.SavedTable.VoxDimX(app.SelectTimeAlignmentDropDown.Value); 
+                                vox_dim_Y = app.SavedTable.VoxDimY(app.SelectTimeAlignmentDropDown.Value);
+                                slice_Thickness = app.SavedTable.SliceThickness(app.SelectTimeAlignmentDropDown.Value);
+                                slice_Gap = app.SavedTable.SliceGap(app.SelectTimeAlignmentDropDown.Value);
+                                units = app.SavedTable.Units(app.SelectTimeAlignmentDropDown.Value);
+                                RotMat = app.SavedTable.RotMat(app.SelectTimeAlignmentDropDown.Value);
+                            catch
+                                try
+                                    OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectTimeAlignmentDropDown.Value));
+                                    TE = app.ExperimentPropertyTable.(3)(app.SelectTimeAlignmentDropDown.Value);
+                                    TR = app.ExperimentPropertyTable.(4)(app.SelectTimeAlignmentDropDown.Value);
+                                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectTimeAlignmentDropDown.Value); 
+                                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectTimeAlignmentDropDown.Value);
+                                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectTimeAlignmentDropDown.Value);
+                                    slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectTimeAlignmentDropDown.Value);
+                                    units = app.ExperimentPropertyTable.(9)(app.SelectTimeAlignmentDropDown.Value);
+                                    RotMat = app.ExperimentPropertyTable.(10)(app.SelectTimeAlignmentDropDown.Value);
+                                catch
+                                end
+                            end
                     end                    
                 case 'Map'
                     exp_ID = append(app.SelectPreMapDropDown.Value, '_Map');
@@ -1211,6 +1252,64 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     info.TransformName = 'Qform';
                     % Write final nifti
                     niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix, info);
+
+                % Time Series alignment
+                case 'Time Series Alignment'
+                    ImageData = app.RegisteredImageData;
+                    Suffix = "_aligned.nii";
+
+                    progress.Value = 0.2;
+                    progress.Message = "Writing NIfTI data information...";
+                    pause(0.5);
+                    % Write initial nifti file for header updating
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectTimeAlignmentDropDown.Value + Suffix);
+                    info = niftiinfo(app.ExportFolderPath + filesep + app.SelectTimeAlignmentDropDown.Value + Suffix);
+                    info.Description = 'Image file generated in BrukKit';
+                    % Get voxel dimensions, update header
+                    switch numel(size(ImageData))
+                        case 4
+                            DimPadding = 1;
+                        case 5
+                            DimPadding = [1,1];
+                    end
+                    try
+                        SliceThickness = app.SavedTable.SliceThickness(app.SelectTimeAlignmentDropDown.Value);
+                        SliceGap = app.SavedTable.SliceGap(app.SelectTimeAlignmentDropDown.Value);
+                    catch
+                        SliceThickness = table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value, "Slice Thickness"));
+                        SliceGap = table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value, "Slice Gap"));
+                    end
+                    % Get other voxel dimensions, update header
+                    try
+                        info.PixelDimensions = [app.SavedTable.VoxDimX(app.SelectTimeAlignmentDropDown.Value), ...
+                            app.SavedTable.VoxDimY(app.SelectTimeAlignmentDropDown.Value), ...
+                            SliceThickness + SliceGap, DimPadding];
+                        temp = split(app.SavedTable.Units(app.SelectTimeAlignmentDropDown.Value));
+                        rotm = cell2mat(app.SavedTable.RotMat(app.SelectTimeAlignmentDropDown.Value));
+                    catch
+                        info.PixelDimensions = [table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value, "Voxel dimension X")), ...
+                            table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value, "Voxel dimension Y")), ...
+                            SliceThickness + SliceGap, DimPadding];
+                        temp = split(table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value,'Dimension Units')));
+                        rotm = cell2mat(table2array(app.ExperimentPropertyTable(app.SelectTimeAlignmentDropDown.Value,"Rotation Matrix")));
+                    end
+                    % Update header units
+                    switch temp(1)
+                        case "mm"
+                            info.SpaceUnits = 'Millimeter';
+                        case "um"
+                            info.SpaceUnits = 'Micron';
+                        case "m"
+                            info.SpaceUnits = 'Meter';
+                    end
+                    progress.Value = 0.6;
+                    progress.Message = "Exporting image data";
+                    pause(0.5);
+                    % Update header transform
+                    info.Transform.T(1:3,1:3) = rotm;
+                    info.TransformName = 'Qform';
+                    % Write final nifti
+                    niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectTimeAlignmentDropDown.Value + Suffix, info);
             end
             % close the dialog box
             progress.Value = 1;
@@ -1325,11 +1424,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.Visible = 'off';
             app.AtlasCollection = struct();
             app.SelectAtlasDropDown.Items = {'None'};
-            app.Dim4Spinner_TimeAlignment.Enable = 'off';
-            app.Dim4Spinner_TimeAlignment.Value = 1;
-            app.Dim5Spinner_TimeAlignment.Enable = 'off';
-            app.Dim5Spinner_TimeAlignment.Value = 1;
+            app.Dim4Spinner_TimeAlignmentReference.Enable = 'off';
+            app.Dim4Spinner_TimeAlignmentReference.Value = 1;
+            app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
+            app.Dim5Spinner_TimeAlignmentReference.Value = 1;
             app.AlignDataButton.Enable = 'off';
+            app.Dim4Slider_TimeAlignmentControl.Enable = 'off';
+            app.Dim4Slider_TimeAlignmentControl.Value = 1;
+            app.Dim4Spinner_TimeAlignmentControl.Enable = 'off';
+            app.Dim4Spinner_TimeAlignmentControl.Value = 1;
+            app.Dim5Slider_TimeAlignmentControl.Enable = 'off';
+            app.Dim5Slider_TimeAlignmentControl.Value = 1;
+            app.Dim5Spinner_TimeAlignmentControl.Enable = 'off';
+            app.Dim5Spinner_TimeAlignmentControl.Value = 1;
     
             % Volumetry 
             cla(app.UIAxes_Volumetry);
@@ -4622,10 +4729,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function SelectTimeAlignmentDropDownValueChanged(app, event)
             
             if app.SelectTimeAlignmentDropDown.Value == "None"
-                app.Dim4Spinner_TimeAlignment.Enable = 'off';
-                app.Dim4Spinner_TimeAlignment.Value = 1;
-                app.Dim5Spinner_TimeAlignment.Enable = 'off';
-                app.Dim5Spinner_TimeAlignment.Value = 1;
+                app.Dim4Spinner_TimeAlignmentReference.Enable = 'off';
+                app.Dim4Spinner_TimeAlignmentReference.Value = 1;
+                app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
+                app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                 app.AlignDataButton.Enable = 'off';
                 return
             end
@@ -4639,27 +4746,27 @@ classdef BrukKit_exported < matlab.apps.AppBase
             switch numel(data_dims)
                 case 4
                     dim4_size = data_dims(4);
-                    app.Dim4Spinner_TimeAlignment.Enable = 'on';
-                    app.Dim4Spinner_TimeAlignment.Limits = [1, dim4_size];
-                    app.Dim4Spinner_TimeAlignment.Value = 1;
-                    app.Dim5Spinner_TimeAlignment.Enable = 'off';
+                    app.Dim4Spinner_TimeAlignmentReference.Enable = 'on';
+                    app.Dim4Spinner_TimeAlignmentReference.Limits = [1, dim4_size];
+                    app.Dim4Spinner_TimeAlignmentReference.Value = 1;
+                    app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
                     app.AlignDataButton.Enable = 'on';
                 case 5
                     dim4_size = data_dims(4);
-                    app.Dim4Spinner_TimeAlignment.Enable = 'on';
-                    app.Dim4Spinner_TimeAlignment.Limits = [1, dim4_size];
-                    app.Dim4Spinner_TimeAlignment.Value = 1;
+                    app.Dim4Spinner_TimeAlignmentReference.Enable = 'on';
+                    app.Dim4Spinner_TimeAlignmentReference.Limits = [1, dim4_size];
+                    app.Dim4Spinner_TimeAlignmentReference.Value = 1;
                     dim5_size = data_dims(5);
-                    app.Dim5Spinner_TimeAlignment.Enable = 'on';
-                    app.Dim5Spinner_TimeAlignment.Limits = [1, dim5_size];
-                    app.Dim5Spinner_TimeAlignment.Value = 1;
+                    app.Dim5Spinner_TimeAlignmentReference.Enable = 'on';
+                    app.Dim5Spinner_TimeAlignmentReference.Limits = [1, dim5_size];
+                    app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                     app.AlignDataButton.Enable = 'on';
                 otherwise
                     % Disable alignment
-                    app.Dim4Spinner_TimeAlignment.Enable = 'off';
-                    app.Dim4Spinner_TimeAlignment.Value = 1;
-                    app.Dim5Spinner_TimeAlignment.Enable = 'off';
-                    app.Dim5Spinner_TimeAlignment.Value = 1;
+                    app.Dim4Spinner_TimeAlignmentReference.Enable = 'off';
+                    app.Dim4Spinner_TimeAlignmentReference.Value = 1;
+                    app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
+                    app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                     app.AlignDataButton.Enable = 'off';
                     uialert(app.BrukKitAlphav0850UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
 
@@ -4668,45 +4775,123 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: AlignDataButton
         function AlignDataButtonPushed(app, event)
-            
+            tic
             % Draw progress bar
             progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
             drawnow
 
             % Get image data
             try
-                working_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
+                original_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
             catch
-                working_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
+                original_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
             end
-            data_dims = size(working_data);
+            data_dims = size(original_data);
+            
             % Set before data
-            app.PreRegistrationImage = working_data;
-            % Align data
+            app.PreRegistrationImage = original_data;
+            % Create empty working array
+            working_data = zeros(data_dims);   
+
+            % Set reference points
+            dim4_reference = app.Dim4Spinner_TimeAlignmentReference.Value;
+            dim5_reference = app.Dim5Spinner_TimeAlignmentReference.Value;
+            % Set python instructions
             rigid_alignment = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap('rigid'));", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
+            
             switch numel(data_dims)
+                % 4D time alignment
                 case 4
+                    % Go through data, if not reference point then align
                     for i=1:data_dims(3)
-                        for j=1:data_dims(4)
-                            if j~=app.Dim4Spinner_TimeAlignment.Value
-                                progress.Message = sprintf("Aligning slice %d, 4th dimension %d", i, j);
-                                base = working_data(:,:,i,app.Dim4Spinner_TimeAlignment.Value);
-                                displaced = working_data(:,:,i,j);
+                        base = original_data(:,:,i,dim4_reference);
+                        parfor j=1:data_dims(4)
+                            if j~=dim4_reference
+                                displaced = original_data(:,:,i,j);
                                 resultImage_py = pyrun(rigid_alignment, "resultArray", fixIm = py.numpy.array(base), movIm = py.numpy.array(displaced));
                                 resultImage = double(resultImage_py);
                                 % Update working data matrix with aligned data
                                 working_data(:,:,i,j) = resultImage;
                             else
+                                working_data(:,:,i,j) = original_data(:,:,i,j);
                             end
                         end
                     end
+                    % Disable dim5 controls
+                    app.Dim5Slider_TimeAlignmentControl.Enable = 'off';
+                    app.Dim5Slider_TimeAlignmentControl.Value = 1;
+                    app.Dim5Spinner_TimeAlignmentControl.Enable = 'off';
+                    app.Dim5Spinner_TimeAlignmentControl.Value = 1;
+
+                % 5D time alignment
                 case 5
+                    % Go through data, if not reference point then align
+                    for i=1:data_dims(3)
+                        base = original_data(:,:,i,dim4_reference, dim5_reference);
+                        for j=1:data_dims(4)
+                            parfor z=1:data_dims(5)
+                                if j~=dim4_reference & z ~=dim5_reference %#ok<AND2>
+                                    displaced = original_data(:,:,i,j,z);
+                                    resultImage_py = pyrun(rigid_alignment, "resultArray", fixIm = py.numpy.array(base), movIm = py.numpy.array(displaced));
+                                    resultImage = double(resultImage_py);
+                                    % Update working data matrix with aligned data
+                                    working_data(:,:,i,j,z) = resultImage;
+                                else
+                                    working_data(:,:,i,j,z) = original_data(:,:,i,j,z);
+                                end
+                            end
+                        end
+                    end
+                    % Enable dim4 controls
+                    app.Dim5Slider_TimeAlignmentControl.Enable = 'on';
+                    app.Dim5Slider_TimeAlignmentControl.Limits = [1, data_dims(5)];
+                    app.Dim5Slider_TimeAlignmentControl.Value = 1;
+                    app.Dim5Spinner_TimeAlignmentControl.Enable = 'on';
+                    app.Dim5Spinner_TimeAlignmentControl.Limits = [1, data_dims(5)];
+                    app.Dim5Spinner_TimeAlignmentControl.Value = 1;
             end
+
+            % Update slice controls
+            try
+                app.SliceSlider_Registration.Value = 1;
+                app.SliceSlider_Registration.Enable = 'on';
+                app.SliceSlider_Registration.Limits = [1, data_dims(3)];
+                app.SliceSpinner_Registration.Value = 1;
+                app.SliceSpinner_Registration.Enable = 'on';
+                app.SliceSpinner_Registration.Limits = [1, data_dims(3)];
+            catch
+                app.SliceSlider_Registration.Enable = 'off';
+                app.SliceSlider_Registration.Value = 1;
+                app.SliceSpinner_Registration.Enable = 'off';
+                app.SliceSpinner_Registration.Value = 1;
+            end
+
+            % Enable dim4 controls
+            app.Dim4Slider_TimeAlignmentControl.Enable = 'on';
+            app.Dim4Slider_TimeAlignmentControl.Limits = [1, data_dims(4)];
+            app.Dim4Slider_TimeAlignmentControl.Value = 1;
+            app.Dim4Spinner_TimeAlignmentControl.Enable = 'on';
+            app.Dim4Spinner_TimeAlignmentControl.Limits = [1, data_dims(4)];
+            app.Dim4Spinner_TimeAlignmentControl.Value = 1;
+
             % Set working data as registration data
             app.RegisteredImageData = working_data;
             
+            % Enable remaining components, refresh image
+            app.TurboButton_Registration.Enable = 'on';
+            app.GreyscaleButton_Registration.Enable = 'on';
+            app.ImageshownSwitch_Registration.Enable = 'on';
+
+            RefreshImageRegistration(app); 
+
+            app.SaveRegisteredDataButton.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportDataButton_Registration.Enable = 'on';
+            end
+
             % Close the dialog box
             close(progress)
+            toc
         end
 
         % Value changing function: SliceSlider_Registration
@@ -4722,6 +4907,36 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.Value = app.SliceSpinner_Registration.Value;
 
             RefreshImageRegistration(app);
+        end
+
+        % Value changing function: Dim4Slider_TimeAlignmentControl
+        function Dim4Slider_TimeAlignmentControlValueChanging(app, event)
+            event.Source.Value = round(event.Value);
+            app.Dim4Spinner_TimeAlignmentControl.Value = event.Source.Value;
+
+            RefreshImageRegistration(app);
+        end
+
+        % Value changed function: Dim4Spinner_TimeAlignmentControl
+        function Dim4Spinner_TimeAlignmentControlValueChanged(app, event)
+            app.Dim4Slider_TimeAlignmentControl.Value = app.Dim4Spinner_TimeAlignmentControl.Value;
+
+            RefreshImageRegistration(app);
+        end
+
+        % Value changing function: Dim5Slider_TimeAlignmentControl
+        function Dim5Slider_TimeAlignmentControlValueChanging(app, event)
+            event.Source.Value = round(event.Value);
+            app.Dim5Spinner_TimeAlignmentControl.Value = event.Source.Value;
+
+            RefreshImageRegistration(app);
+        end
+
+        % Value changed function: Dim5Spinner_TimeAlignmentControl
+        function Dim5Spinner_TimeAlignmentControlValueChanged(app, event)
+            app.Dim5Slider_TimeAlignmentControl.Value = app.Dim5Spinner_TimeAlignmentControl.Value;
+
+            RefreshImageRegistration(app); 
         end
 
         % Selection changed function: ColormapButtonGroup_Registration
@@ -4744,6 +4959,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     ExportImageDataRegistration(app, 'Standard Registration');
                 case "Reference Atlas"
                     ExportImageDataRegistration(app, 'Atlas Registration');
+                case "Time-Series Alignment"
+                    ExportImageDataRegistration(app, 'Time Series Alignment');
             end
  
             uiconfirm(app.BrukKitAlphav0850UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
@@ -7133,65 +7350,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_Registration.Box = 'on';
             app.UIAxes_Registration.Position = [5 66 903 627];
 
-            % Create TimeSeriesAlignmentPanel
-            app.TimeSeriesAlignmentPanel = uipanel(app.RegistrationTab);
-            app.TimeSeriesAlignmentPanel.BorderType = 'none';
-            app.TimeSeriesAlignmentPanel.TitlePosition = 'centertop';
-            app.TimeSeriesAlignmentPanel.Visible = 'off';
-            app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
-
-            % Create SelectTimeAlignmentLabel
-            app.SelectTimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
-            app.SelectTimeAlignmentLabel.HorizontalAlignment = 'center';
-            app.SelectTimeAlignmentLabel.Position = [85 475 181 22];
-            app.SelectTimeAlignmentLabel.Text = 'Select Image Data For Alignment';
-
-            % Create SelectTimeAlignmentDropDown
-            app.SelectTimeAlignmentDropDown = uidropdown(app.TimeSeriesAlignmentPanel);
-            app.SelectTimeAlignmentDropDown.Items = {'None'};
-            app.SelectTimeAlignmentDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectTimeAlignmentDropDownValueChanged, true);
-            app.SelectTimeAlignmentDropDown.Tooltip = {''};
-            app.SelectTimeAlignmentDropDown.Placeholder = 'None';
-            app.SelectTimeAlignmentDropDown.Position = [44 444 264 21];
-            app.SelectTimeAlignmentDropDown.Value = 'None';
-
-            % Create AlignDataButton
-            app.AlignDataButton = uibutton(app.TimeSeriesAlignmentPanel, 'push');
-            app.AlignDataButton.ButtonPushedFcn = createCallbackFcn(app, @AlignDataButtonPushed, true);
-            app.AlignDataButton.Enable = 'off';
-            app.AlignDataButton.Position = [126 279 100 23];
-            app.AlignDataButton.Text = 'Align Data';
-
-            % Create Dim4Spinner_TimeAlignmentLabel
-            app.Dim4Spinner_TimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
-            app.Dim4Spinner_TimeAlignmentLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_TimeAlignmentLabel.Position = [121 361 47 22];
-            app.Dim4Spinner_TimeAlignmentLabel.Text = 'Dim - 4 ';
-
-            % Create Dim4Spinner_TimeAlignment
-            app.Dim4Spinner_TimeAlignment = uispinner(app.TimeSeriesAlignmentPanel);
-            app.Dim4Spinner_TimeAlignment.Enable = 'off';
-            app.Dim4Spinner_TimeAlignment.Position = [179 361 51 22];
-            app.Dim4Spinner_TimeAlignment.Value = 1;
-
-            % Create Dim5Spinner_TimeAlignmentLabel
-            app.Dim5Spinner_TimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
-            app.Dim5Spinner_TimeAlignmentLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_TimeAlignmentLabel.Position = [122 323 44 22];
-            app.Dim5Spinner_TimeAlignmentLabel.Text = 'Dim - 5';
-
-            % Create Dim5Spinner_TimeAlignment
-            app.Dim5Spinner_TimeAlignment = uispinner(app.TimeSeriesAlignmentPanel);
-            app.Dim5Spinner_TimeAlignment.Enable = 'off';
-            app.Dim5Spinner_TimeAlignment.Position = [178 323 51 22];
-            app.Dim5Spinner_TimeAlignment.Value = 1;
-
-            % Create ReferenceDataPointLabel
-            app.ReferenceDataPointLabel = uilabel(app.TimeSeriesAlignmentPanel);
-            app.ReferenceDataPointLabel.HorizontalAlignment = 'center';
-            app.ReferenceDataPointLabel.Position = [111 395 129 29];
-            app.ReferenceDataPointLabel.Text = 'Reference Data Point';
-
             % Create SaveRegisteredDataButton
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
             app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
@@ -7264,6 +7422,120 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ChooseRegistrationTypeDropDown.Tooltip = {''};
             app.ChooseRegistrationTypeDropDown.Position = [981 614 222 22];
             app.ChooseRegistrationTypeDropDown.Value = 'Standard';
+
+            % Create TimeSeriesAlignmentPanel
+            app.TimeSeriesAlignmentPanel = uipanel(app.RegistrationTab);
+            app.TimeSeriesAlignmentPanel.BorderType = 'none';
+            app.TimeSeriesAlignmentPanel.TitlePosition = 'centertop';
+            app.TimeSeriesAlignmentPanel.Visible = 'off';
+            app.TimeSeriesAlignmentPanel.Position = [917 94 349 500];
+
+            % Create SelectTimeAlignmentLabel
+            app.SelectTimeAlignmentLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.SelectTimeAlignmentLabel.HorizontalAlignment = 'center';
+            app.SelectTimeAlignmentLabel.Position = [85 475 181 22];
+            app.SelectTimeAlignmentLabel.Text = 'Select Image Data For Alignment';
+
+            % Create SelectTimeAlignmentDropDown
+            app.SelectTimeAlignmentDropDown = uidropdown(app.TimeSeriesAlignmentPanel);
+            app.SelectTimeAlignmentDropDown.Items = {'None'};
+            app.SelectTimeAlignmentDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectTimeAlignmentDropDownValueChanged, true);
+            app.SelectTimeAlignmentDropDown.Tooltip = {''};
+            app.SelectTimeAlignmentDropDown.Placeholder = 'None';
+            app.SelectTimeAlignmentDropDown.Position = [44 444 264 21];
+            app.SelectTimeAlignmentDropDown.Value = 'None';
+
+            % Create AlignDataButton
+            app.AlignDataButton = uibutton(app.TimeSeriesAlignmentPanel, 'push');
+            app.AlignDataButton.ButtonPushedFcn = createCallbackFcn(app, @AlignDataButtonPushed, true);
+            app.AlignDataButton.Enable = 'off';
+            app.AlignDataButton.Position = [126 279 100 23];
+            app.AlignDataButton.Text = 'Align Data';
+
+            % Create Dim4Spinner_TimeAlignmentReferenceLabel
+            app.Dim4Spinner_TimeAlignmentReferenceLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.Dim4Spinner_TimeAlignmentReferenceLabel.HorizontalAlignment = 'right';
+            app.Dim4Spinner_TimeAlignmentReferenceLabel.Position = [121 361 47 22];
+            app.Dim4Spinner_TimeAlignmentReferenceLabel.Text = 'Dim - 4 ';
+
+            % Create Dim4Spinner_TimeAlignmentReference
+            app.Dim4Spinner_TimeAlignmentReference = uispinner(app.TimeSeriesAlignmentPanel);
+            app.Dim4Spinner_TimeAlignmentReference.Enable = 'off';
+            app.Dim4Spinner_TimeAlignmentReference.Position = [179 361 51 22];
+            app.Dim4Spinner_TimeAlignmentReference.Value = 1;
+
+            % Create Dim5Spinner_TimeAlignmentReferenceLabel
+            app.Dim5Spinner_TimeAlignmentReferenceLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.Dim5Spinner_TimeAlignmentReferenceLabel.HorizontalAlignment = 'right';
+            app.Dim5Spinner_TimeAlignmentReferenceLabel.Position = [122 323 44 22];
+            app.Dim5Spinner_TimeAlignmentReferenceLabel.Text = 'Dim - 5';
+
+            % Create Dim5Spinner_TimeAlignmentReference
+            app.Dim5Spinner_TimeAlignmentReference = uispinner(app.TimeSeriesAlignmentPanel);
+            app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
+            app.Dim5Spinner_TimeAlignmentReference.Position = [178 323 51 22];
+            app.Dim5Spinner_TimeAlignmentReference.Value = 1;
+
+            % Create ReferenceDataPointLabel
+            app.ReferenceDataPointLabel = uilabel(app.TimeSeriesAlignmentPanel);
+            app.ReferenceDataPointLabel.HorizontalAlignment = 'center';
+            app.ReferenceDataPointLabel.Position = [111 395 129 29];
+            app.ReferenceDataPointLabel.Text = 'Reference Data Point';
+
+            % Create AdditionalDimensionControlsPanel
+            app.AdditionalDimensionControlsPanel = uipanel(app.TimeSeriesAlignmentPanel);
+            app.AdditionalDimensionControlsPanel.BorderType = 'none';
+            app.AdditionalDimensionControlsPanel.TitlePosition = 'centertop';
+            app.AdditionalDimensionControlsPanel.Title = 'Additional Dimension Controls';
+            app.AdditionalDimensionControlsPanel.Position = [33 130 286 118];
+
+            % Create Dim4Spinner_TimeAlignmentControl
+            app.Dim4Spinner_TimeAlignmentControl = uispinner(app.AdditionalDimensionControlsPanel);
+            app.Dim4Spinner_TimeAlignmentControl.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_TimeAlignmentControlValueChanged, true);
+            app.Dim4Spinner_TimeAlignmentControl.Enable = 'off';
+            app.Dim4Spinner_TimeAlignmentControl.Position = [219 58 51 22];
+            app.Dim4Spinner_TimeAlignmentControl.Value = 1;
+
+            % Create Dim4SliderLabel_TimeAlignmentControl
+            app.Dim4SliderLabel_TimeAlignmentControl = uilabel(app.AdditionalDimensionControlsPanel);
+            app.Dim4SliderLabel_TimeAlignmentControl.HorizontalAlignment = 'right';
+            app.Dim4SliderLabel_TimeAlignmentControl.Position = [17 59 44 22];
+            app.Dim4SliderLabel_TimeAlignmentControl.Text = 'Dim - 4';
+
+            % Create Dim4Slider_TimeAlignmentControl
+            app.Dim4Slider_TimeAlignmentControl = uislider(app.AdditionalDimensionControlsPanel);
+            app.Dim4Slider_TimeAlignmentControl.Limits = [1 100];
+            app.Dim4Slider_TimeAlignmentControl.MajorTicks = [];
+            app.Dim4Slider_TimeAlignmentControl.MajorTickLabels = {};
+            app.Dim4Slider_TimeAlignmentControl.ValueChangingFcn = createCallbackFcn(app, @Dim4Slider_TimeAlignmentControlValueChanging, true);
+            app.Dim4Slider_TimeAlignmentControl.MinorTicks = [];
+            app.Dim4Slider_TimeAlignmentControl.Enable = 'off';
+            app.Dim4Slider_TimeAlignmentControl.Position = [81 67 124 3];
+            app.Dim4Slider_TimeAlignmentControl.Value = 1;
+
+            % Create Dim5Spinner_TimeAlignmentControl
+            app.Dim5Spinner_TimeAlignmentControl = uispinner(app.AdditionalDimensionControlsPanel);
+            app.Dim5Spinner_TimeAlignmentControl.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_TimeAlignmentControlValueChanged, true);
+            app.Dim5Spinner_TimeAlignmentControl.Enable = 'off';
+            app.Dim5Spinner_TimeAlignmentControl.Position = [219 16 51 22];
+            app.Dim5Spinner_TimeAlignmentControl.Value = 1;
+
+            % Create Dim5SliderLabel_TimeAlignmentControl
+            app.Dim5SliderLabel_TimeAlignmentControl = uilabel(app.AdditionalDimensionControlsPanel);
+            app.Dim5SliderLabel_TimeAlignmentControl.HorizontalAlignment = 'right';
+            app.Dim5SliderLabel_TimeAlignmentControl.Position = [17 17 44 22];
+            app.Dim5SliderLabel_TimeAlignmentControl.Text = 'Dim - 5';
+
+            % Create Dim5Slider_TimeAlignmentControl
+            app.Dim5Slider_TimeAlignmentControl = uislider(app.AdditionalDimensionControlsPanel);
+            app.Dim5Slider_TimeAlignmentControl.Limits = [1 100];
+            app.Dim5Slider_TimeAlignmentControl.MajorTicks = [];
+            app.Dim5Slider_TimeAlignmentControl.MajorTickLabels = {};
+            app.Dim5Slider_TimeAlignmentControl.ValueChangingFcn = createCallbackFcn(app, @Dim5Slider_TimeAlignmentControlValueChanging, true);
+            app.Dim5Slider_TimeAlignmentControl.MinorTicks = [];
+            app.Dim5Slider_TimeAlignmentControl.Enable = 'off';
+            app.Dim5Slider_TimeAlignmentControl.Position = [81 25 124 3];
+            app.Dim5Slider_TimeAlignmentControl.Value = 1;
 
             % Create StandardAtlasRegistrationPanel
             app.StandardAtlasRegistrationPanel = uipanel(app.RegistrationTab);
