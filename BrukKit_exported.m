@@ -885,7 +885,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Standard"
                             OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
                             exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
+<<<<<<< HEAD
                             selection = uiconfirm(app.BrukKitAlphav0860UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+=======
+                            selection = uiconfirm(app.BrukKitAlphav0850UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+>>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
                             ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
                             switch selection
                                 case 'Save Mask'
@@ -4803,7 +4807,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
                     app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                     app.AlignDataButton.Enable = 'off';
+<<<<<<< HEAD
                     uialert(app.BrukKitAlphav0860UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
+=======
+                    uialert(app.BrukKitAlphav0850UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
+>>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
 
             end
         end
@@ -4812,7 +4820,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function AlignDataButtonPushed(app, event)
             tic
             % Draw progress bar
+<<<<<<< HEAD
             progress = uiprogressdlg(app.BrukKitAlphav0860UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
+=======
+            progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
+>>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
             drawnow
 
             % Get image data
