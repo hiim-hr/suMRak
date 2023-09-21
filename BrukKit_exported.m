@@ -6124,6 +6124,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     delete(app.AtlasImporterWindow);
                     delete(app.RegistrationViewerWindow);       
                     delete(app.DSCSettingsWindow);
+                    delete(app.OverlayPickerWindow);
                     delete(app);
                 otherwise
                     return

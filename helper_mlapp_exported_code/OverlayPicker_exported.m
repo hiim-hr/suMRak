@@ -21,7 +21,7 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
         ExperimentDropDown            matlab.ui.control.DropDown
         ExperimentDropDownLabel       matlab.ui.control.Label
         OverlaySwitch                 matlab.ui.control.Switch
-        SelectanoptionSwitchLabel     matlab.ui.control.Label
+        SelectOptionLabel             matlab.ui.control.Label
     end
 
     
@@ -67,6 +67,8 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             if value == "None"
                 app.Dim4Spinner.Enable = "off";
                 app.Dim5Spinner.Enable = "off";
+                app.Dim4Spinner.Value = 1;
+                app.Dim5Spinner.Value = 1;
                 app.SelectROIListBox.Enable = "off";
                 app.OverlayStyleDropDown.Enable = "off";
                 app.ColormapDropDown.Enable = "off";
@@ -157,15 +159,6 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             end
         end
 
-        % Close request function: OverlayPickerUIFigure
-        function OverlayPickerUIFigureCloseRequest(app, event)
-            % Close Brukkit progress bar and delete app
-            app.BrukKit.OverlayButton.Enable = 'on';
-            app.BrukKit.OverlayButton.Value = 0;
-            close(app.BrukKit.ProgressBar);
-            delete(app);
-        end
-
         % Value changed function: SelectROIListBox
         function SelectROIListBoxValueChanged(app, event)
             value = app.SelectROIListBox.Value;
@@ -233,6 +226,16 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             delete(app);
 
         end
+
+        % Close request function: OverlayPickerUIFigure
+        function OverlayPickerUIFigureCloseRequest(app, event)
+            
+            % Close Brukkit progress bar and delete app
+            app.BrukKit.OverlayButton.Enable = 'on';
+            app.BrukKit.OverlayButton.Value = 0;
+            close(app.BrukKit.ProgressBar);
+            delete(app);
+        end
     end
 
     % Component initialization
@@ -247,11 +250,11 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             app.OverlayPickerUIFigure.Name = 'Overlay Picker';
             app.OverlayPickerUIFigure.CloseRequestFcn = createCallbackFcn(app, @OverlayPickerUIFigureCloseRequest, true);
 
-            % Create SelectanoptionSwitchLabel
-            app.SelectanoptionSwitchLabel = uilabel(app.OverlayPickerUIFigure);
-            app.SelectanoptionSwitchLabel.HorizontalAlignment = 'center';
-            app.SelectanoptionSwitchLabel.Position = [115 449 91 22];
-            app.SelectanoptionSwitchLabel.Text = 'Select an option';
+            % Create SelectOptionLabel
+            app.SelectOptionLabel = uilabel(app.OverlayPickerUIFigure);
+            app.SelectOptionLabel.HorizontalAlignment = 'center';
+            app.SelectOptionLabel.Position = [122 449 77 22];
+            app.SelectOptionLabel.Text = 'Select Option';
 
             % Create OverlaySwitch
             app.OverlaySwitch = uiswitch(app.OverlayPickerUIFigure, 'slider');
@@ -278,11 +281,11 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             app.ReturnButton.ButtonPushedFcn = createCallbackFcn(app, @ReturnButtonPushed, true);
             app.ReturnButton.Enable = 'off';
             app.ReturnButton.Position = [86 15 149 23];
-            app.ReturnButton.Text = 'Use selected Volume';
+            app.ReturnButton.Text = 'Use Selected Volume';
 
             % Create OverlayStyleDropDownLabel
             app.OverlayStyleDropDownLabel = uilabel(app.OverlayPickerUIFigure);
-            app.OverlayStyleDropDownLabel.HorizontalAlignment = 'right';
+            app.OverlayStyleDropDownLabel.HorizontalAlignment = 'center';
             app.OverlayStyleDropDownLabel.Position = [36 128 76 22];
             app.OverlayStyleDropDownLabel.Text = 'Overlay Style';
 
@@ -310,30 +313,32 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             app.Dim4SpinnerLabel = uilabel(app.OverlayPickerUIFigure);
             app.Dim4SpinnerLabel.HorizontalAlignment = 'right';
             app.Dim4SpinnerLabel.Enable = 'off';
-            app.Dim4SpinnerLabel.Position = [25 347 44 22];
+            app.Dim4SpinnerLabel.Position = [24 347 44 22];
             app.Dim4SpinnerLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner
             app.Dim4Spinner = uispinner(app.OverlayPickerUIFigure);
             app.Dim4Spinner.Enable = 'off';
-            app.Dim4Spinner.Position = [84 347 66 22];
+            app.Dim4Spinner.Position = [83 347 66 22];
+            app.Dim4Spinner.Value = 1;
 
             % Create Dim5Label
             app.Dim5Label = uilabel(app.OverlayPickerUIFigure);
             app.Dim5Label.HorizontalAlignment = 'right';
             app.Dim5Label.Enable = 'off';
-            app.Dim5Label.Position = [174 347 44 22];
+            app.Dim5Label.Position = [173 347 44 22];
             app.Dim5Label.Text = 'Dim - 5';
 
             % Create Dim5Spinner
             app.Dim5Spinner = uispinner(app.OverlayPickerUIFigure);
             app.Dim5Spinner.Enable = 'off';
-            app.Dim5Spinner.Position = [233 347 66 22];
+            app.Dim5Spinner.Position = [232 347 66 22];
+            app.Dim5Spinner.Value = 1;
 
             % Create ColormapDropDownLabel_Viewer
             app.ColormapDropDownLabel_Viewer = uilabel(app.OverlayPickerUIFigure);
             app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.ColormapDropDownLabel_Viewer.Position = [55 96 57 22];
+            app.ColormapDropDownLabel_Viewer.Position = [36 96 57 22];
             app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
 
             % Create ColormapDropDown
