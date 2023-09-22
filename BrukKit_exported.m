@@ -891,6 +891,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                             switch selection
                                 case 'Save Mask'
                                     saved_BrainMask = app.RegisteredMask;
+                                    image_Data = image_Data.*app.RegisteredMask;
                                 case 'Save without Mask'
                                     saved_BrainMask = false(size(image_Data));
                             end
@@ -1634,7 +1635,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             app.ViewerParentObject.Children.Alphamap = alphamap;
         end
-        
+
     end
 
 
