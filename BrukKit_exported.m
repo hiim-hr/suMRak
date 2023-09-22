@@ -1327,6 +1327,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Reset tables
             app.ExperimentPropertyTable = table();
             app.SavedTable = table();
+
+            % Reset time values
+            app.TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
+            app.TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
+            app.TIvalues = zeros(1000, 1000); % 1000x1000 table storing TI values
     
             % Reset drop downs and text fields
             app.PreviewDropDown.Items = {'None'};
@@ -2043,6 +2048,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 LoadedProps = load(env_Path);
                 
                 % Set app properties 
+                app.TEvalues = LoadedProps.TEValues;
+                app.TRvalues = LoadedProps.TRValues;
+                app.TIvalues = LoadedProps.TIValues;
                 app.ExperimentPropertyTable = LoadedProps.ExperimentPropertyTable; 
                 app.SavedTable = LoadedProps.SavedTable; 
                 app.SubjectIDEditField.Value = LoadedProps.SubjectID;
@@ -2266,6 +2274,89 @@ classdef BrukKit_exported < matlab.apps.AppBase
             close(progress);
         end
 
+        % Button pushed function: LoadSingleNIfTIButton
+        function LoadSingleNIfTIButtonPushed(app, event)
+            
+            % Get nifti image data and info
+            [temp_file, temp_dir] = uigetfile('.nii');
+            figure(app.BrukKitAlphav0860UIFigure);
+            nifti_info = niftiinfo(cat(2, temp_dir, temp_file));
+            exp_ImageData = {pagetranspose(niftiread(cat(2, temp_dir, temp_file)))};
+            
+            % Extract data from niftinfo
+            nifti_ID = {temp_file};
+            voxel_Dims_X = nifti_info.PixelDimensions(1);
+            voxel_Dims_Y = nifti_info.PixelDimensions(2);
+            try
+                slice_Thickness = nifti_info.PixelDimensions(3);
+            catch
+                slice_Thickness = 0;
+            end
+            slice_Gap = 0;
+            switch nifti_info.SpaceUnits
+                case 'Millimeter'
+                    dim_Units = join(repmat("mm",1,numel(size(cell2mat(exp_ImageData)))),' ');
+                case 'Micron'
+                    dim_Units = join(repmat("um",1,numel(size(cell2mat(exp_ImageData)))),' ');
+                case 'Meter'
+                    dim_Units = join(repmat("m",1,numel(size(cell2mat(exp_ImageData)))),' ');
+                case 'Unknown'
+                    dim_Units = "Unspecified";
+            end
+            rot_Matrix = {nifti_info.Transform.T(1:3,1:3)};
+            
+            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+            % Load nifti data
+            if isequal(app.ExperimentPropertyTable, table())
+                % No other data loaded
+                nifti_ID = cat(1, {'None'}, nifti_ID);
+                exp_ImageData = cat(1, {[]}, exp_ImageData);
+                voxel_Dims_X = cat(1, 0, voxel_Dims_X);
+                voxel_Dims_Y = cat(1, 0, voxel_Dims_Y);
+                slice_Thickness = cat(1, 0, slice_Thickness);
+                slice_Gap = cat(1, 0, slice_Gap);
+                dim_Units = cat(1, "Unspecifed", dim_Units);
+                rot_Matrix = cat(1, {[]}, rot_Matrix);
+                
+                % Update experiment property table
+                app.ExperimentPropertyTable = table(nifti_ID, exp_ImageData, ...
+                [0;0], [0;0], voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
+                slice_Gap, dim_Units, rot_Matrix, 'RowNames', nifti_ID, 'VariableNames', variable_Names);
+                app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
+                app.UITable_Preview.ColumnName = variable_Names;
+
+                % Populate ID fields
+                app.SubjectIDEditField.Value = temp_file;
+                app.StudyIDEditField.Value = "Nifti_Single_Experiment";
+
+                % Update drop down items
+                app.PreviewDropDown.Items = nifti_ID;
+                app.DropDownItemsCombined = nifti_ID;
+                app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
+                app.CreateBrukKitFolderButton.Enable = 'on';
+            else
+                % Other data already loaded
+                % Create temp table
+                temp_table = table(nifti_ID, exp_ImageData, ...
+                0, 0, voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
+                slice_Gap, dim_Units, rot_Matrix, 'RowNames', nifti_ID, 'VariableNames', variable_Names);
+                % Update experiment property table
+                app.ExperimentPropertyTable = cat(1, app.ExperimentPropertyTable, temp_table);
+                app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
+                app.UITable_Preview.ColumnName = variable_Names;
+                % Update drop down items
+                app.PreviewDropDown.Items = cat(2, app.PreviewDropDown.Items, nifti_ID);
+                app.DropDownItemsCombined = cat(1, app.DropDownItemsCombined, nifti_ID);
+                app.SegmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectTimeAlignmentDropDown.Items = app.DropDownItemsCombined;
+                app.SelectPreMapDropDown.Items = app.DropDownItemsCombined;
+                app.Select3DViewerDropDown.Items = app.DropDownItemsCombined;
+            end            
+        end
+
         % Button pushed function: CreateBrukKitFolderButton
         function CreateBrukKitFolderButtonPushed(app, event)
             selected_path = uigetdir;
@@ -2358,7 +2449,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             SubjectAge = app.SubjectAgeEditField.Value;
             DropDownItemsSavedOnly = app.DropDownItemsSavedOnly; %#ok<ADPROPLC>
             PreviewDropDownItems = app.PreviewDropDown.Items; 
-            DropDownItemsCombined = app.DropDownItemsCombined; %#ok<ADPROPLC> 
+            DropDownItemsCombined = app.DropDownItemsCombined; %#ok<ADPROPLC>
+            TEValues = app.TEvalues;
+            TRValues = app.TRvalues;
+            TIValues = app.TIvalues;
             
             % Save environment inside export folder
             progress.Value = 0.6;
@@ -2372,7 +2466,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         env_Path = env_Path + filesep + "main_properties.mat";
                         save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
                             "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
-                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems")
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems", ...
+                            "TEValues", "TRValues", "TIValues")
                     case 'Cancel'
                         return
                 end  
@@ -2381,7 +2476,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 env_Path = env_Path + filesep + "main_properties.mat";
                 save(env_Path, "ExperimentPropertyTable", "SavedTable", "SubjectID", "StudyID", ...
                             "SubjectComment", "StudyComment", "SubjectType", "Sex", "Weight", "StudyStartDate", ...
-                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems")
+                            "StudyStartTime", "SubjectAge", "DropDownItemsSavedOnly", "DropDownItemsCombined", "PreviewDropDownItems", ...
+                            "TEValues", "TRValues", "TIValues")
             end
 
             % close the dialog box
@@ -6342,7 +6438,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadPvDatasetsFileButton
             app.LoadPvDatasetsFileButton = uibutton(app.MainTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
-            app.LoadPvDatasetsFileButton.Position = [308 614 142 22];
+            app.LoadPvDatasetsFileButton.Position = [311 614 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveEditField
@@ -6562,7 +6658,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create LoadSingleNIfTIButton
             app.LoadSingleNIfTIButton = uibutton(app.MainTab, 'push');
-            app.LoadSingleNIfTIButton.Position = [456 614 119 23];
+            app.LoadSingleNIfTIButton.ButtonPushedFcn = createCallbackFcn(app, @LoadSingleNIfTIButtonPushed, true);
+            app.LoadSingleNIfTIButton.Position = [459 614 119 22];
             app.LoadSingleNIfTIButton.Text = 'Load Single NIfTI';
 
             % Create SegmenterTab
