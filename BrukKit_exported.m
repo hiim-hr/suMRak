@@ -301,6 +301,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
+        SavesceneimageButton            matlab.ui.control.Button
         DataDimensionsPanel             matlab.ui.container.Panel
         ZEditField_Viewer               matlab.ui.control.NumericEditField
         ZEditFieldLabel_Viewer          matlab.ui.control.Label
@@ -885,11 +886,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Standard"
                             OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
                             exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
-<<<<<<< HEAD
                             selection = uiconfirm(app.BrukKitAlphav0860UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
-=======
-                            selection = uiconfirm(app.BrukKitAlphav0850UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
->>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
                             ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
                             switch selection
                                 case 'Save Mask'
@@ -4807,11 +4804,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
                     app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                     app.AlignDataButton.Enable = 'off';
-<<<<<<< HEAD
                     uialert(app.BrukKitAlphav0860UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
-=======
-                    uialert(app.BrukKitAlphav0850UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
->>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
 
             end
         end
@@ -4820,11 +4813,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function AlignDataButtonPushed(app, event)
             tic
             % Draw progress bar
-<<<<<<< HEAD
             progress = uiprogressdlg(app.BrukKitAlphav0860UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
-=======
-            progress = uiprogressdlg(app.BrukKitAlphav0850UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
->>>>>>> 90cd87e26453dd08d4b6aeff70190bba3ed275cf
             drawnow
 
             % Get image data
@@ -6196,6 +6185,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     return
             end
+            
+        end
+
+        % Button pushed function: SavesceneimageButton
+        function SavesceneimageButtonPushed(app, event)
             
         end
     end
@@ -8181,7 +8175,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.UIAxes_AlphaMap.YTick = [];
             app.UIAxes_AlphaMap.ZTick = [];
             app.UIAxes_AlphaMap.Box = 'on';
-            app.UIAxes_AlphaMap.Position = [974 17 263 218];
+            app.UIAxes_AlphaMap.Position = [974 34 263 218];
 
             % Create ViewerPanel
             app.ViewerPanel = uipanel(app.DViewerTab);
@@ -8194,7 +8188,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create Select3DViewerLabel
             app.Select3DViewerLabel = uilabel(app.DViewerTab);
             app.Select3DViewerLabel.HorizontalAlignment = 'right';
-            app.Select3DViewerLabel.Position = [1031 636 147 22];
+            app.Select3DViewerLabel.Position = [1031 653 147 22];
             app.Select3DViewerLabel.Text = 'Select Experiment To View';
 
             % Create Select3DViewerDropDown
@@ -8202,13 +8196,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.Select3DViewerDropDown.Items = {'None'};
             app.Select3DViewerDropDown.ValueChangedFcn = createCallbackFcn(app, @Select3DViewerDropDownValueChanged, true);
             app.Select3DViewerDropDown.Placeholder = 'None';
-            app.Select3DViewerDropDown.Position = [971 606 268 21];
+            app.Select3DViewerDropDown.Position = [971 623 268 21];
             app.Select3DViewerDropDown.Value = 'None';
 
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [1060 457 90 22];
+            app.RenderingStyleDropDownLabel.Position = [1060 474 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
@@ -8217,13 +8211,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [1007 429 196 22];
+            app.RenderingStyleDropDown.Position = [1007 446 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
 
             % Create ColormapDropDownLabel_Viewer
             app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.ColormapDropDownLabel_Viewer.Position = [1077 387 57 22];
+            app.ColormapDropDownLabel_Viewer.Position = [1077 404 57 22];
             app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
 
             % Create ColormapDropDown_Viewer
@@ -8232,13 +8226,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
             app.ColormapDropDown_Viewer.Enable = 'off';
             app.ColormapDropDown_Viewer.Tooltip = {''};
-            app.ColormapDropDown_Viewer.Position = [1007 359 196 22];
+            app.ColormapDropDown_Viewer.Position = [1007 376 196 22];
             app.ColormapDropDown_Viewer.Value = 'Greyscale';
 
             % Create AlphamapDropDownLabel_Viewer
             app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.AlphamapDropDownLabel_Viewer.Position = [1076 279 59 22];
+            app.AlphamapDropDownLabel_Viewer.Position = [1076 296 59 22];
             app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
 
             % Create AlphamapDropDown_Viewer
@@ -8247,65 +8241,65 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
             app.AlphamapDropDown_Viewer.Enable = 'off';
             app.AlphamapDropDown_Viewer.Tooltip = {''};
-            app.AlphamapDropDown_Viewer.Position = [1007 251 196 22];
+            app.AlphamapDropDown_Viewer.Position = [1007 268 196 22];
             app.AlphamapDropDown_Viewer.Value = 'Linear';
 
             % Create ColormapImage_Viewer
             app.ColormapImage_Viewer = uiimage(app.DViewerTab);
             app.ColormapImage_Viewer.Visible = 'off';
-            app.ColormapImage_Viewer.Position = [983 328 244 21];
+            app.ColormapImage_Viewer.Position = [983 345 244 21];
 
             % Create Dim5Spinner_ViewerLabel
             app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
             app.Dim5Spinner_ViewerLabel.HorizontalAlignment = 'right';
-            app.Dim5Spinner_ViewerLabel.Position = [571 23 44 22];
+            app.Dim5Spinner_ViewerLabel.Position = [497 32 44 22];
             app.Dim5Spinner_ViewerLabel.Text = 'Dim - 5';
 
             % Create Dim5Spinner_Viewer
             app.Dim5Spinner_Viewer = uispinner(app.DViewerTab);
             app.Dim5Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim5Spinner_ViewerValueChanged, true);
             app.Dim5Spinner_Viewer.Enable = 'off';
-            app.Dim5Spinner_Viewer.Position = [627 23 51 22];
+            app.Dim5Spinner_Viewer.Position = [553 32 51 22];
             app.Dim5Spinner_Viewer.Value = 1;
 
             % Create Dim4Spinner_ViewerLabel
             app.Dim4Spinner_ViewerLabel = uilabel(app.DViewerTab);
             app.Dim4Spinner_ViewerLabel.HorizontalAlignment = 'right';
-            app.Dim4Spinner_ViewerLabel.Position = [442 23 44 22];
+            app.Dim4Spinner_ViewerLabel.Position = [368 32 44 22];
             app.Dim4Spinner_ViewerLabel.Text = 'Dim - 4';
 
             % Create Dim4Spinner_Viewer
             app.Dim4Spinner_Viewer = uispinner(app.DViewerTab);
             app.Dim4Spinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @Dim4Spinner_ViewerValueChanged, true);
             app.Dim4Spinner_Viewer.Enable = 'off';
-            app.Dim4Spinner_Viewer.Position = [497 23 51 22];
+            app.Dim4Spinner_Viewer.Position = [423 32 51 22];
             app.Dim4Spinner_Viewer.Value = 1;
 
             % Create DisplayedSliceRangeLabel
             app.DisplayedSliceRangeLabel = uilabel(app.DViewerTab);
             app.DisplayedSliceRangeLabel.HorizontalAlignment = 'center';
-            app.DisplayedSliceRangeLabel.Position = [137 23 126 22];
+            app.DisplayedSliceRangeLabel.Position = [63 32 126 22];
             app.DisplayedSliceRangeLabel.Text = 'Displayed Slice Range';
 
             % Create SliceRangeLowSpinner_Viewer
             app.SliceRangeLowSpinner_Viewer = uispinner(app.DViewerTab);
             app.SliceRangeLowSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeLowSpinner_ViewerValueChanged, true);
             app.SliceRangeLowSpinner_Viewer.Enable = 'off';
-            app.SliceRangeLowSpinner_Viewer.Position = [273 23 51 22];
+            app.SliceRangeLowSpinner_Viewer.Position = [199 32 51 22];
             app.SliceRangeLowSpinner_Viewer.Value = 1;
 
             % Create SliceRangeHighSpinner_Viewer
             app.SliceRangeHighSpinner_Viewer = uispinner(app.DViewerTab);
             app.SliceRangeHighSpinner_Viewer.ValueChangedFcn = createCallbackFcn(app, @SliceRangeHighSpinner_ViewerValueChanged, true);
             app.SliceRangeHighSpinner_Viewer.Enable = 'off';
-            app.SliceRangeHighSpinner_Viewer.Position = [359 23 51 22];
+            app.SliceRangeHighSpinner_Viewer.Position = [285 32 51 22];
             app.SliceRangeHighSpinner_Viewer.Value = 1;
 
             % Create DashLabel
             app.DashLabel = uilabel(app.DViewerTab);
             app.DashLabel.HorizontalAlignment = 'center';
             app.DashLabel.FontWeight = 'bold';
-            app.DashLabel.Position = [330 22 19 25];
+            app.DashLabel.Position = [256 31 19 25];
             app.DashLabel.Text = '-';
 
             % Create OverlayButton
@@ -8313,14 +8307,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.OverlayButton.ValueChangedFcn = createCallbackFcn(app, @OverlayButtonValueChanged, true);
             app.OverlayButton.Enable = 'off';
             app.OverlayButton.Text = 'Overlay';
-            app.OverlayButton.Position = [712 23 100 23];
+            app.OverlayButton.Position = [638 32 100 23];
 
             % Create DataDimensionsPanel
             app.DataDimensionsPanel = uipanel(app.DViewerTab);
             app.DataDimensionsPanel.BorderType = 'none';
             app.DataDimensionsPanel.TitlePosition = 'centertop';
             app.DataDimensionsPanel.Title = 'Data Dimensions';
-            app.DataDimensionsPanel.Position = [995 502 221 80];
+            app.DataDimensionsPanel.Position = [995 519 221 80];
 
             % Create YEditFieldLabel_Viewer
             app.YEditFieldLabel_Viewer = uilabel(app.DataDimensionsPanel);
@@ -8354,6 +8348,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ZEditField_Viewer = uieditfield(app.DataDimensionsPanel, 'numeric');
             app.ZEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @ZEditField_ViewerValueChanged, true);
             app.ZEditField_Viewer.Position = [158 9 59 22];
+
+            % Create SavesceneimageButton
+            app.SavesceneimageButton = uibutton(app.DViewerTab, 'push');
+            app.SavesceneimageButton.ButtonPushedFcn = createCallbackFcn(app, @SavesceneimageButtonPushed, true);
+            app.SavesceneimageButton.Enable = 'off';
+            app.SavesceneimageButton.Position = [772 32 114 23];
+            app.SavesceneimageButton.Text = 'Save scene image';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0860UIFigure);
