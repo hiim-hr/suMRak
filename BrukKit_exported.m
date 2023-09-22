@@ -302,7 +302,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_PostMap                  matlab.ui.control.UIAxes
         UIAxes_PreMap                   matlab.ui.control.UIAxes
         DViewerTab                      matlab.ui.container.Tab
-        SavesceneimageButton            matlab.ui.control.Button
+        ExportSceneButton               matlab.ui.control.Button
         DataDimensionsPanel             matlab.ui.container.Panel
         ZEditField_Viewer               matlab.ui.control.NumericEditField
         ZEditFieldLabel_Viewer          matlab.ui.control.Label
@@ -2105,6 +2105,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 if ~isequal(app.PostMapImageData, [])
                     app.ExportDataButton_Map.Enable = 'on';
                 end    
+                if app.Select3DViewerDropDown.Value ~= "None"
+                    app.ExportSceneButton.Enable = 'on';
+                end
 
                 % close the dialog box
                 progress.Value = 1;
@@ -2422,6 +2425,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if ~isequal(app.PostMapImageData, [])
                 app.ExportDataButton_Map.Enable = 'on';
             end    
+            if app.Select3DViewerDropDown.Value ~= "None"
+                app.ExportSceneButton.Enable = 'on';
+            end
         end
 
         % Button pushed function: ExportEnvironmentButton
@@ -5977,6 +5983,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.Dim5Spinner_Viewer.Enable = 'off';
                 app.Dim5Spinner_Viewer.Value = 1;
                 app.OverlayButton.Enable = 'off';
+                app.ExportSceneButton.Enable = 'off';
                 return
             end
             
@@ -6009,10 +6016,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.Dim5Spinner_Viewer.Enable = 'off';
                 app.Dim5Spinner_Viewer.Value = 1;
                 app.OverlayButton.Enable = 'off';
+                app.ExportSceneButton.Enable = 'off';
                 uialert(app.BrukKitAlphav0860UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
                 return
             end
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
+            app.ViewerParentObject.OrientationAxes = 'off';
             
             % Get dimension scales, create triplet and update edit fields
             try
@@ -6034,6 +6043,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.AlphamapDropDown_Viewer.Enable = 'on';
             app.AlphamapDropDown_Viewer.Value = "Linear";
             app.OverlayButton.Enable = 'on';
+            if isstring(app.ExportFolderPath)
+                app.ExportSceneButton.Enable = 'on';
+            end
             % Set slice slider limits and values
             app.SliceRangeLowSpinner_Viewer.Enable = 'on';
             app.SliceRangeLowSpinner_Viewer.Limits = [1, app.ViewerImageDataDims(3)-1];
@@ -6286,9 +6298,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
         end
 
-        % Button pushed function: SavesceneimageButton
-        function SavesceneimageButtonPushed(app, event)
-            
+        % Button pushed function: ExportSceneButton
+        function ExportSceneButtonPushed(app, event)
+            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
+
+            cd(app.ExportFolderPath);
+            screencapture(app.ViewerPanel,[],image_name{1});
         end
     end
 
@@ -8285,7 +8300,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ViewerPanel = uipanel(app.DViewerTab);
             app.ViewerPanel.BorderType = 'none';
             app.ViewerPanel.TitlePosition = 'centertop';
-            app.ViewerPanel.Title = 'Viewer';
             app.ViewerPanel.BackgroundColor = [1 1 1];
             app.ViewerPanel.Position = [23 70 903 608];
 
@@ -8453,12 +8467,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ZEditField_Viewer.ValueChangedFcn = createCallbackFcn(app, @ZEditField_ViewerValueChanged, true);
             app.ZEditField_Viewer.Position = [158 9 59 22];
 
-            % Create SavesceneimageButton
-            app.SavesceneimageButton = uibutton(app.DViewerTab, 'push');
-            app.SavesceneimageButton.ButtonPushedFcn = createCallbackFcn(app, @SavesceneimageButtonPushed, true);
-            app.SavesceneimageButton.Enable = 'off';
-            app.SavesceneimageButton.Position = [772 32 114 23];
-            app.SavesceneimageButton.Text = 'Save scene image';
+            % Create ExportSceneButton
+            app.ExportSceneButton = uibutton(app.DViewerTab, 'push');
+            app.ExportSceneButton.ButtonPushedFcn = createCallbackFcn(app, @ExportSceneButtonPushed, true);
+            app.ExportSceneButton.Enable = 'off';
+            app.ExportSceneButton.Position = [779 32 100 23];
+            app.ExportSceneButton.Text = 'Export Scene';
 
             % Create ContextMenu_Preview
             app.ContextMenu_Preview = uicontextmenu(app.BrukKitAlphav0860UIFigure);
