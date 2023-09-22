@@ -5,6 +5,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         BrukKitAlphav0860UIFigure       matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         MainTab                         matlab.ui.container.Tab
+        LoadSingleNIfTIButton           matlab.ui.control.Button
         ExportEnvironmentButton         matlab.ui.control.Button
         LoadBrukKitFolderButton         matlab.ui.control.Button
         LoadBrukerStudyButton           matlab.ui.control.Button
@@ -376,7 +377,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         TEvalues = zeros(1000, 1000); % 1000x1000 table storing TE values
         TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
         TIvalues = zeros(1000, 1000); % 1000x1000 table storing TI values
-        ExperimentPropertyTable % Table of loaded experiment properties
+        ExperimentPropertyTable = table(); % Table of loaded experiment properties
         SavedTable % Table for storing all saved segmenterd/registered data.
 
         PreviewImageData % Preview experiment image data matrix
@@ -6341,7 +6342,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadPvDatasetsFileButton
             app.LoadPvDatasetsFileButton = uibutton(app.MainTab, 'push');
             app.LoadPvDatasetsFileButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPvDatasetsFileButtonPushed, true);
-            app.LoadPvDatasetsFileButton.Position = [370 614 142 22];
+            app.LoadPvDatasetsFileButton.Position = [308 614 142 22];
             app.LoadPvDatasetsFileButton.Text = 'Load PvDatasets File';
 
             % Create ArchiveEditField
@@ -6543,13 +6544,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Create LoadBrukerStudyButton
             app.LoadBrukerStudyButton = uibutton(app.MainTab, 'push');
             app.LoadBrukerStudyButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukerStudyButtonPushed, true);
-            app.LoadBrukerStudyButton.Position = [238 614 126 22];
+            app.LoadBrukerStudyButton.Position = [176 614 126 22];
             app.LoadBrukerStudyButton.Text = 'Load Bruker Study';
 
             % Create LoadBrukKitFolderButton
             app.LoadBrukKitFolderButton = uibutton(app.MainTab, 'push');
             app.LoadBrukKitFolderButton.ButtonPushedFcn = createCallbackFcn(app, @LoadBrukKitFolderButtonPushed, true);
-            app.LoadBrukKitFolderButton.Position = [103 614 129 22];
+            app.LoadBrukKitFolderButton.Position = [41 614 129 22];
             app.LoadBrukKitFolderButton.Text = 'Load BrukKit Folder';
 
             % Create ExportEnvironmentButton
@@ -6558,6 +6559,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExportEnvironmentButton.Enable = 'off';
             app.ExportEnvironmentButton.Position = [171 564 132 22];
             app.ExportEnvironmentButton.Text = 'Export Environment';
+
+            % Create LoadSingleNIfTIButton
+            app.LoadSingleNIfTIButton = uibutton(app.MainTab, 'push');
+            app.LoadSingleNIfTIButton.Position = [456 614 119 23];
+            app.LoadSingleNIfTIButton.Text = 'Load Single NIfTI';
 
             % Create SegmenterTab
             app.SegmenterTab = uitab(app.TabGroup);
