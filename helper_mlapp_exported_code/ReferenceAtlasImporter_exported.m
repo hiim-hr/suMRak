@@ -10,6 +10,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
         SaveToDirectoryCheckBox         matlab.ui.control.CheckBox
         ReferenceAtlasTree              matlab.ui.container.CheckBoxTree
         MRIAtlasNode                    matlab.ui.container.TreeNode
+        MICeNeuroanatomyAtlasC57BL6JMouseNode  matlab.ui.container.TreeNode
         T2wWaxholmSpaceAtlasC57BL6JMouseNode  matlab.ui.container.TreeNode
         T1wWaxholmSpaceAtlasC57BL6JMouseNode  matlab.ui.container.TreeNode
         HistologicalAtlasNode           matlab.ui.container.TreeNode
@@ -41,6 +42,10 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
 
             estimated_size_MB = 0;
             % Go through all atlases
+            if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, checkedNodes)
+                estimated_size_MB = estimated_size_MB + 247;
+            end
+
             if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, checkedNodes)
                 estimated_size_MB = estimated_size_MB + 512;
             end
@@ -123,6 +128,53 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                     mkdir(atlas_loading_folder);   
 
                     % Go through all atlases
+                    if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, chosen_Collection)
+                        % Create end folder
+                        MICe_atlas_Path = strcat(atlas_loading_folder, filesep, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+                        mkdir(MICe_atlas_Path);
+
+                        % Download atlas, unzip to end folder, rename to
+                        % .nii
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Downloading MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        websave(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), "http://repo.mouseimaging.ca/repo/Dorr_2008_nifti/Dorr_2008_average.nii.gz");
+
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Unzipping MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        gunzip(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), MICe_atlas_Path);
+                        movefile(strcat(MICe_atlas_Path, filesep, 'MICeAtlas'), strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii'));
+
+                        % Delete downloaded .nii.gz
+                        delete(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"));
+                        
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Importing MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        % Update atlas path
+                        MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii');
+                        % Load atlas using niftiread, permute dims,
+                        % pagetranspose and flipud
+                        MICe_atlas.ImageData = niftiread(MICe_atlas_Path);
+                        MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
+                        MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
+                        MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
+                        MICe_atlas.ImageData = flip(MICe_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        MICe_info = niftiinfo(MICe_atlas_Path);
+                        MICe_atlas.VoxDimX = MICe_info.PixelDimensions(1);
+                        MICe_atlas.VoxDimY = MICe_info.PixelDimensions(1);
+                        MICe_atlas.SliceThickness = MICe_info.PixelDimensions(1);
+                        MICe_atlas.SliceGap = 0;
+                        MICe_atlas.Units = "mm mm mm";
+                        MICe_atlas.RotMat = MICe_info.Transform.T(1:3,1:3);
+
+                        % Save to loaded atlas collection struct, update
+                        % drop down items
+                        loadedCollection.MICeAtlas = MICe_atlas;
+                        dropdown_items = cat(1, dropdown_items, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+                    end
+
                     if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
                         % Create end folder
                         waxholm_t2_atlas_Path = strcat(atlas_loading_folder, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
@@ -217,7 +269,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                         loadedCollection.T1WaxholmMouse = waxholm_t1_atlas;
                         dropdown_items = cat(1, dropdown_items, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
                     end
-
+                    
                     if ismember(app.AllenBrainAtlasAdultMouseNisslGrayscaleNode, chosen_Collection) 
                         % Download atlas, unzip and rename end folder
                         progress.Value = progress.Value + step_size;
@@ -292,6 +344,53 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                     mkdir(atlas_loading_folder);
 
                     % Go through all atlases
+                    if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, chosen_Collection)
+                        % Create end folder
+                        MICe_atlas_Path = strcat(atlas_loading_folder, filesep, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+                        mkdir(MICe_atlas_Path);
+
+                        % Download atlas, unzip to end folder, rename to
+                        % .nii
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Downloading MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        websave(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), "http://repo.mouseimaging.ca/repo/Dorr_2008_nifti/Dorr_2008_average.nii.gz");
+
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Unzipping MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        gunzip(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), MICe_atlas_Path);
+                        movefile(strcat(MICe_atlas_Path, filesep, 'MICeAtlas'), strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii'));
+
+                        % Delete downloaded .nii.gz
+                        delete(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"));
+                        
+                        progress.Value = progress.Value + step_size;
+                        progress.Message = 'Importing MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                        % Update atlas path
+                        MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii');
+                        % Load atlas using niftiread, permute dims,
+                        % pagetranspose and flipud
+                        MICe_atlas.ImageData = niftiread(MICe_atlas_Path);
+                        MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
+                        MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
+                        MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
+                        MICe_atlas.ImageData = flip(MICe_atlas.ImageData, 3);
+
+                        % Get atlas info, update dimensions and rotation
+                        % matrix
+                        MICe_info = niftiinfo(MICe_atlas_Path);
+                        MICe_atlas.VoxDimX = MICe_info.PixelDimensions(1);
+                        MICe_atlas.VoxDimY = MICe_info.PixelDimensions(1);
+                        MICe_atlas.SliceThickness = MICe_info.PixelDimensions(1);
+                        MICe_atlas.SliceGap = 0;
+                        MICe_atlas.Units = "mm mm mm";
+                        MICe_atlas.RotMat = MICe_info.Transform.T(1:3,1:3);
+
+                        % Save to loaded atlas collection struct, update
+                        % drop down items
+                        loadedCollection.MICeAtlas = MICe_atlas;
+                        dropdown_items = cat(1, dropdown_items, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+                    end
+
                     if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
                         % Create end folder
                         waxholm_t2_atlas_Path = strcat(atlas_loading_folder, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
@@ -478,6 +577,10 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             % Create MRIAtlasNode
             app.MRIAtlasNode = uitreenode(app.ReferenceAtlasTree);
             app.MRIAtlasNode.Text = 'MRI Atlas';
+
+            % Create MICeNeuroanatomyAtlasC57BL6JMouseNode
+            app.MICeNeuroanatomyAtlasC57BL6JMouseNode = uitreenode(app.MRIAtlasNode);
+            app.MICeNeuroanatomyAtlasC57BL6JMouseNode.Text = 'MICe Neuroanatomy Atlas C57BL/6J Mouse';
 
             % Create T2wWaxholmSpaceAtlasC57BL6JMouseNode
             app.T2wWaxholmSpaceAtlasC57BL6JMouseNode = uitreenode(app.MRIAtlasNode);
