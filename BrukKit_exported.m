@@ -120,7 +120,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         UIAxes_SegmenterHelperUp        matlab.ui.control.UIAxes
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
-        OverlayCheckBox                 matlab.ui.control.CheckBox
+        MultiplyCheckBox                matlab.ui.control.CheckBox
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
         SelectAtlasDropDown             matlab.ui.control.DropDown
         ImportReferenceAtlasButton      matlab.ui.control.Button
@@ -513,76 +513,48 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         % Registration UIAxes image updating
         function RefreshImageRegistration(app)
+            
             % Get chosen image based on image shown switch
-            switch app.OverlayCheckBox.Value
-                case true
-                    chosen_Image = app.PreRegistrationImage;
-                    chosen_Overlay = app.RegisteredImageData;
-                case false
-                    chosen_Image = app.RegisteredImageData;
-            end
             app.ExpDimsRegistration = size(app.RegisteredImageData);
-            switch numel(app.ExpDimsRegistration)
-                case 2
-                    app.CurrentSlice = chosen_Image(:,:);
-                    try
-                        CurrentOverlay = chosen_Overlay(:,:);
-                    catch
+            chosen_Image = app.RegisteredImageData;
+            chosen_Fixed = app.PreRegistrationImage;
+            
+            switch app.MultiplyCheckBox.Value
+                case true
+                    switch numel(app.ExpDimsRegistration)
+                        case 2
+                            app.CurrentSlice = chosen_Image(:,:);
+                            CurrentFixed = chosen_Fixed(:,:);
+                        case 3
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value);
+                            CurrentFixed = chosen_Fixed(:,:, app.SliceSpinner_Registration.Value);
+                        case 4
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
+                            CurrentFixed = chosen_Fixed(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
+                        case 5
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
+                            CurrentFixed = chosen_Fixed(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
                     end
-                case 3
-                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value);
-                    try
-                        CurrentOverlay = chosen_Overlay(:,:, app.SliceSpinner_Registration.Value);
-                    catch
+                    app.CurrentSlice = CurrentFixed.*app.CurrentSlice;
+                    app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+                case false
+                    switch numel(app.ExpDimsRegistration)
+                        case 2
+                            app.CurrentSlice = chosen_Image(:,:);
+                        case 3
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value);
+                        case 4
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
+                        case 5
+                            app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
                     end
-                case 4
-                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
-                    try
-                        CurrentOverlay = chosen_Overlay(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value);
-                    catch
-                    end
-                case 5
-                    app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
-                    try
-                        CurrentOverlay = chosen_Overlay(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
-                    catch
-                    end
-            end
-            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            try 
-                CurrentOverlay = (CurrentOverlay - min(CurrentOverlay(:))) / (max(CurrentOverlay(:)) - min(CurrentOverlay(:)));
-            catch
+                    app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
             end
             switch app.TurboButton_Registration.Value
                 case true
-                    if app.OverlayCheckBox.Value == false
-                        reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-                    else
-                        app.CurrentSlice = ind2rgb(gray2ind(app.CurrentSlice), gray);
-                        reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
-                    end
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
                 otherwise
-                    if app.OverlayCheckBox.Value == false
-                        reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
-                    else
-                        app.CurrentSlice = ind2rgb(gray2ind(app.CurrentSlice), gray);
-                        reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
-                    end
-            end
-            reg.ContextMenu = app.ContextMenu_Registration;
-            try
-                switch app.TurboButton_Registration.Value
-                    case true
-                        hold(app.UIAxes_Registration, "on");
-                        overlay_image = imshow(CurrentOverlay, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-                    otherwise
-                        hold(app.UIAxes_Registration, "on");
-                        overlay_image = imshow(CurrentOverlay, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = bone);
-                end
-                hold(app.UIAxes_Registration, "off");
-                overlay_image.AlphaData = 0.2;
-            catch
-                return
+                    reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
             end
             reg.ContextMenu = app.ContextMenu_Registration;
         end
@@ -1469,8 +1441,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Registration.Value = 1;
             app.TurboButton_Registration.Enable = 'off';
             app.GreyscaleButton_Registration.Enable = 'off';
-            app.OverlayCheckBox.Enable = 'off';
-            app.OverlayCheckBox.Value = 0;
+            app.MultiplyCheckBox.Enable = 'off';
+            app.MultiplyCheckBox.Value = 0;
             app.UsedifferentparametermapCheckBox.Value = 0;
             app.SelectparameterDropDown.Enable = 'off';
             app.RegistrationInstructionsTextArea.Value = '';
@@ -4943,7 +4915,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             app.TurboButton_Registration.Enable = 'on';
             app.GreyscaleButton_Registration.Enable = 'on';
-            app.OverlayCheckBox.Enable = 'on';
+            app.MultiplyCheckBox.Enable = 'on';
 
             RefreshImageRegistration(app); 
 
@@ -5173,12 +5145,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Selection changed function: ColormapButtonGroup_Registration
         function ColormapButtonGroup_RegistrationSelectionChanged(app, event)
 
-            RefreshImageRegistration(app);
-        end
-
-        % Value changed function: OverlayCheckBox
-        function OverlayCheckBoxValueChanged(app, event)
-            
             RefreshImageRegistration(app);
         end
 
@@ -6357,18 +6323,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end           
         end
 
-        % Button pushed function: ExportSceneButton
-        function ExportSceneButtonPushed(app, event)
-            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
-
-            if ~exists(image_name)
-                return
-            end
-
-            cd(app.ExportFolderPath);
-            screencapture(app.ViewerPanel,[],image_name{1});
-        end
-
         % Close request function: BrukKitBetav091UIFigure
         function BrukKitBetav091UIFigureCloseRequest(app, event)
             
@@ -6398,6 +6352,25 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     return
             end
+            
+        end
+
+        % Button pushed function: ExportSceneButton
+        function ExportSceneButtonPushed(app, event)
+            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
+
+            if ~exists(image_name)
+                return
+            end
+
+            cd(app.ExportFolderPath);
+            screencapture(app.ViewerPanel,[],image_name{1});
+        end
+
+        % Value changed function: MultiplyCheckBox
+        function MultiplyCheckBoxValueChanged(app, event)
+            
+            RefreshImageRegistration(app);
             
         end
     end
@@ -7263,13 +7236,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
             app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [369 23 51 22];
+            app.SliceSpinner_Registration.Position = [379 23 51 22];
             app.SliceSpinner_Registration.Value = 1;
 
             % Create SliceSliderLabel_Registration
             app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
             app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
-            app.SliceSliderLabel_Registration.Position = [114 24 32 22];
+            app.SliceSliderLabel_Registration.Position = [124 24 32 22];
             app.SliceSliderLabel_Registration.Text = 'Slice';
 
             % Create SliceSlider_Registration
@@ -7280,7 +7253,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
-            app.SliceSlider_Registration.Position = [175 32 183 3];
+            app.SliceSlider_Registration.Position = [185 32 183 3];
             app.SliceSlider_Registration.Value = 1;
 
             % Create ChooseRegistrationTypeDropDownLabel
@@ -7512,12 +7485,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.Position = [44 366 264 21];
             app.SelectAtlasDropDown.Value = 'None';
 
-            % Create OverlayCheckBox
-            app.OverlayCheckBox = uicheckbox(app.RegistrationTab);
-            app.OverlayCheckBox.ValueChangedFcn = createCallbackFcn(app, @OverlayCheckBoxValueChanged, true);
-            app.OverlayCheckBox.Enable = 'off';
-            app.OverlayCheckBox.Text = 'Overlay On Fixed Image';
-            app.OverlayCheckBox.Position = [647 24 152 22];
+            % Create MultiplyCheckBox
+            app.MultiplyCheckBox = uicheckbox(app.RegistrationTab);
+            app.MultiplyCheckBox.ValueChangedFcn = createCallbackFcn(app, @MultiplyCheckBoxValueChanged, true);
+            app.MultiplyCheckBox.Enable = 'off';
+            app.MultiplyCheckBox.Text = 'Multiply with fixed image';
+            app.MultiplyCheckBox.Position = [656 24 152 22];
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -8309,9 +8282,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SelectExperimentForVolumetryLabel
             app.SelectExperimentForVolumetryLabel = uilabel(app.ResultsTab);
-            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'center';
-            app.SelectExperimentForVolumetryLabel.Position = [524 657 234 22];
-            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Statistic Calculation';
+            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'right';
+            app.SelectExperimentForVolumetryLabel.Position = [447 657 240 22];
+            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Statistics Calculation';
 
             % Create SelectResultsDropDown
             app.SelectResultsDropDown = uidropdown(app.ResultsTab);
@@ -8319,42 +8292,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectResultsDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectResultsDropDownValueChanged, true);
             app.SelectResultsDropDown.Placeholder = 'None';
             app.SelectResultsDropDown.ClickedFcn = createCallbackFcn(app, @SelectResultsDropDownClicked, true);
-            app.SelectResultsDropDown.Position = [461 627 360 21];
+            app.SelectResultsDropDown.Position = [385 627 360 21];
             app.SelectResultsDropDown.Value = 'None';
 
             % Create UnitsLabel
             app.UnitsLabel = uilabel(app.ResultsTab);
-            app.UnitsLabel.Position = [522 589 39 26];
+            app.UnitsLabel.Position = [446 589 39 26];
             app.UnitsLabel.Text = 'Units:';
 
             % Create AreaLabel
             app.AreaLabel = uilabel(app.ResultsTab);
-            app.AreaLabel.Position = [573 589 39 26];
+            app.AreaLabel.Position = [497 589 39 26];
             app.AreaLabel.Text = 'Area';
 
             % Create VolumeLabel
             app.VolumeLabel = uilabel(app.ResultsTab);
-            app.VolumeLabel.Position = [673 589 46 26];
+            app.VolumeLabel.Position = [597 589 46 26];
             app.VolumeLabel.Text = 'Volume';
 
             % Create AreaUnitLabel
             app.AreaUnitLabel = uilabel(app.ResultsTab);
             app.AreaUnitLabel.FontWeight = 'bold';
-            app.AreaUnitLabel.Position = [615 589 39 26];
+            app.AreaUnitLabel.Position = [539 589 39 26];
             app.AreaUnitLabel.Text = '';
 
             % Create VolumeUnitLabel
             app.VolumeUnitLabel = uilabel(app.ResultsTab);
             app.VolumeUnitLabel.FontWeight = 'bold';
-            app.VolumeUnitLabel.Position = [721 589 39 26];
+            app.VolumeUnitLabel.Position = [645 589 39 26];
             app.VolumeUnitLabel.Text = '';
 
             % Create ExportDataButton_Results
             app.ExportDataButton_Results = uibutton(app.ResultsTab, 'push');
             app.ExportDataButton_Results.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_ResultsPushed, true);
             app.ExportDataButton_Results.Enable = 'off';
-            app.ExportDataButton_Results.Position = [852 618 164 38];
-            app.ExportDataButton_Results.Text = 'Export Results To Excel File';
+            app.ExportDataButton_Results.Position = [777 618 158 38];
+            app.ExportDataButton_Results.Text = 'Export Results to Excel file';
 
             % Create UIAxes_Results_Container
             app.UIAxes_Results_Container = uipanel(app.ResultsTab);
