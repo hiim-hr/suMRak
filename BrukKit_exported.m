@@ -5176,6 +5176,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             RefreshImageRegistration(app);
         end
 
+        % Value changed function: OverlayCheckBox
+        function OverlayCheckBoxValueChanged(app, event)
+            
+            RefreshImageRegistration(app);
+        end
+
         % Button pushed function: ExportDataButton_Registration
         function ExportDataButton_RegistrationPushed(app, event)
             
@@ -6351,6 +6357,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end           
         end
 
+        % Button pushed function: ExportSceneButton
+        function ExportSceneButtonPushed(app, event)
+            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
+
+            if ~exists(image_name)
+                return
+            end
+
+            cd(app.ExportFolderPath);
+            screencapture(app.ViewerPanel,[],image_name{1});
+        end
+
         % Close request function: BrukKitBetav091UIFigure
         function BrukKitBetav091UIFigureCloseRequest(app, event)
             
@@ -6380,25 +6398,6 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 otherwise
                     return
             end
-            
-        end
-
-        % Button pushed function: ExportSceneButton
-        function ExportSceneButtonPushed(app, event)
-            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
-
-            if ~exists(image_name)
-                return
-            end
-
-            cd(app.ExportFolderPath);
-            screencapture(app.ViewerPanel,[],image_name{1});
-        end
-
-        % Value changed function: OverlayCheckBox
-        function OverlayCheckBoxValueChanged(app, event)
-            
-            RefreshImageRegistration(app);
             
         end
     end
@@ -7245,7 +7244,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Registration.BorderType = 'none';
             app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Registration.Title = 'Colormap';
-            app.ColormapButtonGroup_Registration.Position = [457 16 167 38];
+            app.ColormapButtonGroup_Registration.Position = [454 16 167 38];
 
             % Create GreyscaleButton_Registration
             app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
@@ -7264,13 +7263,13 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
             app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [382 23 51 22];
+            app.SliceSpinner_Registration.Position = [369 23 51 22];
             app.SliceSpinner_Registration.Value = 1;
 
             % Create SliceSliderLabel_Registration
             app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
             app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
-            app.SliceSliderLabel_Registration.Position = [127 24 32 22];
+            app.SliceSliderLabel_Registration.Position = [114 24 32 22];
             app.SliceSliderLabel_Registration.Text = 'Slice';
 
             % Create SliceSlider_Registration
@@ -7281,7 +7280,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
-            app.SliceSlider_Registration.Position = [188 32 183 3];
+            app.SliceSlider_Registration.Position = [175 32 183 3];
             app.SliceSlider_Registration.Value = 1;
 
             % Create ChooseRegistrationTypeDropDownLabel
@@ -7517,8 +7516,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.OverlayCheckBox = uicheckbox(app.RegistrationTab);
             app.OverlayCheckBox.ValueChangedFcn = createCallbackFcn(app, @OverlayCheckBoxValueChanged, true);
             app.OverlayCheckBox.Enable = 'off';
-            app.OverlayCheckBox.Text = 'Overlay on fixed image';
-            app.OverlayCheckBox.Position = [660 24 145 22];
+            app.OverlayCheckBox.Text = 'Overlay On Fixed Image';
+            app.OverlayCheckBox.Position = [647 24 152 22];
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -8310,9 +8309,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             % Create SelectExperimentForVolumetryLabel
             app.SelectExperimentForVolumetryLabel = uilabel(app.ResultsTab);
-            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'right';
-            app.SelectExperimentForVolumetryLabel.Position = [447 657 240 22];
-            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Statistics Calculation';
+            app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'center';
+            app.SelectExperimentForVolumetryLabel.Position = [524 657 234 22];
+            app.SelectExperimentForVolumetryLabel.Text = 'Select Experiment For Statistic Calculation';
 
             % Create SelectResultsDropDown
             app.SelectResultsDropDown = uidropdown(app.ResultsTab);
@@ -8320,42 +8319,42 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SelectResultsDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectResultsDropDownValueChanged, true);
             app.SelectResultsDropDown.Placeholder = 'None';
             app.SelectResultsDropDown.ClickedFcn = createCallbackFcn(app, @SelectResultsDropDownClicked, true);
-            app.SelectResultsDropDown.Position = [385 627 360 21];
+            app.SelectResultsDropDown.Position = [461 627 360 21];
             app.SelectResultsDropDown.Value = 'None';
 
             % Create UnitsLabel
             app.UnitsLabel = uilabel(app.ResultsTab);
-            app.UnitsLabel.Position = [446 589 39 26];
+            app.UnitsLabel.Position = [522 589 39 26];
             app.UnitsLabel.Text = 'Units:';
 
             % Create AreaLabel
             app.AreaLabel = uilabel(app.ResultsTab);
-            app.AreaLabel.Position = [497 589 39 26];
+            app.AreaLabel.Position = [573 589 39 26];
             app.AreaLabel.Text = 'Area';
 
             % Create VolumeLabel
             app.VolumeLabel = uilabel(app.ResultsTab);
-            app.VolumeLabel.Position = [597 589 46 26];
+            app.VolumeLabel.Position = [673 589 46 26];
             app.VolumeLabel.Text = 'Volume';
 
             % Create AreaUnitLabel
             app.AreaUnitLabel = uilabel(app.ResultsTab);
             app.AreaUnitLabel.FontWeight = 'bold';
-            app.AreaUnitLabel.Position = [539 589 39 26];
+            app.AreaUnitLabel.Position = [615 589 39 26];
             app.AreaUnitLabel.Text = '';
 
             % Create VolumeUnitLabel
             app.VolumeUnitLabel = uilabel(app.ResultsTab);
             app.VolumeUnitLabel.FontWeight = 'bold';
-            app.VolumeUnitLabel.Position = [645 589 39 26];
+            app.VolumeUnitLabel.Position = [721 589 39 26];
             app.VolumeUnitLabel.Text = '';
 
             % Create ExportDataButton_Results
             app.ExportDataButton_Results = uibutton(app.ResultsTab, 'push');
             app.ExportDataButton_Results.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_ResultsPushed, true);
             app.ExportDataButton_Results.Enable = 'off';
-            app.ExportDataButton_Results.Position = [777 618 158 38];
-            app.ExportDataButton_Results.Text = 'Export Results to Excel file';
+            app.ExportDataButton_Results.Position = [852 618 164 38];
+            app.ExportDataButton_Results.Text = 'Export Results To Excel File';
 
             % Create UIAxes_Results_Container
             app.UIAxes_Results_Container = uipanel(app.ResultsTab);
