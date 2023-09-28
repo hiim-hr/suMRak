@@ -369,7 +369,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         ContextMenu_RegistrationReferenceFixed  matlab.ui.container.ContextMenu
         MultiplyMovingAndFixedMenu      matlab.ui.container.Menu
         SidebysideMenu                  matlab.ui.container.Menu
-        ImageDifferenceMenu             matlab.ui.container.Menu
+        FalsecolorDifferenceMenu        matlab.ui.container.Menu
     end
 
     
@@ -554,15 +554,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % Montage, side by side
                     elseif app.SidebysideMenu.Checked == "on"
                         app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+                        CurrentFixed = (CurrentFixed - min(CurrentFixed(:))) / (max(CurrentFixed(:)) - min(CurrentFixed(:))); % Scale image to [0 1]
+                        % Display image
                         switch app.TurboButton_Registration.Value
                             case true
-                                app.CurrentSlice = ind2rgb(gray2ind(app.CurrentSlice), turbo);
-                        end
-                        % Display image
-                        reg = imshowpair(app.CurrentSlice, CurrentFixed, "montage", 'Parent', app.UIAxes_Registration);
+                                reg = imshow([app.CurrentSlice, CurrentFixed], [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
+                            otherwise
+                                reg = imshow([app.CurrentSlice, CurrentFixed], [], 'Parent', app.UIAxes_Registration);
+                        end                    
                         reg.ContextMenu = app.ContextMenu_Registration;
                     % Moving and fixed diff
-                    elseif app.ImageDifferenceMenu.Checked == "on"
+                    elseif app.FalsecolorDifferenceMenu.Checked == "on"
                         app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
                         switch app.TurboButton_Registration.Value
                             case true
@@ -570,7 +572,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 CurrentFixed = ind2rgb(gray2ind(CurrentFixed), turbo);
                         end
                         % Display image
-                        reg = imshowpair(app.CurrentSlice, CurrentFixed, "diff", 'Parent', app.UIAxes_Registration);
+                        reg = imshowpair(app.CurrentSlice, CurrentFixed, "falsecolor", 'Parent', app.UIAxes_Registration);
                         reg.ContextMenu = app.ContextMenu_Registration;
                     end        
                 case false
@@ -4873,6 +4875,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         end
                     else
                         fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
+                        app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3)));
                     end
     	            
                     % Register moving onto fixed
@@ -6429,7 +6432,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             app.MultiplyMovingAndFixedMenu.Checked = 'on';
             app.SidebysideMenu.Checked = 'off';
-            app.ImageDifferenceMenu.Checked = 'off';
+            app.FalsecolorDifferenceMenu.Checked = 'off';
             try
                 RefreshImageRegistration(app);
             catch
@@ -6441,19 +6444,19 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             app.MultiplyMovingAndFixedMenu.Checked = 'off';
             app.SidebysideMenu.Checked = 'on';
-            app.ImageDifferenceMenu.Checked = 'off';
+            app.FalsecolorDifferenceMenu.Checked = 'off';
             try
                 RefreshImageRegistration(app);
             catch
             end
         end
 
-        % Menu selected function: ImageDifferenceMenu
-        function ImageDifferenceMenuSelected(app, event)
+        % Menu selected function: FalsecolorDifferenceMenu
+        function FalsecolorDifferenceMenuSelected(app, event)
             
             app.MultiplyMovingAndFixedMenu.Checked = 'off';
             app.SidebysideMenu.Checked = 'off';
-            app.ImageDifferenceMenu.Checked = 'on';
+            app.FalsecolorDifferenceMenu.Checked = 'on';
             try
                 RefreshImageRegistration(app);
             catch
@@ -8815,10 +8818,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.SidebysideMenu.MenuSelectedFcn = createCallbackFcn(app, @SidebysideMenuSelected, true);
             app.SidebysideMenu.Text = 'Side-by-side';
 
-            % Create ImageDifferenceMenu
-            app.ImageDifferenceMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
-            app.ImageDifferenceMenu.MenuSelectedFcn = createCallbackFcn(app, @ImageDifferenceMenuSelected, true);
-            app.ImageDifferenceMenu.Text = 'Image Difference';
+            % Create FalsecolorDifferenceMenu
+            app.FalsecolorDifferenceMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
+            app.FalsecolorDifferenceMenu.MenuSelectedFcn = createCallbackFcn(app, @FalsecolorDifferenceMenuSelected, true);
+            app.FalsecolorDifferenceMenu.Text = 'Falsecolor Difference';
             
             % Assign app.ContextMenu_RegistrationReferenceFixed
             app.ShowReferenceFixedCheckBox.ContextMenu = app.ContextMenu_RegistrationReferenceFixed;
