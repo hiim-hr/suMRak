@@ -1849,6 +1849,32 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 mkdir(app.WorkingFolder);
             end
             movegui(app.BrukKitBetav092UIFigure, 'center');
+            
+            % Get app installation directory
+            if isdeployed % Stand-alone mode.
+                [status, result] = system('path');
+                currentDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
+            else % MATLAB mode.
+                currentDir = 1;
+            end
+            % Check if runtime is in default installation dir
+            if exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a", "dir")
+                % Check for volume folder in image processing toolbox
+                if ~exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume", "dir") & ~isequal(currentDir, 1) %#ok<AND2>
+                    selection = uiconfirm(app.BrukKitBetav092UIFigure, 'Installed MATLAB Runtime does not contain necessary files for 3D Viewer. Replace missing files?', 'MATLAB Runtime Missing Files', 'Icon', 'warning');
+                    switch selection
+                        case 'OK'
+                            [status, msg] = copyfile(strcat(currentDir, filesep, "volume"), "C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume");
+                            if status == 0
+                                uialert(app.BrukKitBetav092UIFigure, "Error replacing missing files. Please restart the application as administrator and try again.", "Error Replacing Missing MATLAB Runtime FIles")
+                            elseif status == 1
+                                uiconfirm(app.BrukKitBetav092UIFigure, "Missing MATLAB Runtime files successfully replaced.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+                            end
+                        otherwise
+                    end
+                end     
+            else
+            end
         end
 
         % Key press function: BrukKitBetav092UIFigure
@@ -1945,7 +1971,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.StudyPath = uigetdir(loading_folder, 'Select a study folder to use');
                 figure(app.BrukKitBetav092UIFigure);
             else
-                uiconfirm(app.BrukKitBetav092UIFigure, "Unkown archive type.", "","Options",{'OK'},"DefaultOption",1, "Icon","error");
+                uiconfirm(app.BrukKitBetav092UIFigure, "Unkown archive type.", "Error Loading PvDatasets","Options",{'OK'},"DefaultOption",1, "Icon","error");
                 return;
             end
 
@@ -3389,7 +3415,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.BrainMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External brain mask loaded successfully.", "External Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav092UIFigure, "External brain mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: VolumeSwitch
@@ -3656,7 +3682,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.HemisphereMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External hemisphere mask loaded successfully.", "External Hemisphere Mask","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav092UIFigure, "External hemisphere mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: ResetHemispheresButton
@@ -3696,7 +3722,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External ROI pack loaded successfully.", "External ROI Pack","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav092UIFigure, "External ROI pack loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: ROIListListBox
