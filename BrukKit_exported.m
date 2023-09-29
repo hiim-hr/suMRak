@@ -2,7 +2,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        BrukKitBetav092UIFigure         matlab.ui.Figure
+        BrukKitBetav0921UIFigure        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         MainTab                         matlab.ui.container.Tab
         LoadSingleNIfTIButton           matlab.ui.control.Button
@@ -948,7 +948,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         case "Standard"
                             OrigIndex = app.SavedTable.OrigIndex(app.SelectmovingDropDown.Value);
                             exp_ID = append(app.SelectmovingDropDown.Value, '_Registered');
-                            selection = uiconfirm(app.BrukKitBetav092UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
+                            selection = uiconfirm(app.BrukKitBetav0921UIFigure,['Save the fixed data mask along with the registered image data? If the fixed data mask is not saved, registration image data will' ...
                             ' need to be segmented again.'],'Save Fixed Data Mask?', 'Icon','question', 'Options', {'Save Mask','Save without Mask'}, 'DefaultOption', 1);
                             switch selection
                                 case 'Save Mask'
@@ -1072,11 +1072,11 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SelectResultsDropDown.Items = app.DropDownItemsSavedOnly;
 
                 % Display confirmation figure
-                uiconfirm(app.BrukKitBetav092UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+                uiconfirm(app.BrukKitBetav0921UIFigure, "Sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
             catch ME
                 switch ME.identifier
                     case 'MATLAB:table:DuplicateRowNames'
-                        selection = uiconfirm(app.BrukKitBetav092UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
+                        selection = uiconfirm(app.BrukKitBetav0921UIFigure,'Saved data already contains an experiment under the same name, do you want to overwrite the data?','Overwrite data', 'Icon','question');
                         switch selection
                             case 'OK'
                                 % Overwrite data of currently saved experiment under same identifier
@@ -1094,7 +1094,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                                 app.SavedTable.RotMat(exp_ID) = RotMat;
                                 
                                 % Display confirmation figure
-                                uiconfirm(app.BrukKitBetav092UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+                                uiconfirm(app.BrukKitBetav0921UIFigure, "Current sequence saved to permanent data.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
                             case 'Cancel'
                                 return
                         end
@@ -1105,7 +1105,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         
         function ExportImageDataGeneral(app, tab)
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
             drawnow    
             switch tab
@@ -1225,7 +1225,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         function ExportImageDataRegistration(app, registration)
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
             drawnow
             ImageData = app.RegisteredImageData;
@@ -1848,7 +1848,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             else
                 mkdir(app.WorkingFolder);
             end
-            movegui(app.BrukKitBetav092UIFigure, 'center');
+            movegui(app.BrukKitBetav0921UIFigure, 'center');
             
             % Get app installation directory
             if isdeployed % Stand-alone mode.
@@ -1861,14 +1861,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
             if exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a", "dir")
                 % Check for volume folder in image processing toolbox
                 if ~exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume", "dir") & ~isequal(currentDir, 1) %#ok<AND2>
-                    selection = uiconfirm(app.BrukKitBetav092UIFigure, 'Installed MATLAB Runtime does not contain necessary files for 3D Viewer. Replace missing files?', 'MATLAB Runtime Missing Files', 'Icon', 'warning');
+                    selection = uiconfirm(app.BrukKitBetav0921UIFigure, 'Installed MATLAB Runtime does not contain necessary files for 3D Viewer. Replace missing files?', 'MATLAB Runtime Missing Files', 'Icon', 'warning');
                     switch selection
                         case 'OK'
                             [status, msg] = copyfile(strcat(currentDir, filesep, "volume"), "C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume");
                             if status == 0
-                                uialert(app.BrukKitBetav092UIFigure, "Error replacing missing files. Please restart the application as administrator and try again.", "Error Replacing Missing MATLAB Runtime FIles")
+                                uialert(app.BrukKitBetav0921UIFigure, "Error replacing missing files. Please restart the application as administrator and try again.", "Error Replacing Missing MATLAB Runtime FIles")
                             elseif status == 1
-                                uiconfirm(app.BrukKitBetav092UIFigure, "Missing MATLAB Runtime files successfully replaced.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+                                uiconfirm(app.BrukKitBetav0921UIFigure, "Missing MATLAB Runtime files successfully replaced.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
                             end
                         otherwise
                     end
@@ -1877,8 +1877,8 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
         end
 
-        % Key press function: BrukKitBetav092UIFigure
-        function BrukKitBetav092UIFigureKeyPress(app, event)
+        % Key press function: BrukKitBetav0921UIFigure
+        function BrukKitBetav0921UIFigureKeyPress(app, event)
             key = event.Key;
 
             switch key
@@ -1929,7 +1929,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function LoadPvDatasetsFileButtonPushed(app, event)
                         
             % Draw progress box 
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Purging old temporary data");
             drawnow
 
@@ -1947,7 +1947,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Value = 0.2;
             progress.Message = "Selecting an archive file";
             [file, folder] = uigetfile('*.PvDatasets', 'Select a Bruker archive file');
-            figure(app.BrukKitBetav092UIFigure);
+            figure(app.BrukKitBetav0921UIFigure);
             if isequal(file, 0)
                 close(progress);
                 return;
@@ -1969,9 +1969,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.StudyPath = fullfile(loading_folder, temp{1,end-1});
             elseif regexp(temp{1,end}, '.*\.subject$') == 1
                 app.StudyPath = uigetdir(loading_folder, 'Select a study folder to use');
-                figure(app.BrukKitBetav092UIFigure);
+                figure(app.BrukKitBetav0921UIFigure);
             else
-                uiconfirm(app.BrukKitBetav092UIFigure, "Unkown archive type.", "Error Loading PvDatasets","Options",{'OK'},"DefaultOption",1, "Icon","error");
+                uiconfirm(app.BrukKitBetav0921UIFigure, "Unkown archive type.", "Error Loading PvDatasets","Options",{'OK'},"DefaultOption",1, "Icon","error");
                 return;
             end
 
@@ -2117,14 +2117,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Button pushed function: LoadBrukKitFolderButton
         function LoadBrukKitFolderButtonPushed(app, event)
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Selecting BrukKit folder");
             drawnow    
             
             % Select BrukKit folder, check for cancel and update the edit field text
             progress.Value = 0.2;
             folder_path = uigetdir;
-            figure(app.BrukKitBetav092UIFigure);
+            figure(app.BrukKitBetav0921UIFigure);
             env_Path = string(folder_path) + filesep + "exported_environment" + filesep + "main_properties.mat";
             if exist(env_Path, 'file')
                 app.ArchiveEditField.Value = folder_path;
@@ -2203,7 +2203,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 close(progress);
             else
                 close(progress);
-                uialert(app.BrukKitBetav092UIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
+                uialert(app.BrukKitBetav0921UIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
             end
         end
 
@@ -2211,14 +2211,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function LoadBrukerStudyButtonPushed(app, event)
             
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Selecting Bruker study");
             drawnow
             
             % Select Bruker study folder, check for cancel and update the edit field text
             progress.Value = 0.2;
             app.StudyPath = uigetdir; 
-            figure(app.BrukKitBetav092UIFigure);
+            figure(app.BrukKitBetav0921UIFigure);
             if isequal(app.StudyPath, 0)
                 close(progress);
                 return;
@@ -2369,7 +2369,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get nifti image data and info
             [temp_file, temp_dir] = uigetfile('.nii');
-            figure(app.BrukKitBetav092UIFigure);
+            figure(app.BrukKitBetav0921UIFigure);
             nifti_info = niftiinfo(cat(2, temp_dir, temp_file));
             exp_ImageData = {pagetranspose(niftiread(cat(2, temp_dir, temp_file)))};
             
@@ -2451,9 +2451,9 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function CreateBrukKitFolderButtonPushed(app, event)
             selected_path = uigetdir;
             app.ExportFolderPath = string(selected_path) + filesep + app.SubjectIDEditField.Value + "_" + app.StudyIDEditField.Value;
-            figure(app.BrukKitBetav092UIFigure);
+            figure(app.BrukKitBetav0921UIFigure);
             if exist(app.ExportFolderPath, 'dir')
-                selection = uiconfirm(app.BrukKitBetav092UIFigure, 'BrukKit Study Folder already existes in chosen directory. Are you sure you want to overwrite?', 'Confirm Overwrite', ...
+                selection = uiconfirm(app.BrukKitBetav0921UIFigure, 'BrukKit Study Folder already existes in chosen directory. Are you sure you want to overwrite?', 'Confirm Overwrite', ...
                     'Icon', 'warning');
                 switch selection
                     case 'OK'
@@ -2521,7 +2521,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ExportEnvironmentButtonPushed(app, event)
             
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving environment properties");
             drawnow    
 
@@ -2552,7 +2552,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             progress.Message = "Exporting environment";
             env_Path = app.ExportFolderPath + filesep + "exported_environment";
             if exist(env_Path, 'dir')
-                selection = uiconfirm(app.BrukKitBetav092UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
+                selection = uiconfirm(app.BrukKitBetav0921UIFigure, 'Overwrite currently saved environment instance in export folder?', 'Confirm Overwrite', ...
                     'Icon', 'warning');
                 switch selection
                     case 'OK'
@@ -2579,12 +2579,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             pause(0.5);
             close(progress);
 
-            uiconfirm(app.BrukKitBetav092UIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: ResetEnvironmentButton
         function ResetEnvironmentButtonButtonPushed(app, event)
-            selection = uiconfirm(app.BrukKitBetav092UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure,'Reset environment variables and saved data?','Confirm Reset',...
                         'Icon','warning');
             switch selection 
                 case 'OK'  
@@ -2681,7 +2681,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ExportDataButton_PreviewPushed(app, event)
             ExportImageDataGeneral(app, 'Preview');
 
-            uiconfirm(app.BrukKitBetav092UIFigure, "Image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changing function: SliceSlider_Preview
@@ -3170,7 +3170,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: PermuteMenu_3_4
         function PermuteMenu_3_4Selected(app, event)
                 
-            selection = uiconfirm(app.BrukKitBetav092UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure,'Permute experiment 3rd and 4th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     switch numel(app.ExpDimsSegmenter)
@@ -3221,7 +3221,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         % Menu selected function: PermuteMenu_3_5
         function PermuteMenu_3_5Selected(app, event)
             
-            selection = uiconfirm(app.BrukKitBetav092UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure,'Permute experiment 3rd and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,5,4,3]);
@@ -3266,7 +3266,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Menu selected function: PermuteMenu_4_5
         function PermuteMenu_4_5Selected(app, event)
-            selection = uiconfirm(app.BrukKitBetav092UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure,'Permute experiment 4th and 5th dimensions? This will erase all segmentation progress.','Permute Dimensions', 'Icon','question');
             switch selection
                 case 'OK'
                     app.OriginalSegmenterImageData = permute(app.OriginalSegmenterImageData, [1,2,3,5,4]);
@@ -3322,7 +3322,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             switch value
                 case 1
-                    app.BrukKitBetav092UIFigure.HandleVisibility = 'callback';
+                    app.BrukKitBetav0921UIFigure.HandleVisibility = 'callback';
                     [y,x] = ginput(1);
                     switch numel(app.ExpDimsSegmenter)
                         case 3
@@ -3340,7 +3340,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         app.SegmenterImageZY = squeeze(app.SegmenterHelperVolume(:,app.SegmenterPosX,:));
                     catch ME
                         if strcmp(ME.identifier,'MATLAB:badsubscript')
-                            uialert(app.BrukKitBetav092UIFigure, 'Selection out of bounds. Please select a point on the image.', 'Out of bounds error', 'Icon','error');
+                            uialert(app.BrukKitBetav0921UIFigure, 'Selection out of bounds. Please select a point on the image.', 'Out of bounds error', 'Icon','error');
                         end
                         app.PerspectiveViewButton.Value = 0;
                         return
@@ -3351,7 +3351,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     RefreshImageSegmenterHelperUp(app);
                     RefreshImageSegmenterHelperDown(app);
                 case 0
-                    app.BrukKitBetav092UIFigure.HandleVisibility = 'off';
+                    app.BrukKitBetav0921UIFigure.HandleVisibility = 'off';
                     cla(app.UIAxes_SegmenterHelperUp);
                     cla(app.UIAxes_SegmenterHelperDown);
                     app.UIAxes_SegmenterHelperUp.Visible = 'off';
@@ -3402,20 +3402,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function LoadExternalBrainMaskButtonPushed(app, event)
             % Get external brain mask data
             [temp_file, temp_dir] = uigetfile('.nii');
-            figure(app.BrukKitBetav092UIFigure)
+            figure(app.BrukKitBetav0921UIFigure)
             temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
             dims_loaded = size(temp_Mask);
             if ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded brain mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded brain mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
                 return
             elseif numel(dims_loaded)>=3 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded brain mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded brain mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
                 return
             end
             app.BrainMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External brain mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "External brain mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: VolumeSwitch
@@ -3478,7 +3478,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     % select best cluster
                     switch numel(app.ExpDimsSegmenter)
                         case 2
-                            uialert(app.BrukKitBetav092UIFigure, ...
+                            uialert(app.BrukKitBetav0921UIFigure, ...
                                 'Data needs to have at least 3 dimensions to be eligible for 3D clustering.', ...
                                 'Auto Cluster Dimension Mismatch')
                         case 3
@@ -3669,20 +3669,20 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
              % Get external hemisphere mask data
             [temp_file, temp_dir] = uigetfile('.nii');
-            figure(app.BrukKitBetav092UIFigure)
+            figure(app.BrukKitBetav0921UIFigure)
             temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
             dims_loaded = size(temp_Mask);
             if ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded hemisphere mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded hemisphere mask x and y dimensions must be equal to those of data being segmented.', 'Loaded Mask Dimension Error')
                 return
             elseif numel(dims_loaded)>=4 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded hemisphere mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded hemisphere mask must have the same amount of slices as data being segmented', 'Loaded Mask Dimension Error')
                 return
             end
             app.HemisphereMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External hemisphere mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "External hemisphere mask loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Button pushed function: ResetHemispheresButton
@@ -3702,18 +3702,18 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Get external ROI pack data
             [temp_file, temp_dir] = uigetfile('.nii');
-            figure(app.BrukKitBetav092UIFigure)
+            figure(app.BrukKitBetav0921UIFigure)
             temp_Mask = pagetranspose(niftiread(cat(2, temp_dir, temp_file)));
             id_path = string(temp_dir)+string(temp_file(1:end-13))+"_identifiers_ROI.mat";   
             dims_loaded = size(temp_Mask);
             if ~exist(id_path, 'file')
-                uialert(app.BrukKitBetav092UIFigure, 'No valid ROI identifier file found on selected ROI pack path.', 'Loaded ROI Pack ID Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'No valid ROI identifier file found on selected ROI pack path.', 'Loaded ROI Pack ID Error')
                 return
             elseif ~isequal(dims_loaded(1:2), app.ExpDimsSegmenter(1:2))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded ROI pack x and y dimensions must be equal to those of data being segmented.', 'Loaded ROI Pack Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded ROI pack x and y dimensions must be equal to those of data being segmented.', 'Loaded ROI Pack Dimension Error')
                 return
             elseif numel(dims_loaded)>=4 && numel(app.ExpDimsSegmenter)>=3 && ~isequal(dims_loaded(3), app.ExpDimsSegmenter(3))
-                uialert(app.BrukKitBetav092UIFigure, 'Loaded ROI pack must have the same amount of slices as data being segmented', 'Loaded ROI Pack Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Loaded ROI pack must have the same amount of slices as data being segmented', 'Loaded ROI Pack Dimension Error')
                 return
             end
             temp_identifiers = load(id_path);
@@ -3722,7 +3722,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ROIMask = temp_Mask;
             
             RefreshImageSegmenter(app);
-            uiconfirm(app.BrukKitBetav092UIFigure, "External ROI pack loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "External ROI pack loaded successfully.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: ROIListListBox
@@ -3752,7 +3752,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.ROIMask = cat(3, app.ROIMask, false(app.ExpDimsSegmenter));
                 end
             else
-                uialert(app.BrukKitBetav092UIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'ROI name must be non-empty and not a duplicate.', 'ROI Naming Error')
             end
             RefreshImageSegmenter(app);
         end
@@ -3794,7 +3794,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: VolROISegmentationToolsButton
         function VolROISegmentationToolsButtonPushed(app, event)
-            app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Segmenting ROI Volumes...", 'Indeterminate','on');
             drawnow
             
@@ -4016,7 +4016,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             ExportImageDataGeneral(app, 'Segmenter');
             
-            uiconfirm(app.BrukKitBetav092UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Segmented sequence mask and image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Value changed function: SelectResultsDropDown
@@ -4065,7 +4065,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end
             
             % Draw a progress box 
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving saved data.");
             drawnow
             
@@ -4366,7 +4366,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             end
 
-            uiconfirm(app.BrukKitBetav092UIFigure, "Results successfully exported to an Excel file.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Results successfully exported to an Excel file.", "","Options",{'OK'},"DefaultOption",1, "Icon","success")
         end
 
         % Cell selection callback: UITable_ResultsBrain
@@ -4566,24 +4566,24 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function ImportReferenceAtlasButtonPushed(app, event)
             
             % Open import options
-            selection = uiconfirm(app.BrukKitBetav092UIFigure, "Select import option:", "Reference Atlas Import Options", ...
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure, "Select import option:", "Reference Atlas Import Options", ...
                 "Options", ["Download New","Load From Directory","Cancel"], "DefaultOption", 1, "CancelOption", 3);
             switch selection
                 case "Download New"
                     % Open atlas importer
-                    app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+                    app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                     'Message', "Importing Reference Atlases...", 'Indeterminate','on');
                     drawnow
                     app.ImportReferenceAtlasButton.Enable = 'off';
                     app.AtlasImporterWindow = ReferenceAtlasImporter(app);
                 case "Load From Directory"
-                    progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+                    progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                     'Message', "Selecting reference atlas folder");
                     drawnow
                     progress.Value = 0;
                     % Get directory
                     selected_directory = uigetdir;
-                    figure(app.BrukKitBetav092UIFigure);
+                    figure(app.BrukKitBetav0921UIFigure);
 
                     loadedCollection = struct();
                     dropdown_items = {'None'};
@@ -4714,7 +4714,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
                     if isequal(dropdown_items, {'None'})
                         close(progress);
-                        uialert(app.BrukKitBetav092UIFigure, 'No reference atlases were found in selected directory.', 'No Reference Atlas Found')
+                        uialert(app.BrukKitBetav0921UIFigure, 'No reference atlases were found in selected directory.', 'No Reference Atlas Found')
                     else
                         % Update loaded atlas collection, update drop down
                         app.AtlasCollection = loadedCollection;
@@ -4726,7 +4726,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                         close(progress);
 
                         % Display confirmation
-                        uiconfirm(app.BrukKitBetav092UIFigure, "Reference atlases sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+                        uiconfirm(app.BrukKitBetav0921UIFigure, "Reference atlases sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
                     end
                 case "Cancel"
                     return
@@ -4754,10 +4754,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Check for valid selections
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UseDifferentParameterMapCheckBox.Value ==1) %#ok<OR2,AND2> 
-                uialert(app.BrukKitBetav092UIFigure, 'Cannot open Registration Viewer; please select valid registration data.', 'Registration Viewer Error.')
+                uialert(app.BrukKitBetav0921UIFigure, 'Cannot open Registration Viewer; please select valid registration data.', 'Registration Viewer Error.')
                 return
             elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
-                uialert(app.BrukKitBetav092UIFigure, 'Cannot open Registration Viewer; please import and select valid reference atlas.', 'Registration Viewer Error.')
+                uialert(app.BrukKitBetav0921UIFigure, 'Cannot open Registration Viewer; please import and select valid reference atlas.', 'Registration Viewer Error.')
                 return
             end
             
@@ -4772,7 +4772,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Open Registration Viewer 
             if app.UseDifferentParameterMapCheckBox.Value == 0
-                app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+                app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                      'Message', "Viewing Registration Data...", 'Indeterminate','on');
                 drawnow
                 app.RegistrationViewerButton.Enable = 'off';
@@ -4782,7 +4782,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 end
             elseif app.UseDifferentParameterMapCheckBox.Value == 1
                 parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
-                app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+                app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                      'Message', "Viewing Registration Data...", 'Indeterminate','on');
                 drawnow
                 app.RegistrationViewerButton.Enable = 'off';
@@ -4809,17 +4809,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             % Check for valid selections, registration instructions
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UseDifferentParameterMapCheckBox.Value ==1) %#ok<OR2,AND2> 
-                uialert(app.BrukKitBetav092UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
+                uialert(app.BrukKitBetav0921UIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
                 return
             elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
-                uialert(app.BrukKitBetav092UIFigure, 'Registration not possible; please import and select valid reference atlas.', 'Registration Error.')
+                uialert(app.BrukKitBetav0921UIFigure, 'Registration not possible; please import and select valid reference atlas.', 'Registration Error.')
                 return
             elseif app.RegistrationInstructionsTextArea.Value == ""
-                uialert(app.BrukKitBetav092UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
+                uialert(app.BrukKitBetav0921UIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
                 return
             end
             
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
             drawnow
 
             % Get total registration instructions, remove 0x0 char arrays
@@ -5051,7 +5051,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
                     app.Dim5Spinner_TimeAlignmentReference.Value = 1;
                     app.AlignDataButton.Enable = 'off';
-                    uialert(app.BrukKitBetav092UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
+                    uialert(app.BrukKitBetav0921UIFigure, 'Time alignment not possible, data must have 4 or 5 dimensions.', 'Dimension error')
 
             end
         end
@@ -5060,7 +5060,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function AlignDataButtonPushed(app, event)
             tic
             % Draw progress bar
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
             drawnow
 
             % Get image data
@@ -5240,7 +5240,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                     ExportImageDataRegistration(app, 'Time Series Alignment');
             end
  
-            uiconfirm(app.BrukKitBetav092UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Registered image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: SaveRegisteredDataButton
@@ -5560,7 +5560,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
         % Button pushed function: AdvancedSettingsButton
         function AdvancedSettingsButtonPushed(app, event)
-            app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Adjusting DSC Mapping Options...", 'Indeterminate','on');
             drawnow
             app.AdvancedSettingsButton.Enable = 'off';
@@ -5571,7 +5571,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function CalculateDSCmapsButtonPushed(app, event)
             
             % Draw progress box
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for DSC mapping");
             drawnow
 
@@ -5631,7 +5631,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.SliceSlider_PostMap.Enable = 'on';
                 app.SliceSlider_PostMap.Value = 1;
             else
-                uialert(app.BrukKitBetav092UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
+                uialert(app.BrukKitBetav0921UIFigure, 'DSC map calculation not possible, data must be 4-dimensional.', 'Dimension error')
             end
             
             % Set interactions on UIAxes
@@ -5697,17 +5697,17 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ivalues = str2double(split(app.TIvaluesText.Value, ";")');
 
             if ~(length(tvalues) == size(app.PreMapImageData, 4) || length(ivalues) == size(app.PreMapImageData, 4))
-                uialert(app.BrukKitBetav092UIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.BrukKitBetav0921UIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
                     'Dimension error');
                 return
             end
             if ~isnan(ivalues(1)) && length(tvalues) ~= 1
-                uialert(app.BrukKitBetav092UIFigure, 'Please use a single TR value for inversion recovery T1 maps', ...
+                uialert(app.BrukKitBetav0921UIFigure, 'Please use a single TR value for inversion recovery T1 maps', ...
                     'Function error');
                 return
             end
 
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Calculating T1 maps...", "Indeterminate", "on");
             drawnow
 
@@ -5724,7 +5724,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
             %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
             % catch
-            %     uialert(app.BrukKitBetav092UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %     uialert(app.BrukKitBetav0921UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
             %         'Optimization settings error');
             %     return
             % end
@@ -5797,12 +5797,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             tvalues = str2double(split(app.TEvaluesText.Value, ";")');
 
             if size(tvalues) ~= size(app.PreMapImageData, 4)
-                uialert(app.BrukKitBetav092UIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.BrukKitBetav0921UIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
                     'Dimension error');
                 return
             end
 
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Calculating T2 maps...", "Indeterminate", "on");
             drawnow
 
@@ -5823,7 +5823,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
             %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
             % catch
-            %     uialert(app.BrukKitBetav092UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %     uialert(app.BrukKitBetav0921UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
             %         'Optimization settings error');
             %     return
             % end
@@ -5880,12 +5880,12 @@ classdef BrukKit_exported < matlab.apps.AppBase
             ivalues = str2double(split(app.TIvaluesText.Value, ";")');
 
             if ~(length(ivalues) == size(app.PreMapImageData, 4) || length(ivalues) == size(app.PreMapImageData, 5))
-                uialert(app.BrukKitBetav092UIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.BrukKitBetav0921UIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
                     'Dimension error');
                 return
             end
 
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Calculating pASL maps...", "Indeterminate", "on");
             drawnow
 
@@ -5926,7 +5926,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             %         'MaxFunctionEvaluations',app.MaxNrofEvaluationsEditField.Value, ...
             %         'MaxIterations',app.MaxNrofIterationsEditField.Value,'Display','none');
             % catch
-            %     uialert(app.BrukKitBetav092UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
+            %     uialert(app.BrukKitBetav0921UIFigure, 'App failed to set desired optimization options. Please check settings.', ...
             %         'Optimization settings error');
             %     return
             % end
@@ -6086,7 +6086,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
 
             ExportImageDataGeneral(app, 'Map');
 
-            uiconfirm(app.BrukKitBetav092UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.BrukKitBetav0921UIFigure, "Parameter map image data exported in NIfTI format.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Button pushed function: SaveDataButton_Map
@@ -6154,7 +6154,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 app.Dim5Spinner_Viewer.Value = 1;
                 app.OverlayButton.Enable = 'off';
                 app.ExportSceneButton.Enable = 'off';
-                uialert(app.BrukKitBetav092UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
+                uialert(app.BrukKitBetav0921UIFigure, 'Selected data cannot be rendered: number of data dimensions must be between 3 and 5.', '3D Viewer Data Dimension Error')
                 return
             end
             app.ViewerParentObject = viewer3d('Parent', app.ViewerPanel);
@@ -6390,7 +6390,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             
             switch value
                 case 1
-                    app.ProgressBar = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Please wait",...
+                    app.ProgressBar = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Please wait",...
                  'Message', "Selecting a volume to overlay in 3D Viewer...", 'Indeterminate','on');
                     drawnow
             
@@ -6403,10 +6403,10 @@ classdef BrukKit_exported < matlab.apps.AppBase
             end           
         end
 
-        % Close request function: BrukKitBetav092UIFigure
-        function BrukKitBetav092UIFigureCloseRequest(app, event)
+        % Close request function: BrukKitBetav0921UIFigure
+        function BrukKitBetav0921UIFigureCloseRequest(app, event)
             
-            progress = uiprogressdlg(app.BrukKitBetav092UIFigure,'Title',"Shutting down",...
+            progress = uiprogressdlg(app.BrukKitBetav0921UIFigure,'Title',"Shutting down",...
                              'Message', "Deleting temporary data...","Indeterminate","on");
             drawnow
     
@@ -6418,7 +6418,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
     
             close(progress);
     
-            selection = uiconfirm(app.BrukKitBetav092UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
+            selection = uiconfirm(app.BrukKitBetav0921UIFigure, "Thank you for using BrukKit! Please cite us as: <citation pending>", ...
                 "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
     
             switch selection
@@ -6499,16 +6499,16 @@ classdef BrukKit_exported < matlab.apps.AppBase
             % Get the file path for locating images
             pathToMLAPP = fileparts(mfilename('fullpath'));
 
-            % Create BrukKitBetav092UIFigure and hide until all components are created
-            app.BrukKitBetav092UIFigure = uifigure('Visible', 'off');
-            app.BrukKitBetav092UIFigure.Position = [100 100 1280 720];
-            app.BrukKitBetav092UIFigure.Name = 'BrukKit Beta v0.9.2';
-            app.BrukKitBetav092UIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'brukkit_icon.png');
-            app.BrukKitBetav092UIFigure.CloseRequestFcn = createCallbackFcn(app, @BrukKitBetav092UIFigureCloseRequest, true);
-            app.BrukKitBetav092UIFigure.KeyPressFcn = createCallbackFcn(app, @BrukKitBetav092UIFigureKeyPress, true);
+            % Create BrukKitBetav0921UIFigure and hide until all components are created
+            app.BrukKitBetav0921UIFigure = uifigure('Visible', 'off');
+            app.BrukKitBetav0921UIFigure.Position = [100 100 1280 720];
+            app.BrukKitBetav0921UIFigure.Name = 'BrukKit Beta v0.9.2.1';
+            app.BrukKitBetav0921UIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'brukkit_icon.png');
+            app.BrukKitBetav0921UIFigure.CloseRequestFcn = createCallbackFcn(app, @BrukKitBetav0921UIFigureCloseRequest, true);
+            app.BrukKitBetav0921UIFigure.KeyPressFcn = createCallbackFcn(app, @BrukKitBetav0921UIFigureKeyPress, true);
 
             % Create TabGroup
-            app.TabGroup = uitabgroup(app.BrukKitBetav092UIFigure);
+            app.TabGroup = uitabgroup(app.BrukKitBetav0921UIFigure);
             app.TabGroup.Position = [1 1 1280 720];
 
             % Create MainTab
@@ -8657,7 +8657,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ExportSceneButton.Text = 'Export Scene';
 
             % Create ContextMenu_Preview
-            app.ContextMenu_Preview = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_Preview = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create RotateMenu_Preview
             app.RotateMenu_Preview = uimenu(app.ContextMenu_Preview);
@@ -8680,7 +8680,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_Preview.Text = 'Reset View';
 
             % Create ContextMenu_Segmenter
-            app.ContextMenu_Segmenter = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_Segmenter = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create RotateMenu_Segmenter
             app.RotateMenu_Segmenter = uimenu(app.ContextMenu_Segmenter);
@@ -8722,7 +8722,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PermuteMenu_4_5.Text = '4-5';
 
             % Create ContextMenu_PreMap
-            app.ContextMenu_PreMap = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_PreMap = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create RotateMenu_PreMap
             app.RotateMenu_PreMap = uimenu(app.ContextMenu_PreMap);
@@ -8764,7 +8764,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.PermuteMenu_4_5_PreMap.Text = '4-5';
 
             % Create ContextMenuEdema
-            app.ContextMenuEdema = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenuEdema = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create HemisphereScalingFactorMenu
             app.HemisphereScalingFactorMenu = uimenu(app.ContextMenuEdema);
@@ -8789,7 +8789,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ApplyEdemaCorrectionCheckBox.ContextMenu = app.ContextMenuEdema;
 
             % Create ContextMenu_PostMap
-            app.ContextMenu_PostMap = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_PostMap = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create RotateMenu_PostMap
             app.RotateMenu_PostMap = uimenu(app.ContextMenu_PostMap);
@@ -8812,7 +8812,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_PostMap.Text = 'Reset View';
 
             % Create ContextMenu_Registration
-            app.ContextMenu_Registration = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_Registration = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create ResetViewMenu_Registration
             app.ResetViewMenu_Registration = uimenu(app.ContextMenu_Registration);
@@ -8820,7 +8820,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ResetViewMenu_Registration.Text = 'Reset View';
 
             % Create ContextMenu_RegistrationInstructions
-            app.ContextMenu_RegistrationInstructions = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_RegistrationInstructions = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create ResetInstructionsMenu
             app.ResetInstructionsMenu = uimenu(app.ContextMenu_RegistrationInstructions);
@@ -8831,7 +8831,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
 
             % Create ContextMenu_RegistrationReferenceFixed
-            app.ContextMenu_RegistrationReferenceFixed = uicontextmenu(app.BrukKitBetav092UIFigure);
+            app.ContextMenu_RegistrationReferenceFixed = uicontextmenu(app.BrukKitBetav0921UIFigure);
 
             % Create MultiplyMovingAndFixedMenu
             app.MultiplyMovingAndFixedMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
@@ -8853,7 +8853,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
             app.ShowReferenceFixedCheckBox.ContextMenu = app.ContextMenu_RegistrationReferenceFixed;
 
             % Show the figure after all components are created
-            app.BrukKitBetav092UIFigure.Visible = 'on';
+            app.BrukKitBetav0921UIFigure.Visible = 'on';
         end
     end
 
@@ -8872,14 +8872,14 @@ classdef BrukKit_exported < matlab.apps.AppBase
                 createComponents(app)
 
                 % Register the app with App Designer
-                registerApp(app, app.BrukKitBetav092UIFigure)
+                registerApp(app, app.BrukKitBetav0921UIFigure)
 
                 % Execute the startup function
                 runStartupFcn(app, @StartUpFcn)
             else
 
                 % Focus the running singleton app
-                figure(runningApp.BrukKitBetav092UIFigure)
+                figure(runningApp.BrukKitBetav0921UIFigure)
 
                 app = runningApp;
             end
@@ -8893,7 +8893,7 @@ classdef BrukKit_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.BrukKitBetav092UIFigure)
+            delete(app.BrukKitBetav0921UIFigure)
         end
     end
 end
