@@ -67,7 +67,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        BrukKit % Main BrukKit interface
+        suMRak % Main suMRak interface
     end  
 
     % Callbacks that handle component events
@@ -75,8 +75,8 @@ classdef DSCSettings_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, caller, loadedOptions)
-            % Store BrukKit
-            app.BrukKit = caller;
+            % Store suMRak
+            app.suMRak = caller;
             
             % Set label values to loaded option values
             % Image
@@ -166,51 +166,51 @@ classdef DSCSettings_exported < matlab.apps.AppBase
 
         % Button pushed function: ApplySettingsButton
         function ApplySettingsButtonPushed(app, event)
-            % Update BrukKit options to new advanced options
+            % Update suMRak options to new advanced options
             % Image
             if app.ConcentrationButton.Value == 1
-                app.BrukKit.DSCOptions.conc = 1; 
+                app.suMRak.DSCOptions.conc = 1; 
             else
-                app.BrukKit.DSCOptions.conc = 0;
+                app.suMRak.DSCOptions.conc = 0;
             end
             % Mask
-            app.BrukKit.DSCOptions.mask.npixel = app.MaskNrVoxelsEditField.Value;
+            app.suMRak.DSCOptions.mask.npixel = app.MaskNrVoxelsEditField.Value;
             % S0
-            app.BrukKit.DSCOptions.S0.thresh = app.S0ThresholdEditField.Value;
-            app.BrukKit.DSCOptions.S0.nSamplesMin = app.S0MinVoxNrEditField.Value;
-            app.BrukKit.DSCOptions.S0.nSamplesMax = app.S0MaxVoxNrEditField.Value;
+            app.suMRak.DSCOptions.S0.thresh = app.S0ThresholdEditField.Value;
+            app.suMRak.DSCOptions.S0.nSamplesMin = app.S0MinVoxNrEditField.Value;
+            app.suMRak.DSCOptions.S0.nSamplesMax = app.S0MaxVoxNrEditField.Value;
             % AIF
-            app.BrukKit.DSCOptions.aif.enable = app.EnableAIFCheckBox.Value;
-            app.BrukKit.DSCOptions.aif.semiasseMinore = app.AIFROIMinorSemiaxisEditField.Value;
-            app.BrukKit.DSCOptions.aif.semiasseMaggiore = app.AIFROIMajorSemiaxisEditField.Value;
-            app.BrukKit.DSCOptions.aif.nVoxelMin = app.AIFMinVoxNrEditField.Value;
-            app.BrukKit.DSCOptions.aif.nVoxelMax = app.AIFMaxVoxNrEditField.Value;
-            app.BrukKit.DSCOptions.aif.ricircolo = app.AIFRecirculationCorrectionCheckBox.Value;
-            app.BrukKit.DSCOptions.aif.pArea = app.VoxelDiscardFractionAUCEditField.Value;
-            app.BrukKit.DSCOptions.aif.pTTP = app.VoxelDiscardFractionTTPEditField.Value;
-            app.BrukKit.DSCOptions.aif.pReg = app.VoxelDiscardFractionRegularityEditField.Value;
-            app.BrukKit.DSCOptions.aif.diffPicco = app.ClusterThresholdPeakTTPEditField.Value;
+            app.suMRak.DSCOptions.aif.enable = app.EnableAIFCheckBox.Value;
+            app.suMRak.DSCOptions.aif.semiasseMinore = app.AIFROIMinorSemiaxisEditField.Value;
+            app.suMRak.DSCOptions.aif.semiasseMaggiore = app.AIFROIMajorSemiaxisEditField.Value;
+            app.suMRak.DSCOptions.aif.nVoxelMin = app.AIFMinVoxNrEditField.Value;
+            app.suMRak.DSCOptions.aif.nVoxelMax = app.AIFMaxVoxNrEditField.Value;
+            app.suMRak.DSCOptions.aif.ricircolo = app.AIFRecirculationCorrectionCheckBox.Value;
+            app.suMRak.DSCOptions.aif.pArea = app.VoxelDiscardFractionAUCEditField.Value;
+            app.suMRak.DSCOptions.aif.pTTP = app.VoxelDiscardFractionTTPEditField.Value;
+            app.suMRak.DSCOptions.aif.pReg = app.VoxelDiscardFractionRegularityEditField.Value;
+            app.suMRak.DSCOptions.aif.diffPicco = app.ClusterThresholdPeakTTPEditField.Value;
             % Proportionality constants
-            app.BrukKit.DSCOptions.par.kh = app.KhEditField.Value;
-            app.BrukKit.DSCOptions.par.rho = app.RhoEditField.Value;
-            app.BrukKit.DSCOptions.par.kvoi = app.KvoiEditField.Value;
+            app.suMRak.DSCOptions.par.kh = app.KhEditField.Value;
+            app.suMRak.DSCOptions.par.rho = app.RhoEditField.Value;
+            app.suMRak.DSCOptions.par.kvoi = app.KvoiEditField.Value;
             % Concentration
-            app.BrukKit.DSCOptions.qr.enable = app.ConcentrationCorrectionCheckBox.Value;
-            app.BrukKit.DSCOptions.qr.a = app.aEditField.Value;
-            app.BrukKit.DSCOptions.qr.b = app.bEditField.Value;
-            app.BrukKit.DSCOptions.qr.r = app.rEditField.Value;
+            app.suMRak.DSCOptions.qr.enable = app.ConcentrationCorrectionCheckBox.Value;
+            app.suMRak.DSCOptions.qr.a = app.aEditField.Value;
+            app.suMRak.DSCOptions.qr.b = app.bEditField.Value;
+            app.suMRak.DSCOptions.qr.r = app.rEditField.Value;
             % Deconvolution
-            app.BrukKit.DSCOptions.deconv.SVD.threshold = app.SVDThresholdEditField.Value;
-            app.BrukKit.DSCOptions.deconv.cSVD.threshold = app.cSVDThresholdEditField.Value;
-            app.BrukKit.DSCOptions.deconv.oSVD.OIthres = app.oSVDThresholdEditField.Value;
-            app.BrukKit.DSCOptions.deconv.oSVD.OIcounter = app.oSVDCounterEditField.Value;
-            app.BrukKit.DSCOptions.deconv.SVD.residual = app.SaveSVDResidualsCheckBox.Value;
-            app.BrukKit.DSCOptions.deconv.cSVD.residual = app.SavecSVDResidualsCheckBox.Value;
-            app.BrukKit.DSCOptions.deconv.oSVD.residual = app.SaveoSVDResidualsCheckBox.Value;
+            app.suMRak.DSCOptions.deconv.SVD.threshold = app.SVDThresholdEditField.Value;
+            app.suMRak.DSCOptions.deconv.cSVD.threshold = app.cSVDThresholdEditField.Value;
+            app.suMRak.DSCOptions.deconv.oSVD.OIthres = app.oSVDThresholdEditField.Value;
+            app.suMRak.DSCOptions.deconv.oSVD.OIcounter = app.oSVDCounterEditField.Value;
+            app.suMRak.DSCOptions.deconv.SVD.residual = app.SaveSVDResidualsCheckBox.Value;
+            app.suMRak.DSCOptions.deconv.cSVD.residual = app.SavecSVDResidualsCheckBox.Value;
+            app.suMRak.DSCOptions.deconv.oSVD.residual = app.SaveoSVDResidualsCheckBox.Value;
             
             % Turn on settings button, delete app
-            app.BrukKit.AdvancedSettingsButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
+            app.suMRak.AdvancedSettingsButton.Enable = 'on';
+            close(app.suMRak.ProgressBar)
             delete(app) 
         end
 
@@ -218,8 +218,8 @@ classdef DSCSettings_exported < matlab.apps.AppBase
         function DSCMappingAdvancedSettingsUIFigureCloseRequest(app, event)
 
             % Turn on settings button, delete app
-            app.BrukKit.AdvancedSettingsButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
+            app.suMRak.AdvancedSettingsButton.Enable = 'on';
+            close(app.suMRak.ProgressBar)
             delete(app) 
         end
     end
@@ -230,10 +230,14 @@ classdef DSCSettings_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
             % Create DSCMappingAdvancedSettingsUIFigure and hide until all components are created
             app.DSCMappingAdvancedSettingsUIFigure = uifigure('Visible', 'off');
             app.DSCMappingAdvancedSettingsUIFigure.Position = [100 100 569 720];
             app.DSCMappingAdvancedSettingsUIFigure.Name = 'DSC Mapping Advanced Settings';
+            app.DSCMappingAdvancedSettingsUIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'icon.png');
             app.DSCMappingAdvancedSettingsUIFigure.CloseRequestFcn = createCallbackFcn(app, @DSCMappingAdvancedSettingsUIFigureCloseRequest, true);
 
             % Create ImageValueButtonGroup

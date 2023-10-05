@@ -20,7 +20,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        BrukKit % Main BrukKit interface
+        suMRak % Main suMRak interface
     end
     
 
@@ -30,8 +30,8 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, caller)
             
-            % Store BrukKit
-            app.BrukKit = caller;
+            % Store suMRak
+            app.suMRak = caller;
 
             movegui(app.ReferenceAtlasImporterUIFigure, 'center');
         end
@@ -81,7 +81,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             selected_path = uigetdir;
             figure(app.ReferenceAtlasImporterUIFigure);
 
-            app.AtlasDirectoryEditField.Value = strcat(selected_path, filesep, 'BrukKit Reference Atlases');
+            app.AtlasDirectoryEditField.Value = strcat(selected_path, filesep, 'suMRak Reference Atlases');
         end
 
         % Button pushed function: DownloadButton
@@ -117,9 +117,9 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                     drawnow
                     pause(0.5)
 
-                    % Create new folder for atlas loading operations inside BrukKit working temp
+                    % Create new folder for atlas loading operations inside suMRak working temp
                     % folder
-                    atlas_loading_folder = strcat(app.BrukKit.WorkingFolder, filesep, 'Atlas Loading');
+                    atlas_loading_folder = strcat(app.suMRak.WorkingFolder, filesep, 'Atlas Loading');
                     % Purge old temporary data
                     try
                         rmdir(atlas_loading_folder, "s");
@@ -535,20 +535,20 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
 
             end
 
-            % Return loaded atlas collection to BrukKit, update drop down
-            app.BrukKit.AtlasCollection = loadedCollection;
-            app.BrukKit.SelectAtlasDropDown.Items = dropdown_items;
+            % Return loaded atlas collection to suMRak, update drop down
+            app.suMRak.AtlasCollection = loadedCollection;
+            app.suMRak.SelectAtlasDropDown.Items = dropdown_items;
             
             % Display confirmation
-            uiconfirm(app.ReferenceAtlasImporterUIFigure, "Atlas selection sucessfuly downloaded and imported to BrukKit.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+            uiconfirm(app.ReferenceAtlasImporterUIFigure, "Atlas selection sucessfuly downloaded and imported to suMRak.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
 
         % Close request function: ReferenceAtlasImporterUIFigure
         function ReferenceAtlasImporterUIFigureCloseRequest(app, event)
             
             % Turn on atlas import button, delete app
-            app.BrukKit.ImportReferenceAtlasButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
+            app.suMRak.ImportReferenceAtlasButton.Enable = 'on';
+            close(app.suMRak.ProgressBar)
             delete(app)
         end
     end
@@ -559,10 +559,14 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
             % Create ReferenceAtlasImporterUIFigure and hide until all components are created
             app.ReferenceAtlasImporterUIFigure = uifigure('Visible', 'off');
             app.ReferenceAtlasImporterUIFigure.Position = [100 100 480 345];
             app.ReferenceAtlasImporterUIFigure.Name = 'Reference Atlas Importer';
+            app.ReferenceAtlasImporterUIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'icon.png');
             app.ReferenceAtlasImporterUIFigure.CloseRequestFcn = createCallbackFcn(app, @ReferenceAtlasImporterUIFigureCloseRequest, true);
 
             % Create ReferenceAtlasSelectionLabel

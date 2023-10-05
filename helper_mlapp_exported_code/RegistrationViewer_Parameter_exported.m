@@ -55,7 +55,7 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        BrukKit % Main BrukKit interface
+        suMRak % Main suMRak interface
         MovingImageData % Moving image data
         ExpDimsMoving % Moving image data dimensions
         FixedImageData % Fixed image data
@@ -146,8 +146,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, caller, movingImage, fixedImage, parameterImage)
             
-            % Store BrukKit
-            app.BrukKit = caller;
+            % Store suMRak
+            app.suMRak = caller;
             
             % Store image data and dimensions
             app.MovingImageData = movingImage;
@@ -419,11 +419,11 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
         % Button pushed function: ReturnInstructionsButton
         function ReturnInstructionsButtonPushed(app, event)
             % Return registration instructions
-            app.BrukKit.RegistrationInstructionsTextArea.Value = app.RegistrationInstructionsTextArea.Value;
+            app.suMRak.RegistrationInstructionsTextArea.Value = app.RegistrationInstructionsTextArea.Value;
             
             % Turn on viewer button, delete app
-            app.BrukKit.RegistrationViewerButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
+            app.suMRak.RegistrationViewerButton.Enable = 'on';
+            close(app.suMRak.ProgressBar)
             delete(app) 
         end
 
@@ -452,8 +452,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
         function RegistrationViewerUIFigureCloseRequest(app, event)
 
             % Turn on viewer button, delete app
-            app.BrukKit.RegistrationViewerButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar)
+            app.suMRak.RegistrationViewerButton.Enable = 'on';
+            close(app.suMRak.ProgressBar)
             delete(app) 
         end
     end
@@ -464,10 +464,14 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
             % Create RegistrationViewerUIFigure and hide until all components are created
             app.RegistrationViewerUIFigure = uifigure('Visible', 'off');
             app.RegistrationViewerUIFigure.Position = [100 100 1179 480];
             app.RegistrationViewerUIFigure.Name = 'Registration Viewer';
+            app.RegistrationViewerUIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'icon.png');
             app.RegistrationViewerUIFigure.CloseRequestFcn = createCallbackFcn(app, @RegistrationViewerUIFigureCloseRequest, true);
 
             % Create UIAxes_Moving

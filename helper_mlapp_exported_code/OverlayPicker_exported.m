@@ -26,12 +26,12 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        BrukKit % Main BrukKit interface
-        ExperimentPropertyTable % Table containing imported Bruker experiments inherited from BrukKit
-        SavedTable % Table containing inherited BrukKit-modified experiments
-        Volume % Volume to be passed into BrukKit's 3D viewer as an overlay
+        suMRak % Main suMRak interface
+        ExperimentPropertyTable % Table containing imported Bruker experiments inherited from suMRak
+        SavedTable % Table containing inherited suMRak-modified experiments
+        Volume % Volume to be passed into suMRak's 3D viewer as an overlay
         VolumeDims % Dimension sizes of the chosen volume
-        ViewerDims % Dimension sizes inherited from BrukKit's 3D viewer
+        ViewerDims % Dimension sizes inherited from suMRak's 3D viewer
     end
     
 
@@ -44,8 +44,8 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             % Center on screen
             movegui(app.OverlayPickerUIFigure, 'center');
 
-            % Store BrukKit
-            app.BrukKit = caller;
+            % Store suMRak
+            app.suMRak = caller;
 
             % Populate dropdown
             app.ExperimentDropDown.Items = DropdownItemsCombined;
@@ -55,7 +55,7 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             app.ExperimentPropertyTable = ExperimentTable;
             app.SavedTable = SavedTable;
 
-            % Save dimension sizes of the experiment loaded in BrukKit's 3D viewer
+            % Save dimension sizes of the experiment loaded in suMRak's 3D viewer
             app.ViewerDims = DataDims;
 
         end
@@ -185,44 +185,44 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
             end
 
             app.Volume = (app.Volume - min(app.Volume(:))) / (max(app.Volume(:)) - min(app.Volume(:)));
-            app.BrukKit.ViewerParentObject.Children.OverlayData = app.Volume;
+            app.suMRak.ViewerParentObject.Children.OverlayData = app.Volume;
             
             switch app.OverlayStyleDropDown.Value
                 case 'Label'
-                    app.BrukKit.ViewerParentObject.Children.OverlayRenderingStyle = "LabelOverlay";
+                    app.suMRak.ViewerParentObject.Children.OverlayRenderingStyle = "LabelOverlay";
                 case 'Volume'
-                    app.BrukKit.ViewerParentObject.Children.OverlayRenderingStyle = "VolumeOverlay";
+                    app.suMRak.ViewerParentObject.Children.OverlayRenderingStyle = "VolumeOverlay";
                 case 'Gradient'
-                    app.BrukKit.ViewerParentObject.Children.OverlayRenderingStyle = "GradientOverlay";
+                    app.suMRak.ViewerParentObject.Children.OverlayRenderingStyle = "GradientOverlay";
             end
 
             switch app.ColormapDropDown.Value
                 case "Greyscale"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = gray;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = gray;
                 case "Turbo"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = turbo;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = turbo;
                 case "Hot"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = hot;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = hot;
                 case "Jet"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = jet;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = jet;
                 case "Parula"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = parula;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = parula;
                 case "Sky"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = sky;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = sky;
                 case "Cool"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = cool;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = cool;
                 case "Copper"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = copper;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = copper;
                 case "Bone"
-                    app.BrukKit.ViewerParentObject.Children.OverlayColormap = bone;
+                    app.suMRak.ViewerParentObject.Children.OverlayColormap = bone;
             end
 
-            app.BrukKit.ViewerParentObject.Children.OverlayAlphamap = app.AlphaEditField.Value;
-            app.BrukKit.ViewerParentObject.Children.OverlayThreshold = app.ThresholdEditField.Value;
+            app.suMRak.ViewerParentObject.Children.OverlayAlphamap = app.AlphaEditField.Value;
+            app.suMRak.ViewerParentObject.Children.OverlayThreshold = app.ThresholdEditField.Value;
 
-            % Close Brukkit progress bar and delete app
-            app.BrukKit.OverlayButton.Enable = 'on';
-            close(app.BrukKit.ProgressBar);
+            % Close suMRak progress bar and delete app
+            app.suMRak.OverlayButton.Enable = 'on';
+            close(app.suMRak.ProgressBar);
             delete(app);
 
         end
@@ -230,10 +230,10 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
         % Close request function: OverlayPickerUIFigure
         function OverlayPickerUIFigureCloseRequest(app, event)
             
-            % Close Brukkit progress bar and delete app
-            app.BrukKit.OverlayButton.Enable = 'on';
-            app.BrukKit.OverlayButton.Value = 0;
-            close(app.BrukKit.ProgressBar);
+            % Close suMRak progress bar and delete app
+            app.suMRak.OverlayButton.Enable = 'on';
+            app.suMRak.OverlayButton.Value = 0;
+            close(app.suMRak.ProgressBar);
             delete(app);
         end
     end
@@ -244,10 +244,14 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
             % Create OverlayPickerUIFigure and hide until all components are created
             app.OverlayPickerUIFigure = uifigure('Visible', 'off');
             app.OverlayPickerUIFigure.Position = [100 100 320 480];
             app.OverlayPickerUIFigure.Name = 'Overlay Picker';
+            app.OverlayPickerUIFigure.Icon = fullfile(pathToMLAPP, 'resources', 'icon.png');
             app.OverlayPickerUIFigure.CloseRequestFcn = createCallbackFcn(app, @OverlayPickerUIFigureCloseRequest, true);
 
             % Create SelectOptionLabel
