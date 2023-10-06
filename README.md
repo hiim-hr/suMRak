@@ -1,4 +1,4 @@
-# BrukKit
+# suMRak
 
 <b> An easier way of processing your MRI data </b>
 
@@ -8,7 +8,7 @@
 
 ------------------------------------------------------------------------
 
-BrukKit is a MATLAB application created with the sole purpose of simplifying pre-clinical MRI data processing.
+suMRak is a MATLAB application created with the sole purpose of simplifying pre-clinical MRI data processing.
 
 ------------------------------------------------------------------------
 
@@ -16,11 +16,11 @@ BrukKit is a MATLAB application created with the sole purpose of simplifying pre
 
 ------------------------------------------------------------------------
 
- ## BrukKit Components
+ ## suMRak Components
 
-BrukKit contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRI data to only one.
+suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRI data to only one.
 > [!IMPORTANT]
-> BrukKit comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
+> suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
 
  ------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ displayed accordingly. Segmented regions of interest can also be corrected for e
 
 ### Registration
  
-MATLAB's integrated python engine allows BrukKit to register saved experiments using the [SimpleElastix](https://simpleelastix.github.io/) python library.
+MATLAB's integrated python engine allows suMRak to register saved experiments using the [SimpleElastix](https://simpleelastix.github.io/) python library.
 
 ### Parameter Maps
 
