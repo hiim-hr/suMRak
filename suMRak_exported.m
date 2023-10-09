@@ -120,7 +120,10 @@ classdef suMRak_exported < matlab.apps.AppBase
         UIAxes_SegmenterHelperUp        matlab.ui.control.UIAxes
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
+        ShowReferenceFixedCheckBox      matlab.ui.control.CheckBox
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
+        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
+        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
         SelectAtlasDropDown             matlab.ui.control.DropDown
         ImportReferenceAtlasButton      matlab.ui.control.Button
         SelectparameterDropDown         matlab.ui.control.DropDown
@@ -130,7 +133,6 @@ classdef suMRak_exported < matlab.apps.AppBase
         SelectfixedLabel                matlab.ui.control.Label
         SelectmovingDropDown            matlab.ui.control.DropDown
         SelectmovingLabel               matlab.ui.control.Label
-        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
         RegistrationViewerButton        matlab.ui.control.Button
         ManualInstructionInputCheckBox  matlab.ui.control.CheckBox
         RegisterButton                  matlab.ui.control.Button
@@ -241,6 +243,7 @@ classdef suMRak_exported < matlab.apps.AppBase
         SelectResultsDropDown           matlab.ui.control.DropDown
         SelectExperimentForVolumetryLabel  matlab.ui.control.Label
         ROIPanel_Results                matlab.ui.container.Panel
+        ApplyEdemaCorrectionCheckBox    matlab.ui.control.CheckBox
         IQRUpperEditField_ROI           matlab.ui.control.NumericEditField
         IQRLowerEditField_ROI           matlab.ui.control.NumericEditField
         IQREditFieldLabel_ROI           matlab.ui.control.Label
@@ -4272,7 +4275,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             UpdateVolumetryROI(app);
         end
 
-        % Callback function
+        % Value changed function: ApplyEdemaCorrectionCheckBox
         function ApplyEdemaCorrectionCheckBoxValueChanged(app, event)
             UpdateVolumetryROI(app);
         end
@@ -5234,6 +5237,48 @@ classdef suMRak_exported < matlab.apps.AppBase
         function ColormapButtonGroup_RegistrationSelectionChanged(app, event)
 
             RefreshImageRegistration(app);
+        end
+
+        % Value changed function: ShowReferenceFixedCheckBox
+        function ShowReferenceFixedCheckBoxValueChanged(app, event)
+            
+            RefreshImageRegistration(app);
+        end
+
+        % Menu selected function: MultiplyMovingAndFixedMenu
+        function MultiplyMovingAndFixedMenuSelected(app, event)
+            
+            app.MultiplyMovingAndFixedMenu.Checked = 'on';
+            app.SidebysideMenu.Checked = 'off';
+            app.FalsecolorDifferenceMenu.Checked = 'off';
+            try
+                RefreshImageRegistration(app);
+            catch
+            end
+        end
+
+        % Menu selected function: SidebysideMenu
+        function SidebysideMenuSelected(app, event)
+            
+            app.MultiplyMovingAndFixedMenu.Checked = 'off';
+            app.SidebysideMenu.Checked = 'on';
+            app.FalsecolorDifferenceMenu.Checked = 'off';
+            try
+                RefreshImageRegistration(app);
+            catch
+            end
+        end
+
+        % Menu selected function: FalsecolorDifferenceMenu
+        function FalsecolorDifferenceMenuSelected(app, event)
+            
+            app.MultiplyMovingAndFixedMenu.Checked = 'off';
+            app.SidebysideMenu.Checked = 'off';
+            app.FalsecolorDifferenceMenu.Checked = 'on';
+            try
+                RefreshImageRegistration(app);
+            catch
+            end
         end
 
         % Button pushed function: ExportDataButton_Registration
@@ -6392,6 +6437,18 @@ classdef suMRak_exported < matlab.apps.AppBase
             
         end
 
+        % Button pushed function: ExportSceneButton
+        function ExportSceneButtonPushed(app, event)
+            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
+
+            if ~exists(image_name)
+                return
+            end
+
+            cd(app.ExportFolderPath);
+            screencapture(app.ViewerPanel,[],image_name{1});
+        end
+
         % Value changed function: OverlayButton
         function OverlayButtonValueChanged(app, event)
             value = app.OverlayButton.Value;
@@ -6441,60 +6498,6 @@ classdef suMRak_exported < matlab.apps.AppBase
                     return
             end
             
-        end
-
-        % Button pushed function: ExportSceneButton
-        function ExportSceneButtonPushed(app, event)
-            image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
-
-            if ~exists(image_name)
-                return
-            end
-
-            cd(app.ExportFolderPath);
-            screencapture(app.ViewerPanel,[],image_name{1});
-        end
-
-        % Callback function
-        function ShowReferenceFixedCheckBoxValueChanged(app, event)
-            
-            RefreshImageRegistration(app);
-        end
-
-        % Menu selected function: MultiplyMovingAndFixedMenu
-        function MultiplyMovingAndFixedMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'on';
-            app.SidebysideMenu.Checked = 'off';
-            app.FalsecolorDifferenceMenu.Checked = 'off';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
-        end
-
-        % Menu selected function: SidebysideMenu
-        function SidebysideMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'off';
-            app.SidebysideMenu.Checked = 'on';
-            app.FalsecolorDifferenceMenu.Checked = 'off';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
-        end
-
-        % Menu selected function: FalsecolorDifferenceMenu
-        function FalsecolorDifferenceMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'off';
-            app.SidebysideMenu.Checked = 'off';
-            app.FalsecolorDifferenceMenu.Checked = 'on';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
         end
     end
 
@@ -7340,7 +7343,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Registration.BorderType = 'none';
             app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Registration.Title = 'Colormap';
-            app.ColormapButtonGroup_Registration.Position = [464 16 167 38];
+            app.ColormapButtonGroup_Registration.Position = [445 16 167 38];
 
             % Create GreyscaleButton_Registration
             app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
@@ -7359,13 +7362,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
             app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [389 23 51 22];
+            app.SliceSpinner_Registration.Position = [364 23 51 22];
             app.SliceSpinner_Registration.Value = 1;
 
             % Create SliceSliderLabel_Registration
             app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
             app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
-            app.SliceSliderLabel_Registration.Position = [134 24 32 22];
+            app.SliceSliderLabel_Registration.Position = [109 24 32 22];
             app.SliceSliderLabel_Registration.Text = 'Slice';
 
             % Create SliceSlider_Registration
@@ -7376,7 +7379,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
-            app.SliceSlider_Registration.Position = [195 32 183 3];
+            app.SliceSlider_Registration.Position = [170 32 183 3];
             app.SliceSlider_Registration.Value = 1;
 
             % Create ChooseRegistrationTypeDropDownLabel
@@ -7531,12 +7534,6 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.RegistrationViewerButton.Position = [106 222 140 22];
             app.RegistrationViewerButton.Text = 'Registration Viewer';
 
-            % Create RegistrationInstructionsTextAreaLabel
-            app.RegistrationInstructionsTextAreaLabel = uilabel(app.StandardAtlasRegistrationPanel);
-            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'center';
-            app.RegistrationInstructionsTextAreaLabel.Position = [109 187 134 22];
-            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
-
             % Create SelectmovingLabel
             app.SelectmovingLabel = uilabel(app.StandardAtlasRegistrationPanel);
             app.SelectmovingLabel.HorizontalAlignment = 'right';
@@ -7602,6 +7599,24 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.Placeholder = 'None';
             app.SelectAtlasDropDown.Position = [44 366 264 21];
             app.SelectAtlasDropDown.Value = 'None';
+
+            % Create RegistrationInstructionsTextAreaLabel
+            app.RegistrationInstructionsTextAreaLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'center';
+            app.RegistrationInstructionsTextAreaLabel.Position = [109 188 134 22];
+            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
+
+            % Create RegistrationInstructionsTextArea
+            app.RegistrationInstructionsTextArea = uitextarea(app.StandardAtlasRegistrationPanel);
+            app.RegistrationInstructionsTextArea.Editable = 'off';
+            app.RegistrationInstructionsTextArea.Position = [16 89 320 92];
+
+            % Create ShowReferenceFixedCheckBox
+            app.ShowReferenceFixedCheckBox = uicheckbox(app.RegistrationTab);
+            app.ShowReferenceFixedCheckBox.ValueChangedFcn = createCallbackFcn(app, @ShowReferenceFixedCheckBoxValueChanged, true);
+            app.ShowReferenceFixedCheckBox.Enable = 'off';
+            app.ShowReferenceFixedCheckBox.Text = 'Show Reference Fixed Data';
+            app.ShowReferenceFixedCheckBox.Position = [633 24 172 22];
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -8384,6 +8399,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.IQRUpperEditField_ROI = uieditfield(app.ROIPanel_Results, 'numeric');
             app.IQRUpperEditField_ROI.Position = [242 279 27 22];
 
+            % Create ApplyEdemaCorrectionCheckBox
+            app.ApplyEdemaCorrectionCheckBox = uicheckbox(app.ROIPanel_Results);
+            app.ApplyEdemaCorrectionCheckBox.ValueChangedFcn = createCallbackFcn(app, @ApplyEdemaCorrectionCheckBoxValueChanged, true);
+            app.ApplyEdemaCorrectionCheckBox.Enable = 'off';
+            app.ApplyEdemaCorrectionCheckBox.Text = 'Apply Edema Correction';
+            app.ApplyEdemaCorrectionCheckBox.Position = [119 201 152 22];
+
             % Create SelectExperimentForVolumetryLabel
             app.SelectExperimentForVolumetryLabel = uilabel(app.ResultsTab);
             app.SelectExperimentForVolumetryLabel.HorizontalAlignment = 'center';
@@ -8834,6 +8856,9 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.GerrietsCompressionFactorMenu.MenuSelectedFcn = createCallbackFcn(app, @GerrietsCompressionFactorMenuSelected, true);
             app.GerrietsCompressionFactorMenu.Tooltip = {'Check documentation for detailed formula.'};
             app.GerrietsCompressionFactorMenu.Text = 'Gerriets Compression Factor';
+            
+            % Assign app.ContextMenuEdema
+            app.ApplyEdemaCorrectionCheckBox.ContextMenu = app.ContextMenuEdema;
 
             % Create ContextMenu_PostMap
             app.ContextMenu_PostMap = uicontextmenu(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
@@ -8873,6 +8898,9 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ResetInstructionsMenu = uimenu(app.ContextMenu_RegistrationInstructions);
             app.ResetInstructionsMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetInstructionsMenuSelected, true);
             app.ResetInstructionsMenu.Text = 'Reset Instructions';
+            
+            % Assign app.ContextMenu_RegistrationInstructions
+            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
 
             % Create ContextMenu_RegistrationReferenceFixed
             app.ContextMenu_RegistrationReferenceFixed = uicontextmenu(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
@@ -8892,6 +8920,9 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.FalsecolorDifferenceMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
             app.FalsecolorDifferenceMenu.MenuSelectedFcn = createCallbackFcn(app, @FalsecolorDifferenceMenuSelected, true);
             app.FalsecolorDifferenceMenu.Text = 'Falsecolor Difference';
+            
+            % Assign app.ContextMenu_RegistrationReferenceFixed
+            app.ShowReferenceFixedCheckBox.ContextMenu = app.ContextMenu_RegistrationReferenceFixed;
 
             % Show the figure after all components are created
             app.suMRakSimpleUtilityMRiAnalysisKitUIFigure.Visible = 'on';
