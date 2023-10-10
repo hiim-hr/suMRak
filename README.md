@@ -1,6 +1,6 @@
 # suMRak
 
-<b> An easier way of processing your MRI data </b>
+<b> A Simple Utility MRi Analysis Kit </b>
 
 ------------------------------------------------------------------------
 
@@ -8,7 +8,7 @@
 
 ------------------------------------------------------------------------
 
-suMRak is a MATLAB application created with the aim of simplifying pre-clinical brain :brain: MRI data processing. It is a program intended for research purposes and should not be used in a clinical setting.
+suMRak is a MATLAB application created with the aim of simplifying pre-clinical brain :brain: MRi data processing. It is a program intended for research purposes and should not be used in a clinical setting.
 
 ------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ Optional - required for image registration:
 
  ## suMRak Components
 
-suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRI data to only one.
+suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRi data to only one.
 > [!NOTE]
 > suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
 
@@ -51,7 +51,7 @@ displayed accordingly. Segmented regions of interest can also be corrected for e
  
 MATLAB's integrated python engine allows users to register saved experiments using the [SimpleElastix](https://simpleelastix.github.io/) python library. suMRak uses this capability to allow the following methods of image registration:
 1. Standard moving/fixed non-rigid image registration, described [here](https://simpleelastix.readthedocs.io/NonRigidRegistration.html)
-2. Non-rigid registration of data to reference histological/MRI atlases
+2. Non-rigid registration of data to reference histological/MRi atlases
 3. Time-series data alignment
 
 suMRak currently supports the following reference atlases, which are downloaded, unpacked and imported using the suMRak Reference Atlas Importer helper app:
@@ -61,15 +61,15 @@ suMRak currently supports the following reference atlases, which are downloaded,
 
 ### Parameter Map Calculation
 
-suMRak can use your MRI data to calculate specific parameter maps:
-- Dynamic susceptibility contrast CBV, CBF, and MTT - using the [Dynamic Susceptibility Contrast MRI toolbox](https://github.com/marcocastellaro/dsc-mri-toolbox)
+suMRak can use your MRi data to calculate specific parameter maps:
+- Dynamic susceptibility contrast CBV, CBF, and MTT - using the [Dynamic Susceptibility Contrast MRi toolbox](https://github.com/marcocastellaro/dsc-MRi-toolbox)
 - FAIR pASL
 - T1
 - T2
 
 ### Data 3D Viewer
 
-MRI data can be easily viewed in 3D using a multitude of rendering options, including classic volume rendering, minimum/maximum intensity projections and more... Interactively change colormaps, alphamaps, and overlay segmented regions or raw data.
+MRi data can be easily viewed in 3D using a multitude of rendering options, including classic volume rendering, minimum/maximum intensity projections and more... Interactively change colormaps, alphamaps, and overlay segmented regions or raw data.
 
  ------------------------------------------------------------------------
  
