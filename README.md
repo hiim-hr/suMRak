@@ -8,13 +8,13 @@
 
 ------------------------------------------------------------------------
 
-suMRak is a MATLAB application created with the sole purpose of simplifying pre-clinical :brain: brain MRI data processing. It is a program intended for research purposes and should not be used in a clinical setting.
+suMRak is a MATLAB application created with the aim of simplifying pre-clinical :brain: brain MRI data processing. It is a program intended for research purposes and should not be used in a clinical setting.
 
 ------------------------------------------------------------------------
 
 ## Installation
 
-suMRak is available in the forms of an App Designer binary .mlapp file and a fully exported MATLAB code .m file which can be both be executed directly from the MATLAB Command Window
+suMRak is available in the forms of an App Designer binary .mlapp file and a fully exported MATLAB code .m file which can be both be executed directly from the MATLAB Command Window.
 
 It is also available as a single .exe installer file which installs suMRak (and the required MATLAB Runtime) as a standalone application.
 > [!IMPORTANT]
