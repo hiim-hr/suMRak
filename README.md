@@ -22,7 +22,7 @@ It is also available as a single _.exe_ installer file which installs suMRak (an
 
 The following are **prerequisites** for installing suMRak on a end-user machine:
 - [Microsoft Visual C++ Redistributable 2015-2022](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
-- [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) - During installation, select the option to add Python to PATH.
+- [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) - During installation, select the option to add Python to PATH
 
 Optional - required for image registration: 
 - suMRak uses the [SimpleElastix](https://simpleelastix.github.io/) python library for image registration, which can be compiled and installed by following the instructions in the [SimpleElastix Documentation](https://simpleelastix.readthedocs.io/GettingStarted.html#compiling-on-windows)
@@ -71,4 +71,17 @@ suMRak can use your MRI data to calculate specific parameter maps:
 
 MRI data can be easily viewed in 3D using a multitude of rendering options, including classic volume rendering, minimum/maximum intensity projections and more... Interactively change colormaps, alphamaps, and overlay segmented regions or raw data.
 
-![suMRak logo](resources/splash.png)
+ ------------------------------------------------------------------------
+ 
+<p align="center">
+  <img src="https://github.com/Sternak-Marko/suMRak/blob/main/resources/splash.png" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/Sternak-Marko/suMRak/blob/main/resources/unizg.png" />
+  <img height = "179px" width = "375px" src="https://github.com/Sternak-Marko/suMRak/blob/main/resources/hrzz.png" />
+</p>
+
+<p align="center">
+  <img height = "114px" width = "500px" src="https://github.com/Sternak-Marko/suMRak/blob/main/resources/glowlab.png" />
+</p>
