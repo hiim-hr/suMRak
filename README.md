@@ -29,15 +29,24 @@ Optional - required for image registration:
 
 ------------------------------------------------------------------------
 
- ## suMRak Components
+## suMRak Components
 
 suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRi data to only one.
 > [!NOTE]
 > suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
 
- ------------------------------------------------------------------------
+------------------------------------------------------------------------
+### MRi Data Loading & Exporting
 
- ### Segmenter
+suMRak accepts data in the forms of singular Neuroimaging Informatics Technology Initiative (NIfTI) _.nii_ files, Bruker ParaVision study folders or _.PvDatasets_ files, and custom-made suMRak folders. Data from Bruker ParaVision study folders 
+and .PvDatasets files is loaded using the proprietary Bruker package _**pvmatlab**_ by initializing objects of the ImageDataObject class and scraping the necessary information. 
+
+> [!IMPORTANT]
+> The _**pvmatlab**_ package is available from Bruker BioSpin MRI GmbH, Rudolf-Plank Str. 23, 76275 Ettlingen under its respective license, and written permission was obtained for its use in suMRak.
+
+All data analyzed and generated using suMRak can be exported directly into NIfTI files for easier future manipulation.
+
+### Segmenter
 
 The segmenter tab allows you to easily segment the brain :brain:, hemispheres and regions of interest. Use traditional polygonal marking or speed things up using integrated 2D/3D K-means 
 clustering - it's your choice.
