@@ -33,6 +33,7 @@ suMRak contains many different components, all integrated to work and communicat
 > [!NOTE]
 > suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
 
+------------------------------------------------------------------------
 
 ### MRi Data Loading & Exporting
 
