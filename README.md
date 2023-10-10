@@ -2,8 +2,6 @@
 
 <b> A Simple Utility MRi Analysis Kit </b>
 
-------------------------------------------------------------------------
-
 ![Static Badge](https://img.shields.io/badge/MATLAB-R2023a-orange) ![Static Badge](https://img.shields.io/badge/python-3.9-blue)
 
 ------------------------------------------------------------------------
@@ -35,7 +33,7 @@ suMRak contains many different components, all integrated to work and communicat
 > [!NOTE]
 > suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
 
-------------------------------------------------------------------------
+
 ### MRi Data Loading & Exporting
 
 suMRak accepts data in the forms of singular Neuroimaging Informatics Technology Initiative (NIfTI) _.nii_ files, Bruker ParaVision study folders or _.PvDatasets_ files, and custom-made suMRak folders. Data from Bruker ParaVision study folders 
