@@ -31,13 +31,13 @@ Optional - required for image registration:
 
 suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRi data to only one.
 > [!NOTE]
-> suMRak comes with its own carefully written [MANUAL], which explains all of the components in detail and provides recommended workflow steps.
+> suMRak comes with its own carefully written [MANUAL](Manual_Beta_v0.9.pdf), which explains all of the components in detail and provides recommended workflow steps.
 
 ------------------------------------------------------------------------
 
 ### MRi Data Loading & Exporting
 
-suMRak accepts data in the forms of singular Neuroimaging Informatics Technology Initiative (NIfTI) _.nii_ files, Bruker ParaVision study folders or _.PvDatasets_ files, and custom-made suMRak folders. Data from Bruker ParaVision study folders 
+suMRak accepts data in the forms of singular NIfTI _.nii_ files, Bruker ParaVision study folders or _.PvDatasets_ files, and custom-made suMRak folders. Data from Bruker ParaVision study folders 
 and .PvDatasets files is loaded using the proprietary Bruker package _**pvmatlab**_ by initializing objects of the ImageDataObject class and scraping the necessary information. 
 
 > [!IMPORTANT]
