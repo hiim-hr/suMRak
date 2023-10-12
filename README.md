@@ -31,7 +31,7 @@ Optional - required for image registration:
 
 suMRak contains many different components, all integrated to work and communicate with each other - thereby reducing the amount of different tools required for getting the information you need from your MRi data to only one.
 > [!NOTE]
-> suMRak comes with its own carefully written [MANUAL](Manual_Beta_v0.9.pdf), which explains all of the components in detail and provides recommended workflow steps.
+> suMRak comes with its own carefully written [MANUAL](https://github.com/Sternak-Marko/suMRak/Manual_Beta_v0.9.pdf), which explains all of the components in detail and provides recommended workflow steps.
 
 ------------------------------------------------------------------------
 
