@@ -5091,7 +5091,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             dim4_reference = app.Dim4Spinner_TimeAlignmentReference.Value;
             dim5_reference = app.Dim5Spinner_TimeAlignmentReference.Value;
             % Set python instructions
-            rigid_alignment = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap('rigid'));", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
+            rigid_alignment = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap('rigid'));", "elastixImageFilter.LogToConsoleOff()", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
             
             switch numel(data_dims)
                 % 4D time alignment
@@ -5145,6 +5145,9 @@ classdef suMRak_exported < matlab.apps.AppBase
                     app.Dim5Spinner_TimeAlignmentControl.Value = 1;
             end
 
+            % Delete output .txt files
+            delete('TransformParameters.0.txt');
+
             % Update slice controls
             try
                 app.SliceSlider_Registration.Value = 1;
@@ -5174,7 +5177,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Enable remaining components, refresh image
             app.TurboButton_Registration.Enable = 'on';
             app.GreyscaleButton_Registration.Enable = 'on';
-            app.ImageshownSwitch_Registration.Enable = 'on';
+            app.ShowReferenceFixedCheckBox.Enable = 'on';
 
             RefreshImageRegistration(app); 
 
