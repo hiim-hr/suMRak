@@ -1417,6 +1417,16 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectTimeAlignmentDropDown.Items = {'None'};
             app.SelectPreMapDropDown.Items = {'None'};
             app.Select3DViewerDropDown.Items = {'None'};
+
+            % Reset export folder path and components
+            app.CreatesuMRakFolderButton.Enable = 'off';
+            app.ExportEnvironmentButton.Enable = 'off';
+            app.ExportDataButton_Preview.Enable = 'off';
+            app.ExportDataButton_Segmenter.Enable = 'off';
+            app.ExportDataButton_Results.Enable = 'off';
+            app.ExportDataButton_Registration.Enable = 'off';
+            app.ExportDataButton_Map.Enable = 'off';
+            app.ExportSceneButton.Enable = 'off';
     
             % Disable and reset components in different tabs
             
@@ -1729,7 +1739,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 4
                     app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value);
                 case 5
-                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4SpinnAlphaDataer_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
+                    app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
                 otherwise
                     %error alert missing
             end
