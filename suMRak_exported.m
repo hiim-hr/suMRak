@@ -1418,7 +1418,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectPreMapDropDown.Items = {'None'};
             app.Select3DViewerDropDown.Items = {'None'};
 
-            % Reset export folder path and components
+            % Reset export folder path and components, save buttons
             app.CreatesuMRakFolderButton.Enable = 'off';
             app.ExportEnvironmentButton.Enable = 'off';
             app.ExportDataButton_Preview.Enable = 'off';
@@ -1427,12 +1427,15 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ExportDataButton_Registration.Enable = 'off';
             app.ExportDataButton_Map.Enable = 'off';
             app.ExportSceneButton.Enable = 'off';
+
+            app.SaveDataButton_Preview.Enable = 'off';
+            app.SaveSegmentedDataButton.Enable = 'off';
+            app.SaveRegisteredDataButton.Enable = 'off';
+            app.SaveDataButton_Map.Enable = 'off';
     
             % Disable and reset components in different tabs
             
             % Main
-            app.ExportEnvironmentButton.Enable = 'off';
-            app.CreatesuMRakFolderButton.Enable = 'off';
             % Reset UIAxes
             cla(app.UIAxes_Preview);
             app.UITable_Preview.Data=table();
@@ -1488,8 +1491,6 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.HemisphereSegmentationToolsPanel.Visible = 'off';
             app.ROISegmentationToolsPanel.Visible = 'off';
             app.SelectionToolsPanel.Visible = 'off';
-            app.SaveSegmentedDataButton.Enable = 'off';
-            app.ExportDataButton_Segmenter.Enable = 'off';
             app.PerspectiveViewButton.Enable = 'off';
     
             % Registration
@@ -1532,7 +1533,6 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Volumetry 
             cla(app.UIAxes_Results);
             app.UIAxes_Results.Visible = 'off';
-            app.ExportDataButton_Results.Enable = 'off';
             % Reset brain fields and table
             app.UITable_ResultsBrain.Data = table();
             app.VolumeEditField_Brain.Value = 0;
@@ -1575,8 +1575,6 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Reset UIAxes
             cla(app.UIAxes_PreMap);
             cla(app.UIAxes_PostMap);
-            app.ExportDataButton_Map.Enable = 'off';
-            app.SaveDataButton_Map.Enable = 'off';
             app.DSCMapDropDown.Value = 'CBF';
             app.DSCMapDropDown.Enable = 'off';
             app.SliceSlider_PreMap.Enable = 'off';
