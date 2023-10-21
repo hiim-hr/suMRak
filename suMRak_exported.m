@@ -5763,7 +5763,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             ivalues = str2double(split(app.TIvaluesText.Value, ";")');
 
             if ~(length(tvalues) == size(app.PreMapImageData, 4) || length(ivalues) == size(app.PreMapImageData, 4))
-                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x, y, z, nEcho.', ...
                     'Dimension error');
                 return
             end
@@ -5863,7 +5863,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             tvalues = str2double(split(app.TEvaluesText.Value, ";")');
 
             if size(tvalues) ~= size(app.PreMapImageData, 4)
-                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TE values not equal to number of echoes. Please permute dimensions in following order: x, y, z, nEcho.', ...
                     'Dimension error');
                 return
             end
@@ -5946,7 +5946,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             ivalues = str2double(split(app.TIvaluesText.Value, ";")');
 
             if ~(length(ivalues) == size(app.PreMapImageData, 4) || length(ivalues) == size(app.PreMapImageData, 5))
-                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x,y,z,nEcho.', ...
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Number of TR or TI values not equal to number of echoes. Please permute dimensions in following order: x, y, z, nEcho.', ...
                     'Dimension error');
                 return
             end
