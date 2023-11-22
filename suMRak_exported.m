@@ -302,6 +302,8 @@ classdef suMRak_exported < matlab.apps.AppBase
         VolumeEditFieldLabel_Brain      matlab.ui.control.Label
         UITable_ResultsBrain            matlab.ui.control.Table
         DViewerTab                      matlab.ui.container.Tab
+        PlaneIntersectionSwitch         matlab.ui.control.Switch
+        PlaneIntersectionSwitchLabel    matlab.ui.control.Label
         ExportSceneButton               matlab.ui.control.Button
         DataDimensionsPanel             matlab.ui.container.Panel
         ZEditField_Viewer               matlab.ui.control.NumericEditField
@@ -1605,6 +1607,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             delete(app.ViewerParentObject);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Value = "Volume Rendering";
+            app.PlaneIntersectionSwitch.Enable = 'off';
             app.ColormapDropDown_Viewer.Enable = 'off';
             app.ColormapDropDown_Viewer.Value = "Greyscale";
             app.ColormapImage_Viewer.Visible = 'off';
@@ -6166,6 +6169,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 cla(app.UIAxes_AlphaMap);
                 app.RenderingStyleDropDown.Enable = 'off';
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
+                app.PlaneIntersectionSwitch.Enable = 'off';
                 app.ColormapDropDown_Viewer.Enable = 'off';
                 app.ColormapDropDown_Viewer.Value = "Greyscale";
                 app.ColormapImage_Viewer.Visible = 'off';
@@ -6199,6 +6203,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             if numel(app.ViewerImageDataDims)<3
                 app.RenderingStyleDropDown.Enable = 'off';
                 app.RenderingStyleDropDown.Value = "Volume Rendering";
+                app.PlaneIntersectionSwitch.Enable = 'off';
                 app.ColormapDropDown_Viewer.Enable = 'off';
                 app.ColormapDropDown_Viewer.Value = "Greyscale";
                 app.ColormapImage_Viewer.Visible = 'off';
@@ -6237,6 +6242,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Enable/Disable Components
             app.RenderingStyleDropDown.Enable = 'on';
             app.RenderingStyleDropDown.Value = "Volume Rendering";
+            app.PlaneIntersectionSwitch.Enable = 'on';
             app.ColormapDropDown_Viewer.Enable = 'on';
             app.ColormapDropDown_Viewer.Value = "Greyscale";
             app.ColormapImage_Viewer.Visible = 'on';
@@ -6293,18 +6299,35 @@ classdef suMRak_exported < matlab.apps.AppBase
             switch app.RenderingStyleDropDown.Value
                 case "Volume Rendering"
                     renderingStyle = 'VolumeRendering';
+                    app.PlaneIntersectionSwitch.Enable = 'on';
                 case "Maximum Intensity Projection"
                     renderingStyle = 'MaximumIntensityProjection';
+                    app.PlaneIntersectionSwitch.Enable = 'on';
                 case "Minimum Intensity Projection"
                     renderingStyle = 'MinimumIntensityProjection';
+                    app.PlaneIntersectionSwitch.Enable = 'on';
                 case "Slice Planes"
                     renderingStyle = 'SlicePlanes';
+                    app.PlaneIntersectionSwitch.Enable = 'off';
                 case "Gradient Opacity"
                     renderingStyle = 'GradientOpacity';
+                    app.PlaneIntersectionSwitch.Enable = 'on';
                 case "Isosurface"
                     renderingStyle = 'Isosurface';
+                    app.PlaneIntersectionSwitch.Enable = 'on';
             end
             app.ViewerParentObject.Children.RenderingStyle = renderingStyle;
+        end
+
+        % Value changed function: PlaneIntersectionSwitch
+        function PlaneIntersectionSwitchValueChanged(app, event)
+            
+            switch app.PlaneIntersectionSwitch.Value
+                case 'On'
+                    app.ViewerParentObject.ClipIntersection = 'on';
+                case 'Off'
+                    app.ViewerParentObject.ClipIntersection = 'off';
+            end            
         end
 
         % Value changed function: ColormapDropDown_Viewer
@@ -8498,7 +8521,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.UIAxes_AlphaMap.YTick = [];
             app.UIAxes_AlphaMap.ZTick = [];
             app.UIAxes_AlphaMap.Box = 'on';
-            app.UIAxes_AlphaMap.Position = [974 34 263 218];
+            app.UIAxes_AlphaMap.Position = [974 19 263 218];
 
             % Create ViewerPanel
             app.ViewerPanel = uipanel(app.DViewerTab);
@@ -8524,7 +8547,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Create RenderingStyleDropDownLabel
             app.RenderingStyleDropDownLabel = uilabel(app.DViewerTab);
             app.RenderingStyleDropDownLabel.HorizontalAlignment = 'center';
-            app.RenderingStyleDropDownLabel.Position = [1060 474 90 22];
+            app.RenderingStyleDropDownLabel.Position = [1060 489 90 22];
             app.RenderingStyleDropDownLabel.Text = 'Rendering Style';
 
             % Create RenderingStyleDropDown
@@ -8533,13 +8556,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.RenderingStyleDropDown.ValueChangedFcn = createCallbackFcn(app, @RenderingStyleDropDownValueChanged, true);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Tooltip = {''};
-            app.RenderingStyleDropDown.Position = [1007 446 196 22];
+            app.RenderingStyleDropDown.Position = [1007 461 196 22];
             app.RenderingStyleDropDown.Value = 'Volume Rendering';
 
             % Create ColormapDropDownLabel_Viewer
             app.ColormapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.ColormapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.ColormapDropDownLabel_Viewer.Position = [1077 404 57 22];
+            app.ColormapDropDownLabel_Viewer.Position = [1077 360 57 22];
             app.ColormapDropDownLabel_Viewer.Text = 'Colormap';
 
             % Create ColormapDropDown_Viewer
@@ -8548,13 +8571,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ColormapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDown_ViewerValueChanged, true);
             app.ColormapDropDown_Viewer.Enable = 'off';
             app.ColormapDropDown_Viewer.Tooltip = {''};
-            app.ColormapDropDown_Viewer.Position = [1007 376 196 22];
+            app.ColormapDropDown_Viewer.Position = [1007 332 196 22];
             app.ColormapDropDown_Viewer.Value = 'Greyscale';
 
             % Create AlphamapDropDownLabel_Viewer
             app.AlphamapDropDownLabel_Viewer = uilabel(app.DViewerTab);
             app.AlphamapDropDownLabel_Viewer.HorizontalAlignment = 'center';
-            app.AlphamapDropDownLabel_Viewer.Position = [1076 296 59 22];
+            app.AlphamapDropDownLabel_Viewer.Position = [1076 271 59 22];
             app.AlphamapDropDownLabel_Viewer.Text = 'Alphamap';
 
             % Create AlphamapDropDown_Viewer
@@ -8563,13 +8586,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.AlphamapDropDown_Viewer.ValueChangedFcn = createCallbackFcn(app, @AlphamapDropDown_ViewerValueChanged, true);
             app.AlphamapDropDown_Viewer.Enable = 'off';
             app.AlphamapDropDown_Viewer.Tooltip = {''};
-            app.AlphamapDropDown_Viewer.Position = [1007 268 196 22];
+            app.AlphamapDropDown_Viewer.Position = [1007 243 196 22];
             app.AlphamapDropDown_Viewer.Value = 'Linear';
 
             % Create ColormapImage_Viewer
             app.ColormapImage_Viewer = uiimage(app.DViewerTab);
             app.ColormapImage_Viewer.Visible = 'off';
-            app.ColormapImage_Viewer.Position = [983 345 244 21];
+            app.ColormapImage_Viewer.Position = [983 301 244 21];
 
             % Create Dim5Spinner_ViewerLabel
             app.Dim5Spinner_ViewerLabel = uilabel(app.DViewerTab);
@@ -8677,6 +8700,19 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ExportSceneButton.Enable = 'off';
             app.ExportSceneButton.Position = [773 32 100 23];
             app.ExportSceneButton.Text = 'Export Scene';
+
+            % Create PlaneIntersectionSwitchLabel
+            app.PlaneIntersectionSwitchLabel = uilabel(app.DViewerTab);
+            app.PlaneIntersectionSwitchLabel.HorizontalAlignment = 'center';
+            app.PlaneIntersectionSwitchLabel.WordWrap = 'on';
+            app.PlaneIntersectionSwitchLabel.Position = [1046 416 119 34];
+            app.PlaneIntersectionSwitchLabel.Text = 'Plane Intersection';
+
+            % Create PlaneIntersectionSwitch
+            app.PlaneIntersectionSwitch = uiswitch(app.DViewerTab, 'slider');
+            app.PlaneIntersectionSwitch.ValueChangedFcn = createCallbackFcn(app, @PlaneIntersectionSwitchValueChanged, true);
+            app.PlaneIntersectionSwitch.Enable = 'off';
+            app.PlaneIntersectionSwitch.Position = [1083 391 45 20];
 
             % Create AboutTab
             app.AboutTab = uitab(app.TabGroup);
