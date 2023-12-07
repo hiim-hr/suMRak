@@ -1605,6 +1605,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % 3D Viewer
             delete(app.ViewerParentObject);
+            cla(app.UIAxes_AlphaMap);
             app.RenderingStyleDropDown.Enable = 'off';
             app.RenderingStyleDropDown.Value = "Volume Rendering";
             app.PlaneIntersectionSwitch.Enable = 'off';
@@ -6475,7 +6476,8 @@ classdef suMRak_exported < matlab.apps.AppBase
         function ExportSceneButtonPushed(app, event)
             image_name = inputdlg('Enter new image file name', 'Export scene to an image', [1 40], {'image.tif'});
 
-            if ~exists(image_name)
+            if exist(image_name{1}, 'file')
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Error exporting scene image. Please pick a non-existant file name.", "Error exporting scene: duplicate file.")
                 return
             end
 
