@@ -2099,27 +2099,67 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Populate text fields from last loaded imageObj for study info
             progress.Message = "Populating information fields";
-            app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
-            app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
-            app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
-            app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
-            app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
-            app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
-            app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
-            app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
-                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
-                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
-                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
-            app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
-                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
-                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
-                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
-            BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
-                str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
-            StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
-                str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
-                str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
-            app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+            try
+                app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
+            catch
+                app.SubjectIDEditField.Value = "No valid ID found.";
+            end
+            try
+                app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
+            catch
+                app.StudyIDEditField.Value = "No valid ID found.";
+            end
+            try
+                app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
+            catch
+                app.SubjectCommentEditField.Value = "No valid comment found.";
+            end
+            try
+                app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
+            catch
+                app.StudyCommentEditField.Value = "No valid comment found.";
+            end
+            try
+                app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
+            catch
+                app.SubjectTypeEditField.Value = "Subject type not specified.";
+            end
+            try
+                app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
+            catch
+                app.SexEditField.Value = "Subject sex not specified.";
+            end
+            try
+                app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
+            catch
+                app.WeightEditField.Value = "Subject weight not specified.";
+            end
+            try
+                app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
+            catch
+                app.StudyStartDateEditField.Value = "Study start date not specified.";
+            end
+            try
+                app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
+            catch
+                app.StudyStartTimeEditField.Value = "Study start time not specified.";
+            end
+            try
+                BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
+                    str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
+                StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
+                app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+            catch
+                app.SubjectAgeEditField.Value = "Subject age not specified.";
+            end
 
             % Update drop down items
             app.PreviewDropDown.Items = exp_ID;
@@ -2349,27 +2389,67 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Populate text fields from last loaded imageObj for study info
             progress.Message = "Populating information fields";
-            app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
-            app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
-            app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
-            app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
-            app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
-            app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
-            app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
-            app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
-                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
-                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
-                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
-            app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
-                str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
-                str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
-                str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
-            BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
-                str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
-            StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
-                str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
-                str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
-            app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+            try
+                app.SubjectIDEditField.Value = imageObj.Visu.VisuSubjectId;
+            catch
+                app.SubjectIDEditField.Value = "No valid ID found.";
+            end
+            try
+                app.StudyIDEditField.Value = imageObj.Visu.VisuStudyId;
+            catch
+                app.StudyIDEditField.Value = "No valid ID found.";
+            end
+            try
+                app.SubjectCommentEditField.Value = regexprep(imageObj.Visu.VisuSubjectComment,'(\\t|\\n|\\r)','');
+            catch
+                app.SubjectCommentEditField.Value = "No valid comment found.";
+            end
+            try
+                app.StudyCommentEditField.Value = regexprep(imageObj.Visu.VisuStudyDescription,'(\\t|\\n|\\r)','');
+            catch
+                app.StudyCommentEditField.Value = "No valid comment found.";
+            end
+            try
+                app.SubjectTypeEditField.Value = imageObj.Visu.VisuSubjectType;
+            catch
+                app.SubjectTypeEditField.Value = "Subject type not specified.";
+            end
+            try
+                app.SexEditField.Value = imageObj.Visu.VisuSubjectSex;
+            catch
+                app.SexEditField.Value = "Subject sex not specified.";
+            end
+            try
+                app.WeightEditField.Value = num2str(imageObj.Visu.VisuSubjectWeight);
+            catch
+                app.WeightEditField.Value = "Subject weight not specified.";
+            end
+            try
+                app.StudyStartDateEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'dd.MM.yyyy'));
+            catch
+                app.StudyStartDateEditField.Value = "Study start date not specified.";
+            end
+            try
+                app.StudyStartTimeEditField.Value = string(datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(7:8)),str2double(imageObj.Visu.VisuStudyDate(10:11)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(13:14)),str2double(imageObj.Visu.VisuStudyDate(16:17)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(19:20)), 'Format', 'HH:mm:ss'));
+            catch
+                app.StudyStartTimeEditField.Value = "Study start time not specified.";
+            end
+            try
+                BirthDate = datetime(str2double(imageObj.Visu.VisuSubjectBirthDate(1:4)), ...
+                    str2double(imageObj.Visu.VisuSubjectBirthDate(5:6)),str2double(imageObj.Visu.VisuSubjectBirthDate(7:8)));
+                StudyDate = datetime(str2double(imageObj.Visu.VisuStudyDate(2:5)),str2double(imageObj.Visu.VisuStudyDate(7:8)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(10:11)),str2double(imageObj.Visu.VisuStudyDate(13:14)), ...
+                    str2double(imageObj.Visu.VisuStudyDate(16:17)),str2double(imageObj.Visu.VisuStudyDate(19:20)));
+                app.SubjectAgeEditField.Value = num2str(floor(days(StudyDate - BirthDate)));
+            catch
+                app.SubjectAgeEditField.Value = "Subject age not specified.";
+            end
 
             % Update drop down items
             app.PreviewDropDown.Items = exp_ID;
@@ -2394,7 +2474,11 @@ classdef suMRak_exported < matlab.apps.AppBase
             [temp_file, temp_dir] = uigetfile('.nii');
             figure(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
             nifti_info = niftiinfo(cat(2, temp_dir, temp_file));
-            exp_ImageData = {pagetranspose(niftiread(cat(2, temp_dir, temp_file)))};
+            try
+                exp_ImageData = {pagetranspose(double(niftiread(cat(2, temp_dir, temp_file))))};
+            catch
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'SuMRak ran out of memory; the selected NIfTI may be too large.', 'Memory Error', 'Icon','error');
+            end
             
             % Extract data from niftinfo
             nifti_ID = {temp_file};
@@ -3363,7 +3447,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                         app.SegmenterImageZY = squeeze(app.SegmenterHelperVolume(:,app.SegmenterPosX,:));
                     catch ME
                         if strcmp(ME.identifier,'MATLAB:badsubscript')
-                            uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Selection out of bounds. Please select a point on the image.', 'Out of bounds error', 'Icon','error');
+                            uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Selection out of bounds. Please select a point on the image.', 'Out Of Bounds Error', 'Icon','error');
                         end
                         app.PerspectiveViewButton.Value = 0;
                         return
@@ -6740,6 +6824,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Create SubjectCommentEditField
             app.SubjectCommentEditField = uieditfield(app.MainTab, 'text');
             app.SubjectCommentEditField.Editable = 'off';
+            app.SubjectCommentEditField.HorizontalAlignment = 'right';
             app.SubjectCommentEditField.Position = [752 620 151 22];
 
             % Create StudyCommentEditFieldLabel
@@ -6751,6 +6836,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Create StudyCommentEditField
             app.StudyCommentEditField = uieditfield(app.MainTab, 'text');
             app.StudyCommentEditField.Editable = 'off';
+            app.StudyCommentEditField.HorizontalAlignment = 'right';
             app.StudyCommentEditField.Position = [1060 620 151 22];
 
             % Create SubjectAgeEditFieldLabel
@@ -6803,6 +6889,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Create SubjectTypeEditField
             app.SubjectTypeEditField = uieditfield(app.MainTab, 'text');
             app.SubjectTypeEditField.Editable = 'off';
+            app.SubjectTypeEditField.HorizontalAlignment = 'right';
             app.SubjectTypeEditField.Position = [752 556 151 22];
 
             % Create SexEditFieldLabel
@@ -6814,6 +6901,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Create SexEditField
             app.SexEditField = uieditfield(app.MainTab, 'text');
             app.SexEditField.Editable = 'off';
+            app.SexEditField.HorizontalAlignment = 'right';
             app.SexEditField.Position = [677 524 89 22];
 
             % Create WeightEditFieldLabel
@@ -8762,7 +8850,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.VersionLabel.FontSize = 18;
             app.VersionLabel.FontAngle = 'italic';
             app.VersionLabel.Position = [1039 649 174 23];
-            app.VersionLabel.Text = 'version 0.9.3.0 BETA';
+            app.VersionLabel.Text = 'version 0.9.4.0 BETA';
 
             % Create AuthorsILabel
             app.AuthorsILabel = uilabel(app.AboutTab);
