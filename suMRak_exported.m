@@ -2478,6 +2478,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 exp_ImageData = {pagetranspose(double(niftiread(cat(2, temp_dir, temp_file))))};
             catch
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'SuMRak ran out of memory; the selected NIfTI may be too large.', 'Memory Error', 'Icon','error');
+                return
             end
             
             % Extract data from niftinfo
