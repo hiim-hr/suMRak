@@ -199,7 +199,7 @@ classdef ROIVolumeSegmenter_exported < matlab.apps.AppBase
                 case 'Chan-Vese'
                     app.SmoothFactorEditField.Value = 0;
                     app.ContractionBiasEditField.Value = 0;
-                case 'edge'
+                case 'Edge'
                     app.SmoothFactorEditField.Value = 1;
                     app.ContractionBiasEditField.Value = 0.3;
             end
