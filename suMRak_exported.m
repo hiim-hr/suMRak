@@ -554,7 +554,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
                     % Moving and fixed multiplication
                     if app.MultiplyMovingAndFixedMenu.Checked == "on"
-                        app.CurrentSlice = CurrentFixed.*app.CurrentSlice;
+                        app.CurrentSlice = double(CurrentFixed).*app.CurrentSlice;
                         app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
                         % Display image
                         switch app.TurboButton_Registration.Value
@@ -8856,7 +8856,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.VersionLabel.FontSize = 18;
             app.VersionLabel.FontAngle = 'italic';
             app.VersionLabel.Position = [1039 649 174 23];
-            app.VersionLabel.Text = 'version 0.9.4.0 BETA';
+            app.VersionLabel.Text = 'version 0.9.5.0 BETA';
 
             % Create AuthorsILabel
             app.AuthorsILabel = uilabel(app.AboutTab);
