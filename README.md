@@ -29,9 +29,11 @@ Optional - required for image registration:
 
 Open the Windows command prompt and insert following commands, line by line:
 
-`pip install --upgrade pip`
-`pip install SimpleITK`
-`pip install SimpleITK-SimpleElastix`
+```
+pip install --upgrade pip
+pip install SimpleITK
+pip install SimpleITK-SimpleElastix
+```
 
 ------------------------------------------------------------------------
 
