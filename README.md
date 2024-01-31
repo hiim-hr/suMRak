@@ -25,6 +25,14 @@ The following are **prerequisites** for installing suMRak on a end-user machine:
 Optional - required for image registration: 
 - suMRak uses the [SimpleElastix](https://simpleelastix.github.io/) python library for image registration, which can be compiled and installed by following the instructions in the [SimpleElastix Documentation](https://simpleelastix.readthedocs.io/GettingStarted.html#compiling-on-windows)
 
+### Instructions for SimpleElastix installation
+
+Open the Windows command prompt and insert following commands, line by line:
+
+`pip install --upgrade pip`
+`pip install SimpleITK`
+`pip install SimpleITK-SimpleElastix`
+
 ------------------------------------------------------------------------
 
 ## suMRak Components
