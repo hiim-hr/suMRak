@@ -23,9 +23,10 @@ The following are **prerequisites** for installing suMRak on a end-user machine:
 - [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) - During installation, select the option to add Python to PATH
 
 Optional - required for image registration: 
-- suMRak uses the [SimpleElastix](https://simpleelastix.github.io/) python library for image registration, which can be compiled and installed by following the instructions in the [SimpleElastix Documentation](https://simpleelastix.readthedocs.io/GettingStarted.html#compiling-on-windows)
+- suMRak uses the [SimpleElastix](https://simpleelastix.github.io/) python library for image registration, which can be compiled and installed by following the instructions in the [SimpleElastix Documentation](https://simpleelastix.readthedocs.io/GettingStarted.html#compiling-on-windows).
+- Additionally, SimpleElastix can be installed using the Windows command prompt and the pip package installer for Python;
 
-### Instructions for SimpleElastix installation
+### Instructions for SimpleElastix installation using pip
 
 Open the Windows command prompt and insert following commands, line by line:
 
