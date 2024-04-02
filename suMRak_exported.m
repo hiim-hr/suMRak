@@ -6609,7 +6609,7 @@ classdef suMRak_exported < matlab.apps.AppBase
     
             close(progress);
     
-            selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Thank you for using suMRak! Please cite us as: <citation pending>", ...
+            selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Thank you for using suMRak! Please cite us as: Ister R, Sternak M, Škokić S and Gajović S (2024) suMRak: a multi-tool solution for preclinical brain MRI data analysis. Front. Neuroinform. 18:1358917. doi: 10.3389/fninf.2024.1358917", ...
                 "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
     
             switch selection
@@ -8855,8 +8855,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.VersionLabel = uilabel(app.AboutTab);
             app.VersionLabel.FontSize = 18;
             app.VersionLabel.FontAngle = 'italic';
-            app.VersionLabel.Position = [1039 649 174 23];
-            app.VersionLabel.Text = 'version 0.9.5.0 BETA';
+            app.VersionLabel.Position = [1039 649 108 23];
+            app.VersionLabel.Text = 'version 1.0.0';
 
             % Create AuthorsILabel
             app.AuthorsILabel = uilabel(app.AboutTab);
