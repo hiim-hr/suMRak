@@ -28,7 +28,7 @@ All notable changes to suMRak are documented in this file.
 - **Reference Atlas Importer**
   - Label volumes are downloaded or bundled and applied as brain masks. The nerves and inner ear are excluded for Waxholm.
   - MICe atlas now uses the MINC (`.mnc`) distribution and is read with the bundled `mominc` reader.
-  - The Waxholm label file (`resources/WHS_0.6.1_Labels.nii.gz`) is bundled with the app, which avoids a NITRC download that the built-in unzip could not extract (Deflate64). The path works both in MATLAB and in deployed builds (`isdeployed`/`ctfroot`).
+  - The Waxholm label file (`resources/WHS_0.6.1_Labels.nii.gz`) is bundled with the app, which avoids a NITRC download that the built-in unzip could not extract (Deflate64). The path is resolved relative to the app, so it works both in MATLAB and in standalone builds.
   - Download size estimates are more accurate, and the progress dialog shows every step.
 - Version string lives in one place (`app.Version`) and is written into `info.txt` of new study folders.
 
@@ -60,7 +60,7 @@ All notable changes to suMRak are documented in this file.
 #### MATLAB R2024a migration
 - The code base was refactored from R2023a to R2024a, and all eight apps are saved in R2024a.
 - Standalone builds target MATLAB Runtime R2024a.
-- The runtime check for the 3D Viewer's missing `volume` files uses `matlabroot` instead of a hard-coded `MATLAB Runtime\R2023a` install path, so it keeps working across Runtime versions.
+- The 3D Viewer's missing-files check for MATLAB Runtime R2023a was removed. R2024a has no `toolbox\images\volume` folder, so the check no longer applies.
 
 #### Other changes
 - `RegisterButtonPushed` sets the fixed and moving image dimensions itself, so it no longer depends on UI callbacks that do not fire during atlas registration.

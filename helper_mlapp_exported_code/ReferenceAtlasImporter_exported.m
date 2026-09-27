@@ -212,11 +212,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             
                 progress.Value = progress.Value + step_size;
                 progress.Message = 'Copying T2w Waxholm Space labels';
-                if isdeployed
-                    LabelsBasePath = ctfroot;
-                else
-                    LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
-                end
+                LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
                 copyfile(fullfile(LabelsBasePath, 'WHS_0.6.1_Labels.nii.gz'), ...
                     strcat(waxholm_t2_folder, filesep, 'T2WaxholmMouseLabels.nii.gz'));
             
@@ -270,11 +266,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                 progress.Value = progress.Value + step_size;
                 progress.Message = 'Unzipping T1w Waxholm Space Atlas - C57BL6J Mouse';
                 
-                if isdeployed
-                    LabelsBasePath = ctfroot;
-                else
-                    LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
-                end
+                LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
                 copyfile(fullfile(LabelsBasePath, 'WHS_0.6.1_Labels.nii.gz'), strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouseLabels.nii.gz'));
 
 

@@ -2611,44 +2611,6 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             movegui(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'center');
             
-             % Get app installation directory
-            if isdeployed % Stand-alone mode.
-                [~, result] = system('path');
-                currentDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
-            else % MATLAB mode.
-                currentDir = 1;
-            end
-
-            %  3D Viewer support-file check 
-            if isdeployed
-                runtimeRoot = matlabroot;
-                volumeDir   = fullfile(runtimeRoot, 'toolbox', 'images', 'volume');
-                if ~exist(volumeDir, 'dir') && ~isequal(currentDir, 1)
-                    fallbackVolume = fullfile(currentDir, 'volume');
-                    if exist(fallbackVolume, 'dir')
-                        selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
-                            sprintf(['Your MATLAB Runtime (%s) is missing files needed ', ...
-                                     'by the 3D Viewer. Replace them now? You may need ', ...
-                                     'to restart as an administrator on Windows.'], runtimeRoot), ...
-                            'MATLAB Runtime Missing Files', 'Icon', 'warning');
-                        if strcmp(selection, 'OK')
-                            [status, msg] = copyfile(fallbackVolume, volumeDir);
-                            if status
-                                uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
-                                    "Missing MATLAB Runtime files successfully replaced.", ...
-                                    "", "Options", {'OK'}, "DefaultOption", 1, "Icon", "success");
-                            else
-                                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
-                                    sprintf(['Error replacing missing files: %s\n\n', ...
-                                             'Please restart the application as ', ...
-                                             'administrator and try again.'], msg), ...
-                                    'Error Replacing Missing MATLAB Runtime Files');
-                            end
-                        end
-                    end
-                end
-            end
-
             % Populate transforms list box on Registration tab
             app.StageSettings = suMRak.defaultStageSettings();
             refreshTransformsListBox(app);

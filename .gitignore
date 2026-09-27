@@ -31,3 +31,8 @@ desktop.ini
 # Local tooling / scratch extraction of .mlapp archives
 .mlapp_extracted/
 .claude/
+
+# MATLAB Compiler project and build output
+suMRak-SimpleUtilityMRiAnalysisKit/
+suMRak-SimpleUtilityMRiAnalysisKit_resources/
+suMRak-SimpleUtilityMRiAnalysisKit.prj
