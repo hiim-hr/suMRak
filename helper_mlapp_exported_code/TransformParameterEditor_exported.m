@@ -23,7 +23,7 @@ classdef TransformParameterEditor_exported < matlab.apps.AppBase
         ShrinkFactorsEditField         matlab.ui.control.EditField
         ShrinkFactorsEditFieldLabel    matlab.ui.control.Label
         ConvergenceTolEditField        matlab.ui.control.NumericEditField
-        ConvegrenceToleranceEditFieldLabel  matlab.ui.control.Label
+        ConvergenceToleranceLabel      matlab.ui.control.Label
         NumIterationsSpinner           matlab.ui.control.Spinner
         NrofIterationsSpinnerLabel     matlab.ui.control.Label
         LearningRateSpinner            matlab.ui.control.Spinner
@@ -353,11 +353,11 @@ classdef TransformParameterEditor_exported < matlab.apps.AppBase
             app.NumIterationsSpinner = uispinner(app.OptimizerPanel);
             app.NumIterationsSpinner.Position = [134 112 62 22];
 
-            % Create ConvegrenceToleranceEditFieldLabel
-            app.ConvegrenceToleranceEditFieldLabel = uilabel(app.OptimizerPanel);
-            app.ConvegrenceToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.ConvegrenceToleranceEditFieldLabel.Position = [14 77 132 22];
-            app.ConvegrenceToleranceEditFieldLabel.Text = 'Convegrence Tolerance';
+            % Create ConvergenceToleranceLabel
+            app.ConvergenceToleranceLabel = uilabel(app.OptimizerPanel);
+            app.ConvergenceToleranceLabel.HorizontalAlignment = 'right';
+            app.ConvergenceToleranceLabel.Position = [14 77 132 22];
+            app.ConvergenceToleranceLabel.Text = 'Convergence Tolerance';
 
             % Create ConvergenceTolEditField
             app.ConvergenceTolEditField = uieditfield(app.OptimizerPanel, 'numeric');

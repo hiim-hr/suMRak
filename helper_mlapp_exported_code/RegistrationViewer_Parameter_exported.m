@@ -797,7 +797,7 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             % Create ReturnInstructionsButton
             app.ReturnInstructionsButton = uibutton(app.RegistrationViewerUIFigure, 'push');
             app.ReturnInstructionsButton.ButtonPushedFcn = createCallbackFcn(app, @ReturnInstructionsButtonPushed, true);
-            app.ReturnInstructionsButton.Position = [702 70 125 22];
+            app.ReturnInstructionsButton.Position = [691 70 125 22];
             app.ReturnInstructionsButton.Text = 'Return Instructions';
 
             % Create ColormapButtonGroup_Parameter
