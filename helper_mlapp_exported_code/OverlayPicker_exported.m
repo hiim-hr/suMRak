@@ -41,6 +41,19 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, caller, DropdownItemsCombined, ExperimentTable, SavedTable, DataDims)
             
+            % Input validation 
+            % SavedTable is [] until something has been saved (e.g. after loading
+            % a single NIfTI), so an empty value is accepted.
+            assert((iscell(DropdownItemsCombined) || isstring(DropdownItemsCombined)) ...
+                && ~isempty(DropdownItemsCombined), ...
+                'OverlayPicker: DropdownItemsCombined must be a non-empty list of names.');
+            assert(istable(ExperimentTable) || isempty(ExperimentTable), ...
+                'OverlayPicker: ExperimentTable must be a MATLAB table.');
+            assert(istable(SavedTable) || isempty(SavedTable), ...
+                'OverlayPicker: SavedTable must be a MATLAB table.');
+            assert(isnumeric(DataDims) && ~isempty(DataDims), ...
+                'OverlayPicker: DataDims must be a non-empty numeric vector.');
+
             % Center on screen
             movegui(app.OverlayPickerUIFigure, 'center');
 
@@ -62,6 +75,7 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
 
         % Value changed function: ExperimentDropDown
         function ExperimentDropDownValueChanged(app, event)
+            
             value = app.ExperimentDropDown.Value;
             
             if value == "None"
@@ -79,25 +93,52 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
                 return
             end
 
-            % Get selected sequence image data from loaded experiments or saved registration experiments
-            try
-                app.Volume = cell2mat(app.SavedTable.Image(value));
+            % Get selected sequence image data. Use the SavedTable (registered/
+            % processed data) when it holds this experiment; otherwise fall back
+            % to the raw ExperimentPropertyTable. Real load errors are reported.
+            savedT  = app.SavedTable;
+            inSaved = istable(savedT) && ~isempty(savedT) ...
+                && ismember('Image', savedT.Properties.VariableNames) ...
+                && ismember(value, savedT.Properties.RowNames);
+
+            if inSaved
+                try
+                    app.Volume = cell2mat(savedT.Image(value));
+                catch ME
+                    uialert(app.OverlayPickerUIFigure, ...
+                        ['Unexpected error loading volume: ' ME.message], 'Volume Load Error');
+                    return
+                end
                 if app.OverlaySwitch.Value == "ROI"
-                    try
-                        app.SelectROIListBox.Items = app.SavedTable.ROI{value,1}.ID; % Try populating SelectROIListBox items
-                        app.SelectROIListBox.Enable = 'on';
-                        if app.SelectROIListBox.Items{1,1} == "None"
-                            app.SelectROIListBox.Items = {};
-                            app.SelectROIListBox.Enable = 'off';
-                            return
+                    roiIDs = {};
+                    if ismember('ROI', savedT.Properties.VariableNames)
+                        try
+                            roiIDs = savedT.ROI{value,1}.ID;
+                        catch ME
+                            uialert(app.OverlayPickerUIFigure, ...
+                                ['Unexpected error reading ROI data: ' ME.message], 'ROI Load Error');
                         end
-                    catch
+                    end
+                    if isempty(roiIDs)
                         app.SelectROIListBox.Items = {};
                         app.SelectROIListBox.Enable = 'off';
+                    elseif roiIDs{1,1} == "None"
+                        app.SelectROIListBox.Items = {};
+                        app.SelectROIListBox.Enable = 'off';
+                        return
+                    else
+                        app.SelectROIListBox.Items = roiIDs;
+                        app.SelectROIListBox.Enable = 'on';
                     end
                 end
-            catch
-                app.Volume = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            else
+                try
+                    app.Volume = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                catch ME
+                    uialert(app.OverlayPickerUIFigure, ...
+                        ['Unexpected error loading volume: ' ME.message], 'Volume Load Error');
+                    return
+                end
                 app.SelectROIListBox.Items = {};
                 app.SelectROIListBox.Enable = 'off';
             end
@@ -133,28 +174,49 @@ classdef OverlayPicker_exported < matlab.apps.AppBase
 
         % Value changed function: OverlaySwitch
         function OverlaySwitchValueChanged(app, event)
-            value = app.OverlaySwitch.Value;
             
+            value   = app.OverlaySwitch.Value;
+            expName = app.ExperimentDropDown.Value;
+
+            % Is the selected experiment in the SavedTable (registered/processed data)?
+            savedT  = app.SavedTable;
+            inSaved = istable(savedT) && ~isempty(savedT) ...
+                && ismember('Image', savedT.Properties.VariableNames) ...
+                && ismember(expName, savedT.Properties.RowNames);
+
             switch value
                 case 'Experiment'
                     app.SelectROIListBox.Items = {};
                     app.SelectROIListBox.Enable = 'off';
                     try
-                        app.Volume = cell2mat(app.SavedTable.Image(app.ExperimentDropDown.Value));
-                    catch
-                        app.Volume = cell2mat(app.ExperimentPropertyTable.(2)(app.ExperimentDropDown.Value));
+                        if inSaved
+                            app.Volume = cell2mat(savedT.Image(expName));
+                        else
+                            app.Volume = cell2mat(app.ExperimentPropertyTable.(2)(expName));
+                        end
+                    catch ME
+                        uialert(app.OverlayPickerUIFigure, ...
+                            ['Unexpected error switching overlay source: ' ME.message], ...
+                            'Overlay Source Error');
+                        return
                     end
                 case 'ROI'
-                    try
-                        app.SelectROIListBox.Items = app.SavedTable.ROI{app.ExperimentDropDown.Value,1}.ID; % Try populating SelectROIListBox items
-                        app.SelectROIListBox.Enable = 'on';
-                        if app.SelectROIListBox.Items{1,1} == "None"
-                            app.SelectROIListBox.Items = {};
-                            app.SelectROIListBox.Enable = 'off';
+                    roiIDs = {};
+                    if inSaved && ismember('ROI', savedT.Properties.VariableNames)
+                        try
+                            roiIDs = savedT.ROI{expName,1}.ID;
+                        catch ME
+                            uialert(app.OverlayPickerUIFigure, ...
+                                ['Unexpected error loading ROI list: ' ME.message], ...
+                                'ROI List Error');
                         end
-                    catch
+                    end
+                    if isempty(roiIDs) || roiIDs{1,1} == "None"
                         app.SelectROIListBox.Items = {};
                         app.SelectROIListBox.Enable = 'off';
+                    else
+                        app.SelectROIListBox.Items = roiIDs;
+                        app.SelectROIListBox.Enable = 'on';
                     end
             end
         end

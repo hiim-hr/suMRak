@@ -120,10 +120,15 @@ classdef suMRak_exported < matlab.apps.AppBase
         UIAxes_SegmenterHelperUp        matlab.ui.control.UIAxes
         UIAxes_Segmenter                matlab.ui.control.UIAxes
         RegistrationTab                 matlab.ui.container.Tab
+        ReferenceFixedViewDropDown      matlab.ui.control.DropDown
         ShowReferenceFixedCheckBox      matlab.ui.control.CheckBox
         StandardAtlasRegistrationPanel  matlab.ui.container.Panel
-        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
-        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
+        OutputInterpolatorDropDown      matlab.ui.control.DropDown
+        OutputInterpolatorDropDownLabel  matlab.ui.control.Label
+        TransformsListBox               matlab.ui.control.ListBox
+        TransformsLabel                 matlab.ui.control.Label
+        RegistrationSliceLimitsTextArea  matlab.ui.control.TextArea
+        RegistrationSliceLimitsTextAreaLabel  matlab.ui.control.Label
         SelectAtlasDropDown             matlab.ui.control.DropDown
         ImportReferenceAtlasButton      matlab.ui.control.Button
         SelectparameterDropDown         matlab.ui.control.DropDown
@@ -379,10 +384,19 @@ classdef suMRak_exported < matlab.apps.AppBase
         ResetViewMenu_Registration      matlab.ui.container.Menu
         ContextMenu_RegistrationInstructions  matlab.ui.container.ContextMenu
         ResetInstructionsMenu           matlab.ui.container.Menu
-        ContextMenu_RegistrationReferenceFixed  matlab.ui.container.ContextMenu
-        MultiplyMovingAndFixedMenu      matlab.ui.container.Menu
-        SidebysideMenu                  matlab.ui.container.Menu
-        FalsecolorDifferenceMenu        matlab.ui.container.Menu
+        TransformsContextMenu           matlab.ui.container.ContextMenu
+        EditTransformMenu               matlab.ui.container.Menu
+        AddTransformMenu                matlab.ui.container.Menu
+        AddTranslationMenu              matlab.ui.container.Menu
+        AddEuler3DMenu                  matlab.ui.container.Menu
+        AddSimilarity3DMenu             matlab.ui.container.Menu
+        AddAffineMenu                   matlab.ui.container.Menu
+        AddBSplineMenu                  matlab.ui.container.Menu
+        DuplicateTransformMenu          matlab.ui.container.Menu
+        RemoveTransformMenu             matlab.ui.container.Menu
+        MoveUpTransformMenu             matlab.ui.container.Menu
+        MoveDownTransformMenu           matlab.ui.container.Menu
+        ResetTransformMenu              matlab.ui.container.Menu
     end
 
     
@@ -395,7 +409,7 @@ classdef suMRak_exported < matlab.apps.AppBase
         TRvalues = zeros(1000, 1000); % 1000x1000 table storing TR values
         TIvalues = zeros(1000, 1000); % 1000x1000 table storing TI values
         ExperimentPropertyTable = table(); % Table of loaded experiment properties
-        SavedTable % Table for storing all saved segmenterd/registered data.
+        SavedTable % Table for storing all saved segmented/registered data.
 
         PreviewImageData % Preview experiment image data matrix
         PreviewImage % Property for storing imshow of PreviewImageData
@@ -409,6 +423,10 @@ classdef suMRak_exported < matlab.apps.AppBase
         WorkingSegmenterImageData % Working experiment image data matrix
         ExpDimsSegmenter % Dimensions of selected experiment for segmentation
         SegmenterImage % Property for storing imshow of segmenter image without a mask overlay or MaskedImage
+        SegmenterOverlayGreen  % Image graphics handle for the green (brain-mask) overlay
+        SegmenterOverlayBlue   % Image graphics handle for the blue (left-hemisphere) overlay
+        SegmenterOverlayRed    % Image graphics handle for the red (right-hemisphere) overlay
+        SegmenterOverlayYellow % Image graphics handle for the yellow (ROI) overlay
         FreeROI % Property for storing current manual ROI object
         ROI_OperationID = ""; % Manually set ROI operation identifier
         MaskedImage % Masked image of current slice
@@ -420,6 +438,12 @@ classdef suMRak_exported < matlab.apps.AppBase
         SegmenterHelperVolume % Stores 3D permuted volume for use with helper UIaxes
         SegmenterPosX % Position X of the current helperUp perspective
         SegmenterPosY % Position Y of the current helperDown perspective
+        SegmenterHelperImageUp     % Image graphics handle for UIAxes_SegmenterHelperUp
+        SegmenterHelperImageDown   % Image graphics handle for UIAxes_SegmenterHelperDown
+        SegmenterHelperRectZ_Up    % Yellow rectangle (Z slice) on HelperUp axes
+        SegmenterHelperRectX_Up    % Yellow rectangle (X position) on HelperUp axes
+        SegmenterHelperRectZ_Down  % Yellow rectangle (Z slice) on HelperDown axes
+        SegmenterHelperRectY_Down  % Yellow rectangle (Y position) on HelperDown axes
          
         % Hemisphere segmentation
         HemisphereMask % 4D Matrix with right and left hemisphere masks stored in 4th dimension for each slice - 1 = left, 2 = right
@@ -456,6 +480,7 @@ classdef suMRak_exported < matlab.apps.AppBase
         RegisteredImageData % Property for storing registered image data
         PreRegistrationFixedImage % Property for storing before-registration fixed image data
         RegisteredMask % Property for storing mask of fixed image data used in registration
+        RegistrationImage % Image graphics handle on UIAxes_Registration (kept across refreshes for CData updates)
         
         % Parameter Maps tab
         DSCSettingsWindow % DSC Settings dialogue window
@@ -491,7 +516,8 @@ classdef suMRak_exported < matlab.apps.AppBase
         ROIIdentifiers = {}; % Matrix containing added ROI Names
         ROIMask = [];% 4D Matrix containing added ROI masks for each slice
 
-        % Registration Atlas properties
+        % Registration properties
+        StageSettings  % 1xN struct array of SimpleITK stage settings
         AtlasCollection = struct(); % Struct containing all imported reference atlases
 
         % DSC Parameter map properties
@@ -501,7 +527,488 @@ classdef suMRak_exported < matlab.apps.AppBase
         ViewerParentObject % Property for storing viewer3d object
     end
     
+    properties (Constant)
+        Version = '1.1.0'  % Application version — bump on release
+
+        % Canonical column names for ExperimentPropertyTable.
+        ExpTableVars = ["Experiment ID", "Image data", "TE1", "TR1", ...
+                        "Voxel dimension X", "Voxel dimension Y", ...
+                        "Slice Thickness", "Slice Gap", ...
+                        "Dimension Units", "Rotation Matrix"];
+    end
+    
+    methods (Static)
+
+        % Returns an onCleanup handle that closes `dlg` when it goes out of scope.
+        function guard = guardDialog(dlg)
+            guard = onCleanup(@() closeIfValid(dlg));
+            function closeIfValid(d)
+                try
+                    if isvalid(d), close(d); end
+                catch
+                    % Dialog already gone; nothing to do.
+                end
+            end
+        end
+
+        % Image-update helper using CData. Any ambiguity
+        % falls through to the safe imshow-rebuild path.
+        function imHandle = showImage(imHandle, ax, data, useTurbo, displayRange)
+            arguments
+                imHandle
+                ax {mustBeA(ax, ["matlab.ui.control.UIAxes", "matlab.graphics.axis.Axes"])}
+                data
+                useTurbo (1,1) logical
+                displayRange (1,2) double = [0 1]
+            end
+
+            canReuse = false;
+            if ~isempty(imHandle) && isa(imHandle, 'matlab.graphics.primitive.Image')
+                try
+                    canReuse = isvalid(imHandle) && isequal(imHandle.Parent, ax) ...
+                    && isequal(size(imHandle.CData), size(data)); 
+                catch
+                    canReuse = false;
+                end
+            end
+
+            if canReuse
+                try
+                    imHandle.CData = data;
+                    if useTurbo
+                        ax.Colormap = turbo;
+                    else
+                        ax.Colormap = gray;
+                    end
+                    return
+                catch
+                    % Fall through to rebuild.
+                end
+            end
+
+            imHandle = imshow(data, displayRange, 'Parent', ax);
+            if useTurbo
+                ax.Colormap = turbo;
+            else
+                ax.Colormap = gray;
+            end
+        end
+
+        % Overlay-layer helper used by RefreshImageSegmenter.
+        function imHandle = showOverlay(imHandle, ax, screenData, alphaData)
+            arguments
+                imHandle
+                ax {mustBeA(ax, ["matlab.ui.control.UIAxes", "matlab.graphics.axis.Axes"])}
+                screenData
+                alphaData
+            end
+
+            if isempty(imHandle) || ~isgraphics(imHandle) || ~isvalid(imHandle) ...
+                    || imHandle.Parent ~= ax
+                hold(ax, "on");
+                imHandle = imshow(screenData, 'Parent', ax);
+                hold(ax, "off");
+            end
+            imHandle.AlphaData = alphaData;
+        end
+    
+        function stages = defaultStageSettings(regType)
+            arguments
+                regType (1,1) string = "Standard"
+            end
+            if regType == "Reference Atlas", preset = "Atlas"; else, preset = "Standard"; end
+            stages = [ ...
+                suMRak.defaultStageOfType("Euler3D", preset), ...
+                suMRak.defaultStageOfType("Affine",  preset), ...
+                suMRak.defaultStageOfType("BSpline", preset)];
+        end
+
+        function s = defaultStageOfType(type, preset)
+        %DEFAULTSTAGEOFTYPE Default settings for a single SimpleITK registration stage.
+            arguments
+                type (1,1) string {mustBeMember(type, ...
+                    ["Translation","Euler3D","Similarity3D","Affine","BSpline"])}
+                preset (1,1) string {mustBeMember(preset, ["Standard","Atlas"])} = "Standard"
+            end
+        
+            s = struct( ...
+                'Type',                char(type), ...
+                'Enabled',             true, ...
+                'Metric',              'MattesMI', ...
+                'MetricBins',          50, ...
+                'SamplingPct',         0.10, ...
+                'SamplingStrategy',    'Random', ...
+                'Optimizer',           'GradientDescent', ...
+                'LearningRate',        1.0, ...
+                'NumIterations',       100, ...
+                'ConvergenceTol',      1e-6, ...
+                'ShrinkFactors',       [4 2 1], ...
+                'SmoothingSigmas',     [2 1 0], ...
+                'Interpolator',        'Linear', ...
+                'BSplineMeshSize',     [8 8 8], ...
+                'BSplineOrder',        3, ...
+                'BSplineScaleFactors', [1 1 1], ...   % coarse->fine grid; numel must == numel(ShrinkFactors)
+                'MinJacobian',         0.1, ...          % reject BSpline if min Jacobian <= this
+                'InPlaneOnly',         true);   % freeze out-of-plane rot/shear for co-planar acquisitions
+        
+            switch char(type)
+                case 'Translation'
+                    s.NumIterations = 50;
+                case 'BSpline'
+                    s.LearningRate  = 0.1;
+                    s.NumIterations = 50;
+            end
+        
+            switch preset
+                case "Standard"     % intra-subject: near-aligned, only light/local warp needed
+                    switch char(type)
+                        case {'Euler3D','Affine'}
+                            s.SamplingPct = 0.15;  s.NumIterations = 200;
+                            s.Optimizer       = 'GradientDescentLineSearch';
+                            s.ShrinkFactors   = [2 1];
+                            s.SmoothingSigmas = [1 0];
+                        case 'BSpline'
+                            s.Enabled = false;   % intra-subject is near-aligned; enable only to correct real distortion
+                            s.SamplingPct = 0.25;  s.NumIterations = 100;
+                            s.ShrinkFactors = [2 1];  s.SmoothingSigmas = [1 0];
+                            s.BSplineMeshSize = [6 6 4];  s.BSplineScaleFactors = [1 2];
+                            s.MinJacobian = 0.1;
+                    end
+                case "Atlas"        % subject<->atlas: large scale/shape/contrast gap, partial FOV
+                    switch char(type)
+                        case {'Euler3D','Affine'}
+                            s.SamplingPct = 0.25;  s.NumIterations = 400;  s.SmoothingSigmas = [3 1.5 0];
+                            s.InPlaneOnly = false;   % subject<->atlas needs full 3D orientation
+                        case 'BSpline'
+                            s.SamplingPct = 0.30;  s.NumIterations = 150;
+                            s.ShrinkFactors = [4 2 1];  s.SmoothingSigmas = [2 1 0];
+                            s.BSplineMeshSize = [4 4 3];  s.BSplineScaleFactors = [1 2 2];
+                            s.MinJacobian = 0.2;
+                    end
+            end
+        end
+
+        function types = availableStageTypes()
+            types = ["Translation","Euler3D","Similarity3D","Affine","BSpline"];
+        end
+
+        function code = buildRegistrationScript()
+        %BUILDREGISTRATIONSCRIPT 3-stage SimpleITK pipeline as a Python source array.
+            code = [ ...
+                "import SimpleITK as sitk", ...
+                "import numpy as np", ...
+                "", ...
+                "stage_warnings = []", ...
+                "fixIm = np.ascontiguousarray(np.transpose(fixIm, (2, 0, 1)).astype(np.float32))", ...
+                "movIm = np.ascontiguousarray(np.transpose(movIm, (2, 0, 1)).astype(np.float32))", ...
+                "fixed  = sitk.GetImageFromArray(fixIm)", ...
+                "moving = sitk.GetImageFromArray(movIm)", ...
+                "fixed.SetSpacing([float(s) for s in fixSpacing])", ...
+                "moving.SetSpacing([float(s) for s in movSpacing])", ...
+                "def center_at_origin(img):", ...
+                "    img.SetOrigin([-(sz - 1) * sp / 2.0 for sz, sp in zip(img.GetSize(), img.GetSpacing())])", ...
+                "center_at_origin(fixed)", ...
+                "center_at_origin(moving)", ...
+                "", ...
+                "def make_metric(R, cfg):", ...
+                "    m = cfg['Metric']", ...
+                "    if m == 'MattesMI':", ...
+                "        R.SetMetricAsMattesMutualInformation(int(cfg['MetricBins']))", ...
+                "    elif m == 'MeanSquares':", ...
+                "        R.SetMetricAsMeanSquares()", ...
+                "    elif m == 'Correlation':", ...
+                "        R.SetMetricAsCorrelation()", ...
+                "    strat = {'Random': R.RANDOM, 'Regular': R.REGULAR, 'None': R.NONE}[cfg['SamplingStrategy']]", ...
+                "    R.SetMetricSamplingStrategy(strat)", ...
+                "    if cfg['SamplingPct'] > 0:", ...
+                "        R.SetMetricSamplingPercentage(float(cfg['SamplingPct']), seed=42)", ...
+                "", ...
+                "FOREGROUND_THRESHOLD = 0.0            # intensity > this counts as foreground", ...
+                "BSPLINE_MASK_DILATION = [5, 5, 1]     # dilation radius in voxels per [x, y, z(slice)] axis", ...
+                "def foreground_mask(img):", ...
+                "    arr = sitk.GetArrayFromImage(img)", ...
+                "    mask = sitk.GetImageFromArray((arr > FOREGROUND_THRESHOLD).astype(np.uint8))", ...
+                "    mask.CopyInformation(img)", ...
+                "    return mask", ...
+                "def dilate_mask(mask):", ...
+                "    return sitk.BinaryDilate(mask, [int(r) for r in BSPLINE_MASK_DILATION], sitk.sitkBall)", ...
+                "fixedMask         = foreground_mask(fixed)", ...
+                "movingMask        = foreground_mask(moving)", ...
+                "fixedMaskDilated  = dilate_mask(fixedMask)", ...
+                "movingMaskDilated = dilate_mask(movingMask)", ...
+                "", ...
+                "def make_optimizer(R, cfg):", ...
+                "    o = cfg['Optimizer']", ...
+                "    if o == 'GradientDescent':", ...
+                "        R.SetOptimizerAsGradientDescent(", ...
+                "            learningRate=float(cfg['LearningRate']),", ...
+                "            numberOfIterations=int(cfg['NumIterations']),", ...
+                "            convergenceMinimumValue=float(cfg['ConvergenceTol']),", ...
+                "            convergenceWindowSize=10)", ...
+                "    elif o == 'GradientDescentLineSearch':", ...
+                "        R.SetOptimizerAsGradientDescentLineSearch(", ...
+                "            learningRate=float(cfg['LearningRate']),", ...
+                "            numberOfIterations=int(cfg['NumIterations']),", ...
+                "            convergenceMinimumValue=float(cfg['ConvergenceTol']),", ...
+                "            convergenceWindowSize=10)", ...
+                "    elif o == 'LBFGSB':", ...
+                "        R.SetOptimizerAsLBFGSB(", ...
+                "            gradientConvergenceTolerance=float(cfg['ConvergenceTol']),", ...
+                "            numberOfIterations=int(cfg['NumIterations']))", ...
+                "    elif o == 'Powell':", ...
+                "        R.SetOptimizerAsPowell(numberOfIterations=int(cfg['NumIterations']))", ...
+                "    R.SetOptimizerScalesFromPhysicalShift()", ...
+                "", ...
+                "def make_interpolator(R, cfg):", ...
+                "    R.SetInterpolator({", ...
+                "        'Linear':          sitk.sitkLinear,", ...
+                "        'NearestNeighbor': sitk.sitkNearestNeighbor,", ...
+                "        'BSpline':         sitk.sitkBSpline}[cfg['Interpolator']])", ...
+                "", ...
+                "def init_transform(stage_type, fixed, moving):", ...
+                "    if stage_type == 'Translation':", ...
+                "        return sitk.TranslationTransform(fixed.GetDimension())", ...
+                "    if stage_type == 'Euler3D':", ...
+                "        return sitk.CenteredTransformInitializer(", ...
+                "            fixed, moving, sitk.Euler3DTransform(),", ...
+                "            sitk.CenteredTransformInitializerFilter.MOMENTS)", ...
+                "    if stage_type == 'Similarity3D':", ...
+                "        return sitk.CenteredTransformInitializer(", ...
+                "            fixed, moving, sitk.Similarity3DTransform(),", ...
+                "            sitk.CenteredTransformInitializerFilter.MOMENTS)", ...
+                "    if stage_type == 'Affine':", ...
+                "        return sitk.AffineTransform(fixed.GetDimension())", ...
+                "    if stage_type == 'BSpline':", ...
+                "        return None", ...
+                "    raise ValueError(stage_type)", ...
+                "", ...
+                "def min_jacobian(reference, transform):", ...
+                "    # smallest Jacobian determinant of the deformation; <= 0 means folding", ...
+                "    f = sitk.TransformToDisplacementFieldFilter()", ...
+                "    f.SetReferenceImage(reference)", ...
+                "    jac = sitk.DisplacementFieldJacobianDeterminant(f.Execute(transform))", ...
+                "    return float(sitk.GetArrayViewFromImage(jac).min())", ...
+                "", ...
+                "def run_stage(cfg, fixed, moving, prior):", ...
+                "    if not bool(cfg['Enabled']):", ...
+                "        return prior", ...
+                "    R = sitk.ImageRegistrationMethod()", ...
+                "    make_metric(R, cfg)", ...
+                "    make_optimizer(R, cfg)", ...
+                "    make_interpolator(R, cfg)", ...
+                "    if cfg['Type'] == 'BSpline':", ...
+                "        R.SetMetricFixedMask(fixedMaskDilated)", ...
+                "        R.SetMetricMovingMask(movingMaskDilated)", ...
+                "    R.SetShrinkFactorsPerLevel([int(x) for x in cfg['ShrinkFactors']])", ...
+                "    R.SetSmoothingSigmasPerLevel([float(x) for x in cfg['SmoothingSigmas']])", ...
+                "    R.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()", ...
+                "    if cfg['Type'] == 'BSpline':", ...
+                "        mesh = [int(x) for x in cfg['BSplineMeshSize']]", ...
+                "        tx = sitk.BSplineTransformInitializer(fixed, mesh, int(cfg['BSplineOrder']))", ...
+                "        scale = [int(x) for x in cfg['BSplineScaleFactors']]", ...
+                "        if len(scale) != len(cfg['ShrinkFactors']):", ...
+                "            scale = [1] * len(cfg['ShrinkFactors'])", ...
+                "        R.SetInitialTransformAsBSpline(tx, inPlace=True, scaleFactors=scale)", ...
+                "    else:", ...
+                "        tx = init_transform(cfg['Type'], fixed, moving)", ...
+                "        R.SetInitialTransform(tx, inPlace=False)", ...
+                "        if bool(cfg['InPlaneOnly']):", ...
+                "            w = {'Euler3D': [0, 0, 1, 1, 1, 1],", ...
+                "                 'Similarity3D': [0, 0, 1, 1, 1, 1, 1],", ...
+                "                 'Affine':  [1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1]}.get(cfg['Type'])", ...
+                "            if w is not None:", ...
+                "                R.SetOptimizerWeights(w)", ...
+                "    if prior is not None:", ...
+                "        R.SetMovingInitialTransform(prior)", ...
+                "    learned = R.Execute(fixed, moving)", ...
+                "    if cfg['Type'] == 'BSpline':", ...
+                "        mj = min_jacobian(fixed, learned)", ...
+                "        if mj <= float(cfg['MinJacobian']):", ...
+                "            stage_warnings.append('BSpline stage skipped: deformation folded (min Jacobian %.3f <= %.2f).' % (mj, float(cfg['MinJacobian'])))", ...
+                "            return prior", ...
+                "    composite = sitk.CompositeTransform(fixed.GetDimension())", ...
+                "    if prior is not None:", ...
+                "        composite.AddTransform(prior)", ...
+                "    composite.AddTransform(learned)", ...
+                "    return composite", ...
+                "", ...
+                "prior = None", ...
+                "for cfg in stagesList:", ...
+                "    prior = run_stage(cfg, fixed, moving, prior)", ...
+                "", ...
+                "if prior is None:", ...
+                "    final = sitk.Transform(fixed.GetDimension(), sitk.sitkIdentity)", ...
+                "else:", ...
+                "    final = prior", ...
+                "OUT_INTERP = {'Linear':          sitk.sitkLinear,", ...
+                "              'NearestNeighbor': sitk.sitkNearestNeighbor,", ...
+                "              'BSpline':         sitk.sitkBSpline}[str(outInterp)]", ...
+                "resampled = sitk.Resample(moving, fixed, final, OUT_INTERP, 0.0, moving.GetPixelID())", ...
+                "resultArray = sitk.GetArrayFromImage(resampled)", ...
+                "resultArray = np.ascontiguousarray(np.transpose(resultArray, (1, 2, 0)))" ...
+                ];
+        end
+
+        function v = getfield_or(s, name, default)
+            if isstruct(s) && isfield(s, name)
+                v = s.(name);
+            elseif istable(s) && ismember(name, s.Properties.VariableNames)
+                v = s.(name);
+                if iscell(v), v = v{1}; end
+            else
+                v = default;
+            end
+        end
+
+        function spacing = voxelSpacing(props)
+        %   Convert MR volume metadata to a SimpleITK spacing vector.
+        
+        %   z-spacing = SliceThickness + SliceGap 
+        
+            sx = double(suMRak.getfield_or(props, 'VoxDimX',        1.0));
+            sy = double(suMRak.getfield_or(props, 'VoxDimY',        1.0));
+            th = double(suMRak.getfield_or(props, 'SliceThickness', 1.0));
+            gp = double(suMRak.getfield_or(props, 'SliceGap',       0.0));
+        
+            if any(~isfinite([sx sy th gp])) || sx <= 0 || sy <= 0 || th <= 0
+                warning('suMRak:voxelSpacing', ...
+                    'Invalid spacing metadata (sx=%g sy=%g th=%g gp=%g); falling back to [1 1 1].', ...
+                    sx, sy, th, gp);
+                spacing = [1 1 1];
+                return
+            end
+            spacing = [sx, sy, th + max(gp, 0)];
+        end
+
+        % Convert a StageSettings struct array into the Python list of dicts
+        % that buildRegistrationScript expects as stagesList.
+        function stages_py = stagesToPy(stages)
+            stages_py = py.list();
+            for k = 1:numel(stages)
+                s = stages(k);
+                d = py.dict(pyargs( ...
+                    'Type',                s.Type, ...
+                    'Enabled',             s.Enabled, ...
+                    'Metric',              s.Metric, ...
+                    'MetricBins',          s.MetricBins, ...
+                    'SamplingPct',         s.SamplingPct, ...
+                    'SamplingStrategy',    s.SamplingStrategy, ...
+                    'Optimizer',           s.Optimizer, ...
+                    'LearningRate',        s.LearningRate, ...
+                    'NumIterations',       s.NumIterations, ...
+                    'ConvergenceTol',      s.ConvergenceTol, ...
+                    'ShrinkFactors',       py.list(num2cell(int32(s.ShrinkFactors))), ...
+                    'SmoothingSigmas',     py.list(num2cell(double(s.SmoothingSigmas))), ...
+                    'Interpolator',        s.Interpolator, ...
+                    'BSplineMeshSize',     py.list(num2cell(int32(s.BSplineMeshSize))), ...
+                    'BSplineOrder',        s.BSplineOrder, ...
+                    'BSplineScaleFactors', py.list(num2cell(int32(s.BSplineScaleFactors))), ...
+                    'MinJacobian',         s.MinJacobian, ...
+                    'InPlaneOnly',         suMRak.getfield_or(s, 'InPlaneOnly', true)));
+                stages_py.append(d);
+            end
+        end
+
+        % Parse a single registration notation segment
+        % Returns dim3 as a double (the slice index); dim4 and dim5 as char tokens
+        function [dim3, dim4, dim5] = parseSegment(instr, prefix)
+            pat = [prefix '\((\d+),([^,)]+),([^,)]+)\)'];
+            tok = regexp(instr, pat, 'tokens', 'once');
+            if isempty(tok)
+                dim3 = []; dim4 = ''; dim5 = '';
+                return
+            end
+            dim3 = str2double(tok{1});
+            dim4 = tok{2};
+            dim5 = tok{3};
+        end
+
+    end
+    
     methods (Access = private)
+
+        % Enables/disables all six "Export Data" buttons based on
+        % whether the relevant tab actually has something exportable.
+        % Replaces two duplicated 18-line blocks elsewhere in the code.
+        function refreshExportButtonState(app)
+            setEnable = @(btn, cond) set(btn, 'Enable', ...
+                matlab.lang.OnOffSwitchState(logical(cond)));
+
+            setEnable(app.ExportDataButton_Preview,      app.PreviewDropDown.Value        ~= "None");
+            setEnable(app.ExportDataButton_Segmenter,    app.SegmentDropDown.Value        ~= "None");
+            setEnable(app.ExportDataButton_Results,      app.SelectResultsDropDown.Value  ~= "None");
+            setEnable(app.ExportDataButton_Registration, ~isempty(app.RegisteredImageData));
+            setEnable(app.ExportDataButton_Map,          ~isempty(app.PostMapImageData));
+            setEnable(app.ExportSceneButton,             app.Select3DViewerDropDown.Value ~= "None");
+        end
+
+        % Look up sequence parameters (TE, TR, voxel sizes, slice
+        % thickness/gap, units, rotation matrix) for an experiment by
+        % dropdown value. Prefers SavedTable, falls back to
+        % ExperimentPropertyTable. Returns a struct with safe defaults
+        % if the experiment isn't in either table.
+        function params = LookupExperimentParams(app, expName)
+            params = struct('OrigIndex', [], 'TE', 0, 'TR', 0, ...
+                            'VoxDimX', 0, 'VoxDimY', 0, ...
+                            'SliceThickness', 0, 'SliceGap', 0, ...
+                            'Units', "", 'RotMat', {{eye(3)}}, ...
+                            'Source', "none");
+
+            if ~isempty(app.SavedTable) && ...
+               ismember(expName, app.SavedTable.Properties.RowNames)
+                S = app.SavedTable;
+                params.OrigIndex      = S.OrigIndex(expName);
+                params.TE             = S.TE(expName);
+                params.TR             = S.TR(expName);
+                params.VoxDimX        = S.VoxDimX(expName);
+                params.VoxDimY        = S.VoxDimY(expName);
+                params.SliceThickness = S.SliceThickness(expName);
+                params.SliceGap       = S.SliceGap(expName);
+                params.Units          = S.Units(expName);
+                params.RotMat         = S.RotMat(expName);
+                params.Source         = "saved";
+                return
+            end
+
+            T = app.ExperimentPropertyTable;
+            if ~isempty(T) && ismember(expName, T.Properties.RowNames)
+                params.OrigIndex      = find(strcmp(T{:, "Experiment ID"}, expName));
+                params.TE             = T.("TE1")(expName);
+                params.TR             = T.("TR1")(expName);
+                params.VoxDimX        = T.("Voxel dimension X")(expName);
+                params.VoxDimY        = T.("Voxel dimension Y")(expName);
+                params.SliceThickness = T.("Slice Thickness")(expName);
+                params.SliceGap       = T.("Slice Gap")(expName);
+                params.Units          = T.("Dimension Units")(expName);
+                params.RotMat         = T.("Rotation Matrix")(expName);
+                params.Source         = "original";
+                return
+            end
+
+            uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                sprintf(['Experiment "%s" not found in SavedTable or ', ...
+                         'ExperimentPropertyTable. Saved row will carry ', ...
+                         'zero-valued sequence parameters.'], expName), ...
+                'Experiment Parameters Not Found');
+        end
+
+        % Deletes any of the four segmenter overlay image handles whose
+        % property name is NOT in keepFields. Called at the top of each
+        % branch of RefreshImageSegmenter so stale overlays from a
+        % previous branch don't linger on the axes.
+        function deleteSegmenterOverlaysExcept(app, keepFields)
+            allFields = ["SegmenterOverlayGreen", "SegmenterOverlayBlue", ...
+                         "SegmenterOverlayRed", "SegmenterOverlayYellow"];
+            keepFields = string(keepFields);
+            for f = allFields
+                if any(keepFields == f), continue, end
+                h = app.(f);
+                if ~isempty(h) && isgraphics(h)
+                    delete(h);
+                end
+                app.(f) = [];
+            end
+        end
 
         % Preview UIAxes image updating
         function RefreshImagePreview(app)
@@ -514,28 +1021,24 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 5
                     app.CurrentSlice = app.PreviewImageData(:,:, round(app.SliceSlider_Preview.Value), round(app.Dim4Slider_Preview.Value), round(app.Dim5Slider_Preview.Value));
                 otherwise
-                    %error alert missing
+                    return
             end
-            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Preview.Value) +  app.BrightnessSlider_Preview.Value); % Apply contrast and brightness
-            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Preview.Value,app.BrightnessSlider_Preview.Value);
-            switch app.TurboButton_Preview.Value
-                case true
-                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Preview, Colormap = turbo);
-                otherwise
-                    app.PreviewImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Preview);
-            end
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice, ...
+                app.ContrastSlider_Preview.Value, app.BrightnessSlider_Preview.Value);
+            app.PreviewImage = suMRak.showImage(app.PreviewImage, ...
+                app.UIAxes_Preview, app.CurrentSlice, ...
+                app.TurboButton_Preview.Value);
             app.PreviewImage.ContextMenu = app.ContextMenu_Preview;
         end
-        
+
         % Registration UIAxes image updating
         function RefreshImageRegistration(app)
-            
+
             % Get chosen image based on image shown switch
             app.ExpDimsRegistration = size(app.RegisteredImageData);
             chosen_Image = app.RegisteredImageData;
             chosen_Fixed = app.PreRegistrationFixedImage;
-            
+
             switch app.ShowReferenceFixedCheckBox.Value
                 case true
                     switch numel(app.ExpDimsRegistration)
@@ -552,42 +1055,45 @@ classdef suMRak_exported < matlab.apps.AppBase
                             app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
                             CurrentFixed = chosen_Fixed(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
                     end
-                    % Moving and fixed multiplication
-                    if app.MultiplyMovingAndFixedMenu.Checked == "on"
-                        app.CurrentSlice = double(CurrentFixed).*app.CurrentSlice;
-                        app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-                        % Display image
-                        switch app.TurboButton_Registration.Value
-                            case true
-                                reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-                            otherwise
-                                reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
-                        end
-                        reg.ContextMenu = app.ContextMenu_Registration;
-                    % Montage, side by side
-                    elseif app.SidebysideMenu.Checked == "on"
-                        app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-                        CurrentFixed = (CurrentFixed - min(CurrentFixed(:))) / (max(CurrentFixed(:)) - min(CurrentFixed(:))); % Scale image to [0 1]
-                        % Display image
-                        switch app.TurboButton_Registration.Value
-                            case true
-                                reg = imshow([app.CurrentSlice, CurrentFixed], [], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-                            otherwise
-                                reg = imshow([app.CurrentSlice, CurrentFixed], [], 'Parent', app.UIAxes_Registration);
-                        end                    
-                        reg.ContextMenu = app.ContextMenu_Registration;
-                    % Moving and fixed diff
-                    elseif app.FalsecolorDifferenceMenu.Checked == "on"
-                        app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+                    switch app.ReferenceFixedViewDropDown.Value
+                        case 'multiply'
+                            CurrentFixed = double(CurrentFixed);
+                            CurrentFixed = (CurrentFixed - min(CurrentFixed(:))) / (max(CurrentFixed(:)) - min(CurrentFixed(:)) + eps);
+                            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)) + eps);
+                            app.CurrentSlice = CurrentFixed .* app.CurrentSlice;
+                            app.RegistrationImage = suMRak.showImage(app.RegistrationImage, ...
+                                app.UIAxes_Registration, app.CurrentSlice, ...
+                                app.TurboButton_Registration.Value);
+                            app.RegistrationImage.ContextMenu = app.ContextMenu_Registration;
+                        case 'sidebyside'
+                        % Registered moving image beside the fixed reference. Each half is
+                        % normalised on its own so both stay visible regardless of contrast.
+                        CurrentFixed = double(CurrentFixed);
+                        CurrentFixed = (CurrentFixed - min(CurrentFixed(:))) / (max(CurrentFixed(:)) - min(CurrentFixed(:)) + eps);
+                        app.CurrentSlice = double(app.CurrentSlice);
+                        app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)) + eps);
+                        app.RegistrationImage = suMRak.showImage(app.RegistrationImage, ...
+                            app.UIAxes_Registration, [app.CurrentSlice, CurrentFixed], ...
+                            app.TurboButton_Registration.Value);
+                        app.RegistrationImage.ContextMenu = app.ContextMenu_Registration;
+                        case 'falsecolor'
+                        CurrentFixed = double(CurrentFixed);
+                        CurrentFixed = (CurrentFixed - min(CurrentFixed(:))) / (max(CurrentFixed(:)) - min(CurrentFixed(:)) + eps);
+                        app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)) + eps);
                         switch app.TurboButton_Registration.Value
                             case true
                                 app.CurrentSlice = ind2rgb(gray2ind(app.CurrentSlice), turbo);
                                 CurrentFixed = ind2rgb(gray2ind(CurrentFixed), turbo);
                         end
-                        % Display image
-                        reg = imshowpair(app.CurrentSlice, CurrentFixed, "falsecolor", 'Parent', app.UIAxes_Registration);
-                        reg.ContextMenu = app.ContextMenu_Registration;
-                    end        
+                        % imshowpair creates a different graphics object; invalidate
+                        % any previous handle so it gets reconstructed cleanly.
+                        if ~isempty(app.RegistrationImage) && isgraphics(app.RegistrationImage)
+                            delete(app.RegistrationImage);
+                            app.RegistrationImage = [];
+                        end
+                        app.RegistrationImage = imshowpair(app.CurrentSlice, CurrentFixed, "falsecolor", 'Parent', app.UIAxes_Registration);
+                        app.RegistrationImage.ContextMenu = app.ContextMenu_Registration;
+                    end
                 case false
                     switch numel(app.ExpDimsRegistration)
                         case 2
@@ -599,16 +1105,27 @@ classdef suMRak_exported < matlab.apps.AppBase
                         case 5
                             app.CurrentSlice = chosen_Image(:,:, app.SliceSpinner_Registration.Value, app.Dim4Spinner_TimeAlignmentControl.Value, app.Dim5Spinner_TimeAlignmentControl.Value);
                     end
-                    app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
+                    app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)));
 
-                    % Display image
-                    switch app.TurboButton_Registration.Value
-                        case true
-                            reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration, Colormap = turbo);
-                        otherwise
-                            reg = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Registration);
-                    end
-                    reg.ContextMenu = app.ContextMenu_Registration;
+                    app.RegistrationImage = suMRak.showImage(app.RegistrationImage, ...
+                        app.UIAxes_Registration, app.CurrentSlice, ...
+                        app.TurboButton_Registration.Value);
+                    app.RegistrationImage.ContextMenu = app.ContextMenu_Registration;
+            end
+        end
+
+        % Redraw after a reference-fixed display mode change. Before any
+        % registration has run there is nothing to draw; anything else that
+        % fails is a real fault and gets reported instead of silently dropped.
+        function refreshReferenceFixedView(app)
+            if isempty(app.RegisteredImageData) || isempty(app.PreRegistrationFixedImage)
+                return
+            end
+            try
+                RefreshImageRegistration(app);
+            catch ME
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    ME.message, 'Display error');
             end
         end
 
@@ -625,10 +1142,11 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 5
                     app.CurrentSlice = app.PreMapImageData(:,:,app.SliceSpinner_PreMap.Value, app.Dim4Spinner_PreMap.Value, app.Dim5Spinner_PreMap.Value);
                 otherwise
-                    %error alert missing
+                    return
             end
-            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            app.PreMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PreMap);
+            app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:)));
+            app.PreMapImage = suMRak.showImage(app.PreMapImage, ...
+                app.UIAxes_PreMap, app.CurrentSlice, false);
             app.PreMapImage.ContextMenu = app.ContextMenu_PreMap;
         end
 
@@ -641,17 +1159,13 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 3
                     app.CurrentSlice = app.PostMapImageData(:,:,app.SliceSpinner_PostMap.Value);
                 otherwise
-                    %error alert missing
+                    return
             end
-            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_PostMap.Value) + app.BrightnessSlider_PostMap.Value); % Apply contrast and brightness
-            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_PostMap.Value,app.BrightnessSlider_PostMap.Value);
-            switch app.TurboButton_PostMap.Value
-                case true
-                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PostMap, Colormap = turbo);
-                otherwise
-                     app.PostMapImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_PostMap);
-            end
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice, ...
+                app.ContrastSlider_PostMap.Value, app.BrightnessSlider_PostMap.Value);
+            app.PostMapImage = suMRak.showImage(app.PostMapImage, ...
+                app.UIAxes_PostMap, app.CurrentSlice, ...
+                app.TurboButton_PostMap.Value);
             app.PostMapImage.ContextMenu = app.ContextMenu_PostMap;
         end
         
@@ -726,28 +1240,14 @@ classdef suMRak_exported < matlab.apps.AppBase
         function [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, image_data, mask_data, voxel_area, slice_thickness, slice_gap, correction_hemi)   
             sliceTable=table();
             dims = size(image_data);
-            % Mask image using mask data
-            switch numel(dims)
-                case 5
-                    for i=1:dims(3)
-                        for j=1:dims(4)
-                            for k=1:dims(5)
-                                image_data(:,:,i,j,k) = image_data(:,:,i,j,k).*mask_data(:,:,i);
-                            end
-                        end
-                    end
-                case 4
-                    for i=1:dims(3)
-                        for j=1:dims(4)
-                            image_data(:,:,i,j) = image_data(:,:,i,j).*mask_data(:,:,i);
-                        end
-                    end
-                case 3
-                    for i=1:dims(3)
-                        image_data(:,:,i) = image_data(:,:,i).*mask_data(:,:,i);
-                    end
-                case 2
-                    image_data = image_data.*mask_data;
+            % Mask image using mask data. MATLAB's implicit singleton
+            % expansion (R2016b+) broadcasts mask_data [:,:,nz] across
+            % any trailing dim4/dim5, collapsing the old nested loops
+            % to a single elementwise multiply.
+            if isa(image_data, 'double') || isa(image_data, 'single')
+                image_data = image_data .* mask_data;
+            else
+                image_data = double(image_data) .* mask_data;
             end
             
             % Get single voxel volume
@@ -893,14 +1393,15 @@ classdef suMRak_exported < matlab.apps.AppBase
                     hemi_Mask = false(1);
                     roi.Mask = false(1);
                     roi.ID = {'None'};
-                    TE = app.ExperimentPropertyTable.(3)(app.PreviewDropDown.Value);
-                    TR = app.ExperimentPropertyTable.(4)(app.PreviewDropDown.Value);
-                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.PreviewDropDown.Value); 
-                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.PreviewDropDown.Value);
-                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.PreviewDropDown.Value);
-                    slice_Gap = app.ExperimentPropertyTable.(8)(app.PreviewDropDown.Value);
-                    units = app.ExperimentPropertyTable.(9)(app.PreviewDropDown.Value);
-                    RotMat = app.ExperimentPropertyTable.(10)(app.PreviewDropDown.Value);
+                    p = LookupExperimentParams(app, app.PreviewDropDown.Value);
+                    TE              = p.TE;
+                    TR              = p.TR;
+                    vox_dim_X       = p.VoxDimX;
+                    vox_dim_Y       = p.VoxDimY;
+                    slice_Thickness = p.SliceThickness;
+                    slice_Gap       = p.SliceGap;
+                    units           = p.Units;
+                    RotMat          = p.RotMat;
                 case 'Segmenter'
                     exp_ID = append(app.SegmentDropDown.Value, '_Segmented');
                     image_Data = app.WorkingSegmenterImageData;
@@ -930,28 +1431,22 @@ classdef suMRak_exported < matlab.apps.AppBase
                         roi.ID = {'None'};
                     end
                     try
-                        OrigIndex = app.SavedTable.OrigIndex(app.SegmentDropDown.Value);
-                        TE = app.SavedTable.TE(app.SegmentDropDown.Value);
-                        TR = app.SavedTable.TR(app.SegmentDropDown.Value);
-                        vox_dim_X = app.SavedTable.VoxDimX(app.SegmentDropDown.Value); 
-                        vox_dim_Y = app.SavedTable.VoxDimY(app.SegmentDropDown.Value);
-                        slice_Thickness = app.SavedTable.SliceThickness(app.SegmentDropDown.Value);
-                        slice_Gap = app.SavedTable.SliceGap(app.SegmentDropDown.Value);
-                        units = app.SavedTable.Units(app.SegmentDropDown.Value);
-                        RotMat = app.SavedTable.RotMat(app.SegmentDropDown.Value);
-                    catch
-                        try
-                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SegmentDropDown.Value));
-                            TE = app.ExperimentPropertyTable.(3)(app.SegmentDropDown.Value);
-                            TR = app.ExperimentPropertyTable.(4)(app.SegmentDropDown.Value);
-                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SegmentDropDown.Value); 
-                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SegmentDropDown.Value);
-                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SegmentDropDown.Value);
-                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SegmentDropDown.Value);
-                            units = app.ExperimentPropertyTable.(9)(app.SegmentDropDown.Value);
-                            RotMat = app.ExperimentPropertyTable.(10)(app.SegmentDropDown.Value);
-                        catch
-                        end
+                        p = LookupExperimentParams(app, app.SegmentDropDown.Value);
+                        OrigIndex       = p.OrigIndex;
+                        TE              = p.TE;
+                        TR              = p.TR;
+                        vox_dim_X       = p.VoxDimX;
+                        vox_dim_Y       = p.VoxDimY;
+                        slice_Thickness = p.SliceThickness;
+                        slice_Gap       = p.SliceGap;
+                        units           = p.Units;
+                        RotMat          = p.RotMat;
+                    catch ME
+                        uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                            sprintf('Could not look up parameters for "%s": %s', ...
+                                    app.SegmentDropDown.Value, ME.message), ...
+                            'Parameter Lookup Failed');
+                        return
                     end
                 case 'Registration'
                     image_Data = app.RegisteredImageData;
@@ -1014,16 +1509,22 @@ classdef suMRak_exported < matlab.apps.AppBase
                                 RotMat = app.SavedTable.RotMat(app.SelectTimeAlignmentDropDown.Value);
                             catch
                                 try
-                                    OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectTimeAlignmentDropDown.Value));
-                                    TE = app.ExperimentPropertyTable.(3)(app.SelectTimeAlignmentDropDown.Value);
-                                    TR = app.ExperimentPropertyTable.(4)(app.SelectTimeAlignmentDropDown.Value);
-                                    vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectTimeAlignmentDropDown.Value); 
-                                    vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectTimeAlignmentDropDown.Value);
-                                    slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectTimeAlignmentDropDown.Value);
-                                    slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectTimeAlignmentDropDown.Value);
-                                    units = app.ExperimentPropertyTable.(9)(app.SelectTimeAlignmentDropDown.Value);
-                                    RotMat = app.ExperimentPropertyTable.(10)(app.SelectTimeAlignmentDropDown.Value);
-                                catch
+                                    p = LookupExperimentParams(app, app.SelectTimeAlignmentDropDown.Value);
+                                    OrigIndex       = p.OrigIndex;
+                                    TE              = p.TE;
+                                    TR              = p.TR;
+                                    vox_dim_X       = p.VoxDimX;
+                                    vox_dim_Y       = p.VoxDimY;
+                                    slice_Thickness = p.SliceThickness;
+                                    slice_Gap       = p.SliceGap;
+                                    units           = p.Units;
+                                    RotMat          = p.RotMat;
+                                catch ME
+                                    uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                                        sprintf('Could not look up parameters for "%s": %s', ...
+                                                app.SelectTimeAlignmentDropDown.Value, ME.message), ...
+                                        'Parameter Lookup Failed');
+                                    return
                                 end
                             end
                     end                    
@@ -1050,16 +1551,22 @@ classdef suMRak_exported < matlab.apps.AppBase
                         RotMat = app.SavedTable.RotMat(app.SelectPreMapDropDown.Value);
                     catch
                         try
-                            OrigIndex = find(strcmp(app.ExperimentPropertyTable{:,'Experiment ID'}, app.SelectPreMapDropDown.Value));
-                            TE = app.ExperimentPropertyTable.(3)(app.SelectPreMapDropDown.Value);
-                            TR = app.ExperimentPropertyTable.(4)(app.SelectPreMapDropDown.Value);
-                            vox_dim_X = app.ExperimentPropertyTable.(5)(app.SelectPreMapDropDown.Value); 
-                            vox_dim_Y = app.ExperimentPropertyTable.(6)(app.SelectPreMapDropDown.Value);
-                            slice_Thickness = app.ExperimentPropertyTable.(7)(app.SelectPreMapDropDown.Value);
-                            slice_Gap = app.ExperimentPropertyTable.(8)(app.SelectPreMapDropDown.Value);
-                            units = app.ExperimentPropertyTable.(9)(app.SelectPreMapDropDown.Value);
-                            RotMat = app.ExperimentPropertyTable.(10)(app.SelectPreMapDropDown.Value);
-                        catch
+                            p = LookupExperimentParams(app, app.SelectPreMapDropDown.Value);
+                            OrigIndex       = p.OrigIndex;
+                            TE              = p.TE;
+                            TR              = p.TR;
+                            vox_dim_X       = p.VoxDimX;
+                            vox_dim_Y       = p.VoxDimY;
+                            slice_Thickness = p.SliceThickness;
+                            slice_Gap       = p.SliceGap;
+                            units           = p.Units;
+                            RotMat          = p.RotMat;
+                        catch ME
+                            uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                                sprintf('Could not look up parameters for "%s": %s', ...
+                                        app.SelectPreMapDropDown.Value, ME.message), ...
+                                'Parameter Lookup Failed');
+                            return
                         end
                     end
             end
@@ -1120,6 +1627,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow    
             switch tab
                 % Get image data, dropdown value and suffix based on tab
@@ -1142,7 +1650,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
             progress.Value = 0.2;
             progress.Message = "Writing NIfTI data information...";
-            pause(0.5);
+
             end
             % Write initial nifti file for header updating
             niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + DropDownValue + Suffix);
@@ -1207,7 +1715,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             progress.Value = 0.6;
             progress.Message = "Exporting image data";
-            pause(0.5);
+
             % Update header transformation
             info.Transform.T(1:3,1:3) = rotm;
             info.TransformName = 'Qform';
@@ -1217,7 +1725,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 try
                 progress.Value = 0.8;
                 progress.Message = "Exporting segmenter mask data";
-                pause(0.5);
+
                 % Write nifti files for segmentation masks
                 niftiwrite(pagetranspose(double(app.SavedBrainMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_brain.nii");
                 niftiwrite(pagetranspose(double(app.HemisphereMask)),app.ExportFolderPath + filesep + app.SegmentDropDown.Value+"_mask_hemisphere.nii");
@@ -1232,14 +1740,15 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         function ExportImageDataRegistration(app, registration)
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for export");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
             ImageData = app.RegisteredImageData;
             ImageData(ImageData<0) = 0;
@@ -1250,7 +1759,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                     progress.Value = 0.2;
                     progress.Message = "Writing NIfTI data information...";
-                    pause(0.5);
+
                     % Write initial nifti file for header updating
                     niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
                     info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
@@ -1280,7 +1789,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
                     progress.Value = 0.6;
                     progress.Message = "Exporting image data";
-                    pause(0.5);
+
                     % Update header transform
                     rotm = cell2mat(app.SavedTable.RotMat(app.SelectfixedDropDown.Value));
                     info.Transform.T(1:3,1:3) = rotm;
@@ -1294,7 +1803,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                     progress.Value = 0.2;
                     progress.Message = "Writing NIfTI data information...";
-                    pause(0.5);
+
                     % Write initial nifti file for header updating
                     niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
                     info = niftiinfo(app.ExportFolderPath + filesep + app.SelectmovingDropDown.Value + Suffix);
@@ -1324,7 +1833,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
                     progress.Value = 0.6;
                     progress.Message = "Exporting image data";
-                    pause(0.5);
+
                     % Update header transform
                     rotm = app.ResizedAtlasProperties.RotMat;
                     info.Transform.T(1:3,1:3) = rotm;
@@ -1338,7 +1847,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                     progress.Value = 0.2;
                     progress.Message = "Writing NIfTI data information...";
-                    pause(0.5);
+
                     % Write initial nifti file for header updating
                     niftiwrite(pagetranspose(ImageData),app.ExportFolderPath + filesep + app.SelectTimeAlignmentDropDown.Value + Suffix);
                     info = niftiinfo(app.ExportFolderPath + filesep + app.SelectTimeAlignmentDropDown.Value + Suffix);
@@ -1382,7 +1891,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
                     progress.Value = 0.6;
                     progress.Message = "Exporting image data";
-                    pause(0.5);
+
                     % Update header transform
                     info.Transform.T(1:3,1:3) = rotm;
                     info.TransformName = 'Qform';
@@ -1392,8 +1901,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         function ResetEnvironment(app)
@@ -1507,9 +2016,11 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.GreyscaleButton_Registration.Enable = 'off';
             app.ShowReferenceFixedCheckBox.Enable = 'off';
             app.ShowReferenceFixedCheckBox.Value = 0;
+            app.ReferenceFixedViewDropDown.Enable = 'off';
+            app.ReferenceFixedViewDropDown.Value = 'sidebyside';
             app.UseDifferentParameterMapCheckBox.Value = 0;
             app.SelectparameterDropDown.Enable = 'off';
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
             app.StandardAtlasRegistrationPanel.Visible = 'on';
             app.TimeSeriesAlignmentPanel.Visible = 'off';
             app.SelectfixedDropDown.Visible = 'on';
@@ -1523,6 +2034,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.Dim5Spinner_TimeAlignmentReference.Enable = 'off';
             app.Dim5Spinner_TimeAlignmentReference.Value = 1;
             app.AlignDataButton.Enable = 'off';
+            app.ChooseRegistrationTypeDropDown.Value = "Standard";
+            app.OutputInterpolatorDropDown.Value = 'NearestNeighbor';
             app.Dim4Slider_TimeAlignmentControl.Enable = 'off';
             app.Dim4Slider_TimeAlignmentControl.Value = 1;
             app.Dim4Spinner_TimeAlignmentControl.Enable = 'off';
@@ -1665,20 +2178,75 @@ classdef suMRak_exported < matlab.apps.AppBase
                     tformZX = affinetform2d(Tzx);
                     imageZXwarped = imwarp(app.SegmenterImageZX,tformZX);
                     imageZXwarped = RefreshImageBC_mex(imageZXwarped,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
-                    switch app.TurboButton_Segmenter.Value
-                        case true
-                            helperUp = imshow(imageZXwarped, 'DisplayRange', [0 1], 'Parent', app.UIAxes_SegmenterHelperUp, Colormap = turbo);
-                        otherwise
-                            helperUp = imshow(imageZXwarped, 'DisplayRange', [0 1], 'Parent', app.UIAxes_SegmenterHelperUp);
-                    end
-                    posZ = [0 (app.SliceSpinner_Segmenter.Value-1)/app.SegmenterDimTriplet(2) size(imageZXwarped, 2) 1/app.SegmenterDimTriplet(2)];
-                    rectZ = rectangle('Position',posZ,'EdgeColor',[1 1 0],'Parent',app.UIAxes_SegmenterHelperUp);
-                    posX = [app.SegmenterPosX/app.SegmenterDimTriplet(3) 0 1/app.SegmenterDimTriplet(3) size(imageZXwarped,1)];
-                    rectX = rectangle('Position',posX,'EdgeColor',[1 1 0],'Parent',app.UIAxes_SegmenterHelperUp);
 
-                    helperUp.ButtonDownFcn = @(o, e) ClickHandlerHelperUp(app, o, e);
-                    rectZ.ButtonDownFcn = @(o, e) ClickHandlerHelperUp(app, o, e);
-                    rectX.ButtonDownFcn = @(o, e) ClickHandlerHelperUp(app, o, e);
+                    ax = app.UIAxes_SegmenterHelperUp;
+                    useTurbo = app.TurboButton_Segmenter.Value;
+
+                    % Image layer: reuse handle, update CData only
+                    canReuseImg = ~isempty(app.SegmenterHelperImageUp) ...
+                        && isa(app.SegmenterHelperImageUp, 'matlab.graphics.primitive.Image');
+                    if canReuseImg
+                        try
+                            canReuseImg = isvalid(app.SegmenterHelperImageUp) ...
+                                && isequal(app.SegmenterHelperImageUp.Parent, ax);
+                        catch
+                            canReuseImg = false;
+                        end
+                    end
+
+                    if canReuseImg
+                        try
+                            app.SegmenterHelperImageUp.CData = imageZXwarped;
+                        catch
+                            % Size/type mismatch -> rebuild from scratch.
+                            canReuseImg = false;
+                        end
+                    end
+
+                    if ~canReuseImg
+                        app.SegmenterHelperImageUp = imshow(imageZXwarped, ...
+                            'DisplayRange', [0 1], 'Parent', ax);
+                        app.SegmenterHelperImageUp.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperUp(app, o, e);
+                        app.SegmenterHelperRectZ_Up = [];
+                        app.SegmenterHelperRectX_Up = [];
+                    end
+
+                    if useTurbo
+                        ax.Colormap = turbo;
+                    else
+                        ax.Colormap = gray;
+                    end
+
+                    % Rectangle overlays: reuse handles, update Position only
+                    posZ = [0 (app.SliceSpinner_Segmenter.Value-1)/app.SegmenterDimTriplet(2) ...
+                        size(imageZXwarped, 2) 1/app.SegmenterDimTriplet(2)];
+                    posX = [app.SegmenterPosX/app.SegmenterDimTriplet(3) 0 ...
+                        1/app.SegmenterDimTriplet(3) size(imageZXwarped, 1)];
+
+                    if isempty(app.SegmenterHelperRectZ_Up) ...
+                            || ~isgraphics(app.SegmenterHelperRectZ_Up) ...
+                            || ~isvalid(app.SegmenterHelperRectZ_Up) ...
+                            || ~isequal(app.SegmenterHelperRectZ_Up.Parent, ax)
+                        app.SegmenterHelperRectZ_Up = rectangle( ...
+                            'Position', posZ, 'EdgeColor', [1 1 0], 'Parent', ax);
+                        app.SegmenterHelperRectZ_Up.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperUp(app, o, e);
+                    else
+                        app.SegmenterHelperRectZ_Up.Position = posZ;
+                    end
+
+                    if isempty(app.SegmenterHelperRectX_Up) ...
+                            || ~isgraphics(app.SegmenterHelperRectX_Up) ...
+                            || ~isvalid(app.SegmenterHelperRectX_Up) ...
+                            || ~isequal(app.SegmenterHelperRectX_Up.Parent, ax)
+                        app.SegmenterHelperRectX_Up = rectangle( ...
+                            'Position', posX, 'EdgeColor', [1 1 0], 'Parent', ax);
+                        app.SegmenterHelperRectX_Up.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperUp(app, o, e);
+                    else
+                        app.SegmenterHelperRectX_Up.Position = posX;
+                    end
                 case 0
                     return
             end
@@ -1691,20 +2259,74 @@ classdef suMRak_exported < matlab.apps.AppBase
                     tformZY = affinetform2d(Tzy);
                     imageZYwarped = imwarp(app.SegmenterImageZY,tformZY);
                     imageZYwarped = RefreshImageBC_mex(imageZYwarped,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
-                    switch app.TurboButton_Segmenter.Value
-                        case true
-                            helperUp = imshow(imageZYwarped, 'DisplayRange', [0 1], 'Parent', app.UIAxes_SegmenterHelperDown, Colormap = turbo);
-                        otherwise
-                            helperUp = imshow(imageZYwarped, 'DisplayRange', [0 1], 'Parent', app.UIAxes_SegmenterHelperDown);
-                    end
-                    posZ = [0 (app.SliceSpinner_Segmenter.Value-1)/app.SegmenterDimTriplet(2) size(imageZYwarped, 2) 1/app.SegmenterDimTriplet(2)];
-                    rectZ = rectangle('Position',posZ,'EdgeColor',[1 1 0],'Parent',app.UIAxes_SegmenterHelperDown);
-                    posY = [app.SegmenterPosY/app.SegmenterDimTriplet(3) 0 1/app.SegmenterDimTriplet(3) size(imageZYwarped,1)];
-                    rectY = rectangle('Position',posY,'EdgeColor',[1 1 0],'Parent',app.UIAxes_SegmenterHelperDown);
 
-                    helperUp.ButtonDownFcn = @(o, e) ClickHandlerHelperDown(app, o, e);
-                    rectZ.ButtonDownFcn = @(o, e) ClickHandlerHelperDown(app, o, e);
-                    rectY.ButtonDownFcn = @(o, e) ClickHandlerHelperDown(app, o, e);
+                    ax = app.UIAxes_SegmenterHelperDown;
+                    useTurbo = app.TurboButton_Segmenter.Value;
+
+                    % Image layer: reuse handle, update CData only
+                    canReuseImg = ~isempty(app.SegmenterHelperImageDown) ...
+                        && isa(app.SegmenterHelperImageDown, 'matlab.graphics.primitive.Image');
+                    if canReuseImg
+                        try
+                            canReuseImg = isvalid(app.SegmenterHelperImageDown) ...
+                                && isequal(app.SegmenterHelperImageDown.Parent, ax);
+                        catch
+                            canReuseImg = false;
+                        end
+                    end
+
+                    if canReuseImg
+                        try
+                            app.SegmenterHelperImageDown.CData = imageZYwarped;
+                        catch
+                            canReuseImg = false;
+                        end
+                    end
+
+                    if ~canReuseImg
+                        app.SegmenterHelperImageDown = imshow(imageZYwarped, ...
+                            'DisplayRange', [0 1], 'Parent', ax);
+                        app.SegmenterHelperImageDown.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperDown(app, o, e);
+                        app.SegmenterHelperRectZ_Down = [];
+                        app.SegmenterHelperRectY_Down = [];
+                    end
+
+                    if useTurbo
+                        ax.Colormap = turbo;
+                    else
+                        ax.Colormap = gray;
+                    end
+
+                    % Rectangle overlays: reuse handles, update Position only 
+                    posZ = [0 (app.SliceSpinner_Segmenter.Value-1)/app.SegmenterDimTriplet(2) ...
+                        size(imageZYwarped, 2) 1/app.SegmenterDimTriplet(2)];
+                    posY = [app.SegmenterPosY/app.SegmenterDimTriplet(3) 0 ...
+                        1/app.SegmenterDimTriplet(3) size(imageZYwarped, 1)];
+
+                    if isempty(app.SegmenterHelperRectZ_Down) ...
+                            || ~isgraphics(app.SegmenterHelperRectZ_Down) ...
+                            || ~isvalid(app.SegmenterHelperRectZ_Down) ...
+                            || ~isequal(app.SegmenterHelperRectZ_Down.Parent, ax)
+                        app.SegmenterHelperRectZ_Down = rectangle( ...
+                            'Position', posZ, 'EdgeColor', [1 1 0], 'Parent', ax);
+                        app.SegmenterHelperRectZ_Down.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperDown(app, o, e);
+                    else
+                        app.SegmenterHelperRectZ_Down.Position = posZ;
+                    end
+
+                    if isempty(app.SegmenterHelperRectY_Down) ...
+                            || ~isgraphics(app.SegmenterHelperRectY_Down) ...
+                            || ~isvalid(app.SegmenterHelperRectY_Down) ...
+                            || ~isequal(app.SegmenterHelperRectY_Down.Parent, ax)
+                        app.SegmenterHelperRectY_Down = rectangle( ...
+                            'Position', posY, 'EdgeColor', [1 1 0], 'Parent', ax);
+                        app.SegmenterHelperRectY_Down.ButtonDownFcn = ...
+                            @(o, e) ClickHandlerHelperDown(app, o, e);
+                    else
+                        app.SegmenterHelperRectY_Down.Position = posY;
+                    end
                 case 0
                     return
             end
@@ -1724,11 +2346,140 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             app.ViewerParentObject.Children.Alphamap = alphamap;
         end
+    
+        function idx = currentStageIndex(app, requireSelection)
+            if nargin < 2, requireSelection = true; end
+            idx = app.TransformsListBox.Value;
+            if isempty(idx) && requireSelection
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    'Select a transform first.', 'No selection');
+            end
+        end
+    
+        function selectStage(app, k)
+            n = numel(app.StageSettings);
+            if n == 0
+                app.TransformsListBox.Value = {};
+            else
+                app.TransformsListBox.Value = max(1, min(k, n));
+            end
+            updateContextMenuState(app);
+        end
+    
+        function insertStageOfType(app, typeName)
+            if strcmp(app.ChooseRegistrationTypeDropDown.Value, 'Reference Atlas')
+                preset = "Atlas";
+            else
+                preset = "Standard";
+            end
+            newStage = suMRak.defaultStageOfType(typeName, preset);
+            sel = currentStageIndex(app, false);
+            if isempty(sel)
+                insertAt = numel(app.StageSettings) + 1;
+            else
+                insertAt = sel + 1;     % insert after current selection
+            end
+            app.StageSettings = [ ...
+                app.StageSettings(1:insertAt-1), ...
+                newStage, ...
+                app.StageSettings(insertAt:end)];
+            refreshTransformsListBox(app);
+            selectStage(app, insertAt);
+        end
+        
+        function updateContextMenuState(app)
+            n = numel(app.StageSettings);
+            idx = app.TransformsListBox.Value;
+            hasSel = ~isempty(idx);
+            isTimeSeries = strcmp(app.ChooseRegistrationTypeDropDown.Value, 'Time-Series Alignment');
+        
+            canEdit = hasSel && ~isTimeSeries;
+            canMod  = ~isTimeSeries;
+        
+            app.EditTransformMenu.Enable      = canEdit;
+            app.AddTransformMenu.Enable       = canMod;
+            app.DuplicateTransformMenu.Enable = canEdit;
+            app.RemoveTransformMenu.Enable    = canEdit && n > 1;
+            app.MoveUpTransformMenu.Enable    = canEdit && idx > 1;
+            app.MoveDownTransformMenu.Enable  = canEdit && idx < n;
+            app.ResetTransformMenu.Enable     = canMod;
+        end
+
+        % Handle errors raised by SimpleITK during registration
+        function handleRegistrationError(app, ME)
+            msgText = ME.message;
+            % Walk the cause chain so we also see the underlying Python message
+            c = ME;
+            while ~isempty(c.cause)
+                c = c.cause{1};
+                msgText = sprintf('%s\n%s', msgText, c.message);
+            end
+
+            % Signature of the "images do not overlap" failure
+            overlapSignatures = [ ...
+                "All samples map outside moving image buffer", ...
+                "images do not sufficiently overlap", ...
+                "align the image centers by translation"];
+            isOverlapError = any(arrayfun(@(s) contains(msgText, s, 'IgnoreCase', true), ...
+                overlapSignatures));
+
+            if isOverlapError
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    ['Registration failed because the moving and fixed images do not sufficiently overlap. ' ...
+                     newline newline ...
+                     'Add a Translation stage at the start of the registration pipeline ' ...
+                     '(Add Transform -> Translation) and run the pipeline again. ' ...
+                     'The translation will align the image centers so the later stages ' ...
+                     '(Euler3D / Affine / BSpline) have enough overlap to converge.'], ...
+                    'Insufficient image overlap', ...
+                    'Icon', 'warning');
+            else
+                % Any other Python / registration failure
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    sprintf('Registration failed:\n\n%s', msgText), ...
+                    'Registration Error', ...
+                    'Icon', 'error');
+            end
+        end
 
     end
 
 
     methods (Access = public)
+
+        function refreshTransformsListBox(app)
+            n = numel(app.StageSettings);
+            if n == 0
+                app.TransformsListBox.Items = {};
+                app.TransformsListBox.ItemsData = [];
+                removeStyle(app.TransformsListBox);
+                updateContextMenuState(app);
+                return
+            end
+            items = cell(1, n);
+            disabledRows = false(1, n);
+            for k = 1:n
+                s = app.StageSettings(k);
+                plain = sprintf('%d: %s', k-1, s.Type);
+                if s.Enabled
+                    items{k} = plain;
+                else
+                    items{k} = sprintf('%s  (disabled)', plain);
+                    disabledRows(k) = true;
+                end
+            end
+            app.TransformsListBox.Items = items;
+            app.TransformsListBox.ItemsData = 1:n;
+            
+            % Style disabled rows.
+            removeStyle(app.TransformsListBox);
+            if any(disabledRows)
+                addStyle(app.TransformsListBox, ...
+                    uistyle('FontColor', [0.53 0.53 0.53], 'FontAngle', 'italic'), ...
+                    'item', find(disabledRows));
+            end
+            updateContextMenuState(app);
+        end
 
         % Segmenter UIAxes image updating
         function RefreshImageSegmenter(app)
@@ -1743,113 +2494,100 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 5
                     app.CurrentSlice = app.WorkingSegmenterImageData(:,:,app.SliceSpinner_Segmenter.Value, app.Dim4Spinner_Segmenter.Value, app.Dim5Spinner_Segmenter.Value);
                 otherwise
-                    %error alert missing
+                    return
             end
-            % app.CurrentSlice = (app.CurrentSlice - min(app.CurrentSlice(:))) / (max(app.CurrentSlice(:)) - min(app.CurrentSlice(:))); % Scale image to [0 1]
-            % app.CurrentSlice = im2uint8(app.CurrentSlice * exp(app.ContrastSlider_Segmenter.Value) +  app.BrightnessSlider_Segmenter.Value); % Apply contrast and brightness
-            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice,app.ContrastSlider_Segmenter.Value,app.BrightnessSlider_Segmenter.Value);
+            app.CurrentSlice = RefreshImageBC_mex(app.CurrentSlice, ...
+                app.ContrastSlider_Segmenter.Value, app.BrightnessSlider_Segmenter.Value);
+
+            useTurbo = app.TurboButton_Segmenter.Value;
+            slice = app.SliceSpinner_Segmenter.Value;
+            isVolumetric = numel(app.ExpDimsSegmenter) ~= 2;
+
             switch app.CurrentSegmentationDropDown.Value
-                % Brain segmentation image updating
                 case 'Brain'
                     switch app.ImageshownSwitch_Brain.Value
                         case "Overlay"
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                                 
+                            deleteSegmenterOverlaysExcept(app, "SegmenterOverlayGreen");
+                            app.SegmenterImage = suMRak.showImage(app.SegmenterImage, ...
+                                app.UIAxes_Segmenter, app.CurrentSlice, useTurbo);
                             try
-                                hold(app.UIAxes_Segmenter, "on");
-                                mask_Overlay = imshow(app.GreenScreen, "Parent", app.UIAxes_Segmenter);
-                                hold(app.UIAxes_Segmenter, "off");
-                                mask_Overlay.AlphaData = app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value)-0.8;
+                                alphaMap = app.BrainMask(:,:,slice) - 0.8;
+                                app.SegmenterOverlayGreen = suMRak.showOverlay( ...
+                                    app.SegmenterOverlayGreen, app.UIAxes_Segmenter, ...
+                                    app.GreenScreen, alphaMap);
                             catch
                                 return
                             end
-                            mask_Overlay.ContextMenu = app.ContextMenu_Segmenter;
+                            app.SegmenterOverlayGreen.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
-                            app.MaskedImage = double(app.CurrentSlice).*app.BrainMask(:,:,app.SliceSpinner_Segmenter.Value);
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
+                            deleteSegmenterOverlaysExcept(app, "");
+                            app.MaskedImage = double(app.CurrentSlice) .* app.BrainMask(:,:,slice);
+                            app.SegmenterImage = suMRak.showImage(app.SegmenterImage, ...
+                                app.UIAxes_Segmenter, app.MaskedImage, useTurbo);
                             app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
 
-                % Hemisphere segmentation image updating
                 case 'Hemisphere'
-                    switch app.TurboButton_Segmenter.Value
-                        case true
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                        otherwise
-                            app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                    end
+                    deleteSegmenterOverlaysExcept(app, ["SegmenterOverlayBlue", "SegmenterOverlayRed"]);
+                    app.SegmenterImage = suMRak.showImage(app.SegmenterImage, ...
+                        app.UIAxes_Segmenter, app.CurrentSlice, useTurbo);
                     try
-                        hold(app.UIAxes_Segmenter, "on");
-                        mask_overlay_Blue = imshow(app.BlueScreen, "Parent",app.UIAxes_Segmenter);
-                        mask_overlay_Red = imshow(app.RedScreen, "Parent",app.UIAxes_Segmenter);
-                        hold(app.UIAxes_Segmenter, "off");
-                        if numel(app.ExpDimsSegmenter) ~= 2
-                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,1)-0.8;
-                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,app.SliceSpinner_Segmenter.Value,2)-0.8;
+                        if isVolumetric
+                            alphaBlue = app.HemisphereMask(:,:,slice,1) - 0.8;
+                            alphaRed  = app.HemisphereMask(:,:,slice,2) - 0.8;
                         else
-                            mask_overlay_Blue.AlphaData = app.HemisphereMask(:,:,1)-0.8;
-                            mask_overlay_Red.AlphaData = app.HemisphereMask(:,:,2)-0.8;
+                            alphaBlue = app.HemisphereMask(:,:,1) - 0.8;
+                            alphaRed  = app.HemisphereMask(:,:,2) - 0.8;
                         end
+                        app.SegmenterOverlayBlue = suMRak.showOverlay( ...
+                            app.SegmenterOverlayBlue, app.UIAxes_Segmenter, ...
+                            app.BlueScreen, alphaBlue);
+                        app.SegmenterOverlayRed = suMRak.showOverlay( ...
+                            app.SegmenterOverlayRed, app.UIAxes_Segmenter, ...
+                            app.RedScreen, alphaRed);
                     catch
                         return
                     end
-                    mask_overlay_Red.ContextMenu = app.ContextMenu_Segmenter;
+                    app.SegmenterOverlayRed.ContextMenu = app.ContextMenu_Segmenter;
 
-                % ROI segmentation image updating
                 case 'ROI'
                     switch app.ImageshownSwitch_ROI.Value
                         case "Overlay"
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                    app.SegmenterImage = imshow(app.CurrentSlice, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
-                            hold(app.UIAxes_Segmenter, "on");
-                            mask_overlay_Yellow = imshow(app.YellowScreen, "Parent",app.UIAxes_Segmenter);
-                            hold(app.UIAxes_Segmenter, "off");
+                            deleteSegmenterOverlaysExcept(app, "SegmenterOverlayYellow");
+                            app.SegmenterImage = suMRak.showImage(app.SegmenterImage, ...
+                                app.UIAxes_Segmenter, app.CurrentSlice, useTurbo);
                             try
-                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
-                                if ~isequal(index, [])
-                                    if numel(app.ExpDimsSegmenter) ~= 2
-                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index)-0.8;
+                                index = find(strcmp(app.ROIIdentifiers, app.ROIListListBox.Value));
+                                if ~isempty(index)
+                                    if isVolumetric
+                                        alphaYellow = app.ROIMask(:,:,slice,index) - 0.8;
                                     else
-                                        mask_overlay_Yellow.AlphaData = app.ROIMask(:,:,index)-0.8;
+                                        alphaYellow = app.ROIMask(:,:,index) - 0.8;
                                     end
                                 else
-                                    mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
+                                    alphaYellow = zeros(app.ExpDimsSegmenter(1:2));
                                 end
                             catch
-                                mask_overlay_Yellow.AlphaData = zeros(app.ExpDimsSegmenter(1:2));
+                                alphaYellow = zeros(app.ExpDimsSegmenter(1:2));
                             end
-                            mask_overlay_Yellow.ContextMenu = app.ContextMenu_Segmenter;
+                            app.SegmenterOverlayYellow = suMRak.showOverlay( ...
+                                app.SegmenterOverlayYellow, app.UIAxes_Segmenter, ...
+                                app.YellowScreen, alphaYellow);
+                            app.SegmenterOverlayYellow.ContextMenu = app.ContextMenu_Segmenter;
                         case "Masked"
+                            deleteSegmenterOverlaysExcept(app, "");
                             try
-                                index = find(strcmp(app.ROIIdentifiers,app.ROIListListBox.Value));
-                                if numel(app.ExpDimsSegmenter) ~= 2
-                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,app.SliceSpinner_Segmenter.Value,index);
+                                index = find(strcmp(app.ROIIdentifiers, app.ROIListListBox.Value));
+                                if isVolumetric
+                                    app.MaskedImage = double(app.CurrentSlice) .* app.ROIMask(:,:,slice,index);
                                 else
-                                    app.MaskedImage = double(app.CurrentSlice).*app.ROIMask(:,:,index);
+                                    app.MaskedImage = double(app.CurrentSlice) .* app.ROIMask(:,:,index);
                                 end
                             catch
-                                app.MaskedImage = double(app.CurrentSlice).*(false(app.ExpDimsSegmenter(1:2)));
+                                app.MaskedImage = double(app.CurrentSlice) .* (false(app.ExpDimsSegmenter(1:2)));
                             end
-                            switch app.TurboButton_Segmenter.Value
-                                case true
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter, Colormap = turbo);
-                                otherwise
-                                     app.SegmenterImage = imshow(app.MaskedImage, 'DisplayRange', [0 1], 'Parent', app.UIAxes_Segmenter);
-                            end
+                            app.SegmenterImage = suMRak.showImage(app.SegmenterImage, ...
+                                app.UIAxes_Segmenter, app.MaskedImage, useTurbo);
                             app.SegmenterImage.ContextMenu = app.ContextMenu_Segmenter;
                     end
                 otherwise
@@ -1873,31 +2611,48 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             movegui(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'center');
             
-            % Get app installation directory
+             % Get app installation directory
             if isdeployed % Stand-alone mode.
                 [~, result] = system('path');
                 currentDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
             else % MATLAB mode.
                 currentDir = 1;
             end
-            % Check if runtime is in default installation dir
-            if exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a", "dir")
-                % Check for volume folder in image processing toolbox
-                if ~exist("C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume", "dir") & ~isequal(currentDir, 1) %#ok<AND2>
-                    selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Installed MATLAB Runtime does not contain necessary files for 3D Viewer. Replace missing files?', 'MATLAB Runtime Missing Files', 'Icon', 'warning');
-                    switch selection
-                        case 'OK'
-                            [status, ~] = copyfile(strcat(currentDir, filesep, "volume"), "C:\Program Files\MATLAB\MATLAB Runtime\R2023a\toolbox\images\volume");
-                            if status == 0
-                                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Error replacing missing files. Please restart the application as administrator and try again.", "Error Replacing Missing MATLAB Runtime FIles")
-                            elseif status == 1
-                                uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Missing MATLAB Runtime files successfully replaced.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
+
+            %  3D Viewer support-file check 
+            if isdeployed
+                runtimeRoot = matlabroot;
+                volumeDir   = fullfile(runtimeRoot, 'toolbox', 'images', 'volume');
+                if ~exist(volumeDir, 'dir') && ~isequal(currentDir, 1)
+                    fallbackVolume = fullfile(currentDir, 'volume');
+                    if exist(fallbackVolume, 'dir')
+                        selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                            sprintf(['Your MATLAB Runtime (%s) is missing files needed ', ...
+                                     'by the 3D Viewer. Replace them now? You may need ', ...
+                                     'to restart as an administrator on Windows.'], runtimeRoot), ...
+                            'MATLAB Runtime Missing Files', 'Icon', 'warning');
+                        if strcmp(selection, 'OK')
+                            [status, msg] = copyfile(fallbackVolume, volumeDir);
+                            if status
+                                uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                                    "Missing MATLAB Runtime files successfully replaced.", ...
+                                    "", "Options", {'OK'}, "DefaultOption", 1, "Icon", "success");
+                            else
+                                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                                    sprintf(['Error replacing missing files: %s\n\n', ...
+                                             'Please restart the application as ', ...
+                                             'administrator and try again.'], msg), ...
+                                    'Error Replacing Missing MATLAB Runtime Files');
                             end
-                        otherwise
+                        end
                     end
-                end     
-            else
+                end
             end
+
+            % Populate transforms list box on Registration tab
+            app.StageSettings = suMRak.defaultStageSettings();
+            refreshTransformsListBox(app);
+            updateContextMenuState(app);
         end
 
         % Key press function: suMRakSimpleUtilityMRiAnalysisKitUIFigure
@@ -1954,6 +2709,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box 
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Purging old temporary data");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             % Create new folder for loading operations inside working temp
@@ -1972,7 +2728,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             [file, folder] = uigetfile('*.PvDatasets', 'Select a Bruker archive file');
             figure(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
             if isequal(file, 0)
-                close(progress);
+                
                 return;
             end
             ResetEnvironment(app);
@@ -2089,7 +2845,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             progress.Value = 0.9;
             progress.Message = "Constructing property table";
             exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+            variable_Names = app.ExpTableVars;
             app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
                 app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
@@ -2173,8 +2929,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         % Button pushed function: LoadsuMRakFolderButton
@@ -2182,6 +2938,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Selecting suMRak folder");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow    
             
             % Select suMRak folder, check for cancel and update the edit field text
@@ -2229,7 +2986,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                 % Set Preview Table
                 app.UITable_Preview.Data=app.ExperimentPropertyTable(2:end,:);
-                variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+                variable_Names = app.ExpTableVars;
                 app.UITable_Preview.ColumnName = variable_Names;
                 
                 % Set export folder to loaded suMRak folder and cd
@@ -2238,34 +2995,17 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                 % Enable export Environment
                 app.ExportEnvironmentButton.Enable = 'on';
-    
-                % Enable export buttons
-                if app.PreviewDropDown.Value ~= "None"
-                    app.ExportDataButton_Preview.Enable = 'on';
-                end
-                if app.SegmentDropDown.Value ~= "None"
-                    app.ExportDataButton_Segmenter.Enable = 'on';
-                end
-                if app.SelectResultsDropDown.Value ~= "None"
-                    app.ExportDataButton_Results.Enable = 'on';
-                end
-                if ~isequal(app.RegisteredImageData, [])
-                    app.ExportDataButton_Registration.Enable = 'on';
-                end
-                if ~isequal(app.PostMapImageData, [])
-                    app.ExportDataButton_Map.Enable = 'on';
-                end    
-                if app.Select3DViewerDropDown.Value ~= "None"
-                    app.ExportSceneButton.Enable = 'on';
-                end
+
+                % Refresh all six "Export Data" buttons based on current state.
+                refreshExportButtonState(app);
 
                 % close the dialog box
                 progress.Value = 1;
                 progress.Message = "Done!";
-                pause(0.5);
-                close(progress);
+
+                
             else
-                close(progress);
+                
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'No saved environment was found in selected directory.', 'No Environment Found')
             end
         end
@@ -2276,6 +3016,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Selecting Bruker study");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
             
             % Select Bruker study folder, check for cancel and update the edit field text
@@ -2283,7 +3024,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.StudyPath = uigetdir; 
             figure(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
             if isequal(app.StudyPath, 0)
-                close(progress);
+                
                 return;
             end
             ResetEnvironment(app);
@@ -2379,7 +3120,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             progress.Value = 0.9;
             progress.Message = "Constructing property table";
             exp_ID = visu_AcqProt;
-            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+            variable_Names = app.ExpTableVars;
             app.ExperimentPropertyTable = table(exp_ID, exp_ImageData, ...
                 app.TEvalues(1:size(visu_AcqProt, 1),1), app.TRvalues(1:size(visu_AcqProt, 1),1), ...
                 voxel_Dims_X, voxel_Dims_Y, slice_Thickness, ...
@@ -2463,8 +3204,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         % Button pushed function: LoadSingleNIfTIButton
@@ -2508,7 +3249,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             rot_Matrix = {nifti_info.Transform.T(1:3,1:3)};
             
-            variable_Names = ["Experiment ID", "Image data", "TE1", "TR1", "Voxel dimension X", "Voxel dimension Y", "Slice Thickness", "Slice Gap", "Dimension Units", "Rotation Matrix"];
+            variable_Names = app.ExpTableVars;
             % Load nifti data
             if isequal(app.ExperimentPropertyTable, table())
                 % No other data loaded
@@ -2580,12 +3321,17 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             
             infofile = fopen('info.txt', 'w+');
-            fprintf(infofile, "########## suMRak study info 1.0\r\n\r\n");
+            if infofile == -1
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    'Unable to create info.txt in the study folder.', 'File Error');
+                return
+            end
+            cleanupFile = onCleanup(@() fclose(infofile));  
+            fprintf(infofile, "########## suMRak study info %s\r\n\r\n", app.Version);
             fprintf(infofile, "Subject ID: %s\r\n", app.SubjectIDEditField.Value);
             fprintf(infofile, "Subject Comment: %s\r\n", app.SubjectCommentEditField.Value);
             fprintf(infofile, "Subject Age: %s\r\n", app.SubjectAgeEditField.Value);
             fprintf(infofile, "Subject Type: %s\r\n", app.SubjectTypeEditField.Value);
-            fprintf(infofile, "Subject Age: %s\r\n", app.SubjectAgeEditField.Value);
             fprintf(infofile, "Subject Sex: %s\r\n", app.SexEditField.Value);
             fprintf(infofile, "Subject Weight: %s\r\n", app.WeightEditField.Value);
             fprintf(infofile, "\r\n");
@@ -2593,7 +3339,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             fprintf(infofile, "Study Comment: %s\r\n", app.StudyCommentEditField.Value);
             fprintf(infofile, "Study Start Time: %s\r\n", app.StudyStartTimeEditField.Value);
             fprintf(infofile, "Study Start Date: %s\r\n", app.StudyStartDateEditField.Value);
-            fclose(infofile);
+            % cleanupFile closes the handle automatically — on normal return,
+            % on error, or if the user interrupts with Ctrl-C.
             
             imagedata_Column = table2array(app.ExperimentPropertyTable(:,2));
             imagedata_String = "";
@@ -2609,25 +3356,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Enable export Environment
             app.ExportEnvironmentButton.Enable = 'on';
 
-            % Enable export buttons
-            if app.PreviewDropDown.Value ~= "None"
-                app.ExportDataButton_Preview.Enable = 'on';
-            end
-            if app.SegmentDropDown.Value ~= "None"
-                app.ExportDataButton_Segmenter.Enable = 'on';
-            end
-            if app.SelectResultsDropDown.Value ~= "None"
-                app.ExportDataButton_Results.Enable = 'on';
-            end
-            if ~isequal(app.RegisteredImageData, [])
-                app.ExportDataButton_Registration.Enable = 'on';
-            end
-            if ~isequal(app.PostMapImageData, [])
-                app.ExportDataButton_Map.Enable = 'on';
-            end    
-            if app.Select3DViewerDropDown.Value ~= "None"
-                app.ExportSceneButton.Enable = 'on';
-            end
+            % Refresh all six "Export Data" buttons based on current state.
+            refreshExportButtonState(app);
         end
 
         % Button pushed function: ExportEnvironmentButton
@@ -2636,11 +3366,12 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Retrieving environment properties");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow    
 
             % Get main environment properties
             progress.Value = 0.3;
-            pause(0.5);
+
             ExperimentPropertyTable = app.ExperimentPropertyTable; %#ok<ADPROPLC> 
             SavedTable = app.SavedTable; %#ok<ADPROPLC> 
             SubjectID = app.SubjectIDEditField.Value;
@@ -2689,8 +3420,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
 
             uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Environment data sucessfully exported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
         end
@@ -2735,7 +3466,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
             
             % Get selected sequence image data
-            app.PreviewImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+            app.PreviewImageData = cell2mat(app.ExperimentPropertyTable.("Image data")(value));
             
             % Initialize default slider values
             app.Dim5Slider_Preview.Value = 1;
@@ -2932,7 +3663,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 reset_indicator = 0;         
             catch
                 try
-                    app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                    app.OriginalSegmenterImageData = cell2mat(app.ExperimentPropertyTable.("Image data")(value));
                     reset_indicator = 1;
                 catch
                 end
@@ -2967,7 +3698,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     app.PerspectiveViewButton.Enable = "on";
                     app.VolROISegmentationToolsButton.Enable = "on";
                 catch 
-                    app.SegmenterDimTriplet = [app.ExperimentPropertyTable.(5)(value) app.ExperimentPropertyTable.(6)(value) app.ExperimentPropertyTable.(7)(value)+app.ExperimentPropertyTable.(8)(value)];
+                    app.SegmenterDimTriplet = [app.ExperimentPropertyTable.("Voxel dimension X")(value) app.ExperimentPropertyTable.("Voxel dimension Y")(value) app.ExperimentPropertyTable.("Slice Thickness")(value)+app.ExperimentPropertyTable.("Slice Gap")(value)];
                     app.PerspectiveViewButton.Enable = "on";
                     app.VolROISegmentationToolsButton.Enable = "on";
                 end
@@ -3090,6 +3821,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ContrastSlider_Segmenter.Enable = 'on';
             
             % Set interactions of segmenter uiaxes
+            disableDefaultInteractivity(app.UIAxes_SegmenterHelperUp);
             app.UIAxes_Segmenter.Interactions = [regionZoomInteraction zoomInteraction];
             
             % Reset zoom
@@ -3459,6 +4191,10 @@ classdef suMRak_exported < matlab.apps.AppBase
                         return
                     end
                     app.UIAxes_Segmenter.Position = [239,66,669,627];
+                    reset(app.UIAxes_SegmenterHelperUp);
+                    disableDefaultInteractivity(app.UIAxes_SegmenterHelperUp);
+                    reset(app.UIAxes_SegmenterHelperDown);
+                    disableDefaultInteractivity(app.UIAxes_SegmenterHelperDown);
                     app.UIAxes_SegmenterHelperUp.Visible = 'on';
                     app.UIAxes_SegmenterHelperDown.Visible = 'on';
                     RefreshImageSegmenterHelperUp(app);
@@ -3853,7 +4589,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             ROI_name = inputdlg('Enter ROI name', 'Add New ROI', [1 40]);
 
             % Check for empty/duplicate name input
-            if ~isequal(ROI_name, {''}) & ~any(strcmp(app.ROIIdentifiers,ROI_name)) %#ok<AND2> 
+            if ~isequal(ROI_name, {''}) && ~any(strcmp(app.ROIIdentifiers,ROI_name))  
                 app.ROIIdentifiers = cat(2, app.ROIIdentifiers, ROI_name);
                 app.ROIListListBox.Items = app.ROIIdentifiers;
                 app.ROIListListBox.Value = ROI_name;
@@ -3919,7 +4655,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case 4
                     volume = app.WorkingSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value);
                 case 5
-                    volume = app.WorkingSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value,app.Dim4Spinner_Segmenter.Value);
+                    volume = app.WorkingSegmenterImageData(:,:,:,app.Dim4Spinner_Segmenter.Value,app.Dim5Spinner_Segmenter.Value);
             end
             app.ROIVolumeSegmenterWindow = ROIVolumeSegmenter(app, volume, app.ROIMask, ...
                 app.ROIIdentifiers, app.SegmenterDimTriplet(1), app.SegmenterDimTriplet(2), app.SegmenterDimTriplet(3));
@@ -4180,11 +4916,12 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw a progress box 
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Retrieving saved data.");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
             
             % Get data from saved table
             progress.Value = 0.1;
-            pause(0.3) 
+
             app.VolumetryImageData = cell2mat(app.SavedTable.Image(app.SelectResultsDropDown.Value));
             app.VolumetryBrainMask = cell2mat(app.SavedTable.BrainMask(app.SelectResultsDropDown.Value));
             app.VolumetryHemiMask = cell2mat(app.SavedTable.HemiMask(app.SelectResultsDropDown.Value));
@@ -4213,7 +4950,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Get volume for segmented brain and area for separate slices
             progress.Value = 0.3;
             progress.Message = "Calculating brain volume and descriptive statistics.";
-            pause(0.5)
+
             [sliceTable, Volume, mean_val, std_val, median_val, IQRlow, IQRup, min_val, max_val] = GetVolumetricData(app, app.VolumetryImageData, app.VolumetryBrainMask, voxel_Area, app.VolumetryThickness, app.VolumetryGap);
             app.UITable_ResultsBrain.Data = sliceTable;
             app.VolumeEditField_Brain.Value = Volume;
@@ -4242,7 +4979,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 % Get volume for segmented hemispheres and area for separate slices
                 progress.Value = 0.5;
                 progress.Message = "Calculating hemisphere volume and descriptive statistics.";
-                pause(0.5)
+
                 app.SelectHemisphereDropDown.Enable = 'on';
                 app.SelectHemisphereDropDown.Value = 'Left';
                 switch numel(size(app.VolumetryHemiMask))
@@ -4280,7 +5017,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 % Get volume for first segmented ROI and area for separate slices
                 progress.Value = 0.7;
                 progress.Message = "Calculating ROI volumes and descriptive statistics.";
-                pause(0.5)
+
                 app.SelectROIDropDown.Enable = 'on';
                 app.SelectROIDropDown.Items = app.VolumetryROI.ID;
                 app.SelectROIDropDown.Value = app.VolumetryROI.ID(1);
@@ -4326,8 +5063,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         % Value changed function: SelectHemisphereDropDown
@@ -4387,7 +5124,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.HemisphereScalingFactorMenu.Checked = 'on';
             app.BelayevScalingFactorMenu.Checked = 'off';
             app.GerrietsCompressionFactorMenu.Checked = 'off';
-            if app.SelectResultsDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+            if app.SelectResultsDropDown.Value ~= "None" && app.ApplyEdemaCorrectionCheckBox.Enable == "on" 
                 UpdateVolumetryROI(app);
             end
         end
@@ -4397,7 +5134,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.HemisphereScalingFactorMenu.Checked = 'off';
             app.BelayevScalingFactorMenu.Checked = 'on';
             app.GerrietsCompressionFactorMenu.Checked = 'off';
-            if app.SelectResultsDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+            if app.SelectResultsDropDown.Value ~= "None" && app.ApplyEdemaCorrectionCheckBox.Enable == "on" 
                 UpdateVolumetryROI(app);
             end
         end
@@ -4407,7 +5144,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.HemisphereScalingFactorMenu.Checked = 'off';
             app.BelayevScalingFactorMenu.Checked = 'off';
             app.GerrietsCompressionFactorMenu.Checked = 'on';
-            if app.SelectResultsDropDown.Value ~= "None" & app.ApplyEdemaCorrectionCheckBox.Enable == "on" %#ok<AND2> 
+            if app.SelectResultsDropDown.Value ~= "None" && app.ApplyEdemaCorrectionCheckBox.Enable == "on" 
                 UpdateVolumetryROI(app);
             end
         end
@@ -4621,33 +5358,39 @@ classdef suMRak_exported < matlab.apps.AppBase
                     app.TimeSeriesAlignmentPanel.Visible = 'on';
             end
             app.SelectfixedDropDown.Value = "None";
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
+
+            switch app.ChooseRegistrationTypeDropDown.Value
+                case "Time-Series Alignment"
+                    app.StageSettings = suMRak.defaultStageOfType("Euler3D");
+                case "Reference Atlas"
+                    app.StageSettings = suMRak.defaultStageSettings("Reference Atlas");
+                    app.OutputInterpolatorDropDown.Value = 'Linear';           % anatomical subject<->atlas
+                otherwise
+                    app.StageSettings = suMRak.defaultStageSettings("Standard");
+                    app.OutputInterpolatorDropDown.Value = 'NearestNeighbor';  % preserve quantitative values
+            end
+            refreshTransformsListBox(app);
         end
 
         % Value changed function: SelectfixedDropDown
         function SelectfixedDropDownValueChanged(app, event)
             if app.SelectfixedDropDown.Value == "None"
-                app.RegistrationInstructionsTextArea.Value = '';
+                app.RegistrationSliceLimitsTextArea.Value = '';
                 return
             end
-            % Get fixed image data number of dimensions
-            fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
-            app.FixedNDims = numel(size(fixed_Image));
 
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
         end
 
         % Value changed function: SelectmovingDropDown
         function SelectmovingDropDownValueChanged(app, event)
             if app.SelectmovingDropDown.Value == "None"
-                app.RegistrationInstructionsTextArea.Value = '';
+                app.RegistrationSliceLimitsTextArea.Value = '';
                 return
             end
-            % Get moving image data number of dimensions
-            moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
-            app.MovingNDims = numel(size(moving_Image));
 
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
         end
 
         % Value changed function: UseDifferentParameterMapCheckBox
@@ -4659,20 +5402,17 @@ classdef suMRak_exported < matlab.apps.AppBase
                 app.SelectparameterDropDown.Enable = 'off';
             end
             app.SelectparameterDropDown.Value = "None";
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
         end
 
         % Value changed function: SelectparameterDropDown
         function SelectparameterDropDownValueChanged(app, event)
             if app.SelectparameterDropDown.Value == "None"
-                app.RegistrationInstructionsTextArea.Value = '';
+                app.RegistrationSliceLimitsTextArea.Value = '';
                 return
             end
-            % Get parameter image data number of dimensions
-            parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
-            app.ParameterNDims = numel(size(parameter_Image));
 
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
         end
 
         % Button pushed function: ImportReferenceAtlasButton
@@ -4692,6 +5432,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 case "Load From Directory"
                     progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                     'Message', "Selecting reference atlas folder");
+                    cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
                     drawnow
                     progress.Value = 0;
                     % Get directory
@@ -4706,12 +5447,17 @@ classdef suMRak_exported < matlab.apps.AppBase
                     if exist(MICe_atlas_Path, 'dir')
                         progress.Value = 0.2;
                         progress.Message = 'Found MICe Neuroanatomy Atlas - C57BL6J Mouse: Importing...';
-                        pause(0.5)
-                        % Update atlas path
-                        MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        MICe_atlas.ImageData = niftiread(MICe_atlas_Path);
+
+                        % Load atlas and labels using minc_read, apply
+                        % labels as mask
+                        MICe_labels_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlasLabels.mnc');
+                        MICe_atlas_Path  = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.mnc');
+                        [MICe_info, MICe_atlas.ImageData] = minc_read(char(MICe_atlas_Path));
+                        [~, MICe_labels.ImageData]        = minc_read(char(MICe_labels_Path));
+                        MICe_labels.ImageData = cast(MICe_labels.ImageData, 'logical');
+                        MICe_atlas.ImageData = MICe_atlas.ImageData .* cast(MICe_labels.ImageData, 'like', MICe_atlas.ImageData);
+
+                        % Permute dims, pagetranspose and flip volume
                         MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
                         MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
                         MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
@@ -4719,13 +5465,12 @@ classdef suMRak_exported < matlab.apps.AppBase
 
                         % Get atlas info, update dimensions and rotation
                         % matrix
-                        MICe_info = niftiinfo(MICe_atlas_Path);
-                        MICe_atlas.VoxDimX = MICe_info.PixelDimensions(1);
-                        MICe_atlas.VoxDimY = MICe_info.PixelDimensions(1);
-                        MICe_atlas.SliceThickness = MICe_info.PixelDimensions(1);
+                        MICe_atlas.VoxDimX = MICe_info.info.voxel_size(1);
+                        MICe_atlas.VoxDimY = MICe_info.info.voxel_size(2);
+                        MICe_atlas.SliceThickness = MICe_info.info.voxel_size(3);
                         MICe_atlas.SliceGap = 0;
                         MICe_atlas.Units = "mm mm mm";
-                        MICe_atlas.RotMat = MICe_info.Transform.T(1:3,1:3);
+                        MICe_atlas.RotMat = MICe_info.info.mat(1:3,1:3);
 
                         % Save to loaded atlas collection struct, update
                         % drop down items
@@ -4737,12 +5482,22 @@ classdef suMRak_exported < matlab.apps.AppBase
                     if exist(waxholm_t2_atlas_Path, 'dir')
                         progress.Value = 0.4;
                         progress.Message = 'Found T2w Waxholm Space Atlas - C57BL6J Mouse: Importing...';
-                        pause(0.5)
-                        % Update atlas path
-                        waxholm_t2_atlas_Path = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
+
+                        % Update atlas and labels path
+                        waxholm_t2_labels_Path = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouseLabels.nii.gz');
+                        waxholm_t2_atlas_Path  = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii.gz');
+                
+                        % Load atlas and labels using niftiread, apply labels as
+                        % mask
                         waxholm_t2_atlas.ImageData = niftiread(waxholm_t2_atlas_Path);
+                        waxholm_t2_labels.ImageData = niftiread(waxholm_t2_labels_Path);
+                        
+                        % Remove nerves and inner ear and apply labels as mask
+                        waxholm_t2_labels.ImageData(ismember(waxholm_t2_labels.ImageData, [18 32 33 34 35 36 37 38 39])) = 0;
+                        waxholm_t2_labels.ImageData = cast(waxholm_t2_labels.ImageData, 'logical');
+                        waxholm_t2_atlas.ImageData = waxholm_t2_atlas.ImageData .* cast(waxholm_t2_labels.ImageData, 'like', waxholm_t2_atlas.ImageData);
+                    
+                        % permute dims, pagetranspose and flipud
                         waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
                         waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
                         waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
@@ -4768,12 +5523,23 @@ classdef suMRak_exported < matlab.apps.AppBase
                     if exist(waxholm_t1_atlas_Path, 'dir')
                         progress.Value = 0.6;
                         progress.Message = 'Found T1w Waxholm Space Atlas - C57BL6J Mouse: Importing...';
-                        pause(0.5)
-                        % Update atlas path
-                        waxholm_t1_atlas_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
+
+                        % Update atlas and labels path
+                        waxholm_t1_labels_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouseLabels.nii.gz');
+                        waxholm_t1_atlas_Path  = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii.gz');
+                
+                        % Load atlas and labels using niftiread, apply labels as
+                        % mask
                         waxholm_t1_atlas.ImageData = niftiread(waxholm_t1_atlas_Path);
+                        waxholm_t1_labels.ImageData = niftiread(waxholm_t1_labels_Path);
+                        
+                        % Remove nerves and inner ear and apply labels as mask
+                        waxholm_t1_labels.ImageData(ismember(waxholm_t1_labels.ImageData, [18 32 33 34 35 36 37 38 39])) = 0;
+                        waxholm_t1_labels.ImageData = cast(waxholm_t1_labels.ImageData, 'logical');
+                        waxholm_t1_atlas.ImageData = waxholm_t1_atlas.ImageData .* cast(waxholm_t1_labels.ImageData, 'like', waxholm_t1_atlas.ImageData);
+                        
+        
+                        % permute dims, pagetranspose and flipud
                         waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
                         waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
                         waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
@@ -4799,7 +5565,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     if exist(allen_atlas_Path, 'dir')
                         progress.Value = 0.8;
                         progress.Message = 'Found Allen Brain Atlas - Adult Mouse Nissl Grayscale; Importing...';
-                        pause(0.5)
+
                         % Update atlas path
                         allen_atlas_Path = strcat(allen_atlas_Path, filesep, 'atlasVolume.raw');
                         % Load atlas per Allen Brain Atlas instructions
@@ -4826,7 +5592,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                     end
 
                     if isequal(dropdown_items, {'None'})
-                        close(progress);
+                        
                         uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'No reference atlases were found in selected directory.', 'No Reference Atlas Found')
                     else
                         % Update loaded atlas collection, update drop down
@@ -4835,8 +5601,8 @@ classdef suMRak_exported < matlab.apps.AppBase
                         
                         progress.Value = 1;
                         progress.Message = 'Done!';
-                        pause(0.5)
-                        close(progress);
+
+                        
 
                         % Display confirmation
                         uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Reference atlases sucessfully imported.", "","Options",{'OK'},"DefaultOption",1, "Icon","success");
@@ -4866,10 +5632,12 @@ classdef suMRak_exported < matlab.apps.AppBase
         function RegistrationViewerButtonPushed(app, event)
             
             % Check for valid selections
-            if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UseDifferentParameterMapCheckBox.Value ==1) %#ok<OR2,AND2> 
+            if app.SelectmovingDropDown.Value == "None" || ...
+                    (app.ChooseRegistrationTypeDropDown.Value == "Standard" && app.SelectfixedDropDown.Value == "None") || ...
+                    (app.SelectparameterDropDown.Value == "None" && app.UseDifferentParameterMapCheckBox.Value == 1)
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Cannot open Registration Viewer; please select valid registration data.', 'Registration Viewer Error.')
                 return
-            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
+            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" && app.SelectAtlasDropDown.Value == "None")
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Cannot open Registration Viewer; please import and select valid reference atlas.', 'Registration Viewer Error.')
                 return
             end
@@ -4911,9 +5679,9 @@ classdef suMRak_exported < matlab.apps.AppBase
             value = app.ManualInstructionInputCheckBox.Value;
                
             if value == 1
-                app.RegistrationInstructionsTextArea.Editable = 'on';
+                app.RegistrationSliceLimitsTextArea.Editable = 'on';
             else
-                app.RegistrationInstructionsTextArea.Editable = 'off';
+                app.RegistrationSliceLimitsTextArea.Editable = 'off';
             end
         end
 
@@ -4924,30 +5692,38 @@ classdef suMRak_exported < matlab.apps.AppBase
             if app.SelectmovingDropDown.Value == "None"|(app.ChooseRegistrationTypeDropDown.Value == "Standard" & app.SelectfixedDropDown.Value == "None")|(app.SelectparameterDropDown.Value == "None" & app.UseDifferentParameterMapCheckBox.Value ==1) %#ok<OR2,AND2> 
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Registration not possible; please select valid registration data.', 'Registration Error.')
                 return
-            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" & app.SelectAtlasDropDown.Value == "None") %#ok<AND2>
+            elseif (app.ChooseRegistrationTypeDropDown.Value == "Reference Atlas" && app.SelectAtlasDropDown.Value == "None")
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Registration not possible; please import and select valid reference atlas.', 'Registration Error.')
                 return
-            elseif app.RegistrationInstructionsTextArea.Value == ""
+            elseif app.RegistrationSliceLimitsTextArea.Value == ""
                 uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Registration not possible; no instructions specified.', 'Registration Error.')
                 return
             end
             
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Registering images');
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             % Get total registration instructions, remove 0x0 char arrays
-            split_instr = split(app.RegistrationInstructionsTextArea.Value, ' ');
+            split_instr = split(app.RegistrationSliceLimitsTextArea.Value, ' -> ');
             split_instr =  split_instr(~cellfun('isempty',split_instr));
 
             app.RegisteredImageData = [];
-            app.PreRegistrationFixedImage = [];
+            % app.PreRegistrationFixedImage = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
             app.RegisteredMask = [];
             
-            % Get moving, fixed/atlas and parameter image data
+            % Get moving, fixed/atlas and parameter image data and spacing
             moving_Image = cell2mat(app.SavedTable.Image(app.SelectmovingDropDown.Value));
+            movingProps = app.SavedTable(app.SelectmovingDropDown.Value, :);
+            movingSpacing = suMRak.voxelSpacing(movingProps);
+            app.MovingNDims = numel(size(moving_Image));
             switch app.ChooseRegistrationTypeDropDown.Value
                 case "Standard"
                     fixed_Image = cell2mat(app.SavedTable.Image(app.SelectfixedDropDown.Value));
+                    fixed_Mask = cell2mat(app.SavedTable.BrainMask(app.SelectfixedDropDown.Value));
+                    fixedProps = app.SavedTable(app.SelectfixedDropDown.Value, :);
+                    fixedSpacing = suMRak.voxelSpacing(fixedProps);
+                    app.FixedNDims = numel(size(fixed_Image));
                 case "Reference Atlas"
                     fixed_Image = app.ChosenAtlas.ImageData;
                     % Resize Atlas image data using moving/atlas larger dimension ratio
@@ -4957,139 +5733,174 @@ classdef suMRak_exported < matlab.apps.AppBase
                     atlas_dims = atlas_dims(1:2);
                     resizing_factor = max(moving_dims)/max(atlas_dims);
                     fixed_Image = imresize(fixed_Image, resizing_factor, 'Method', 'bilinear');
-                    % Calculate resized atlas properties
-                    app.ResizedAtlasProperties.VoxDimX = app.ChosenAtlas.VoxDimX/resizing_factor;
-                    app.ResizedAtlasProperties.VoxDimY = app.ChosenAtlas.VoxDimY/resizing_factor;
-                    app.ResizedAtlasProperties.SliceThickness = app.ChosenAtlas.SliceThickness/resizing_factor;
-                    app.ResizedAtlasProperties.SliceGap = app.ChosenAtlas.SliceGap/resizing_factor;
-                    app.ResizedAtlasProperties.RotMat = app.ChosenAtlas.RotMat/resizing_factor;
+                
+                    app.ResizedAtlasProperties.VoxDimX        = app.ChosenAtlas.VoxDimX/resizing_factor;
+                    app.ResizedAtlasProperties.VoxDimY        = app.ChosenAtlas.VoxDimY/resizing_factor;
+                    app.ResizedAtlasProperties.SliceThickness = app.ChosenAtlas.SliceThickness;
+                    app.ResizedAtlasProperties.SliceGap       = app.ChosenAtlas.SliceGap;
+                    app.ResizedAtlasProperties.RotMat         = app.ChosenAtlas.RotMat;
+                
+                    fixedSpacing = suMRak.voxelSpacing(app.ResizedAtlasProperties);
+                    app.FixedNDims = numel(size(fixed_Image));
+                                case "Time-Series Alignment"
+                    fixedSpacing = movingSpacing;
+                    app.FixedNDims = app.MovingNDims;
             end
             if app.UseDifferentParameterMapCheckBox.Value == 1
                 parameter_Image = cell2mat(app.SavedTable.Image(app.SelectparameterDropDown.Value));
+                paramProps = app.SavedTable(app.SelectparameterDropDown.Value, :);
+                paramSpacing = suMRak.voxelSpacing(paramProps);
+                paramSpacing_py = py.list(num2cell(paramSpacing));
+                app.ParameterNDims = numel(size(parameter_Image));
+            end
+
+            fixedSpacing_py  = py.list(num2cell(fixedSpacing));
+            movingSpacing_py = py.list(num2cell(movingSpacing));
+
+            % Convert StageSettings struct array -> Python list of dicts
+            stages_py = py.list();
+            for k = 1:numel(app.StageSettings)
+                s = app.StageSettings(k);
+                d = py.dict(pyargs( ...
+                    'Type',                s.Type, ...
+                    'Enabled',             s.Enabled, ...
+                    'Metric',              s.Metric, ...
+                    'MetricBins',          s.MetricBins, ...
+                    'SamplingPct',         s.SamplingPct, ...
+                    'SamplingStrategy',    s.SamplingStrategy, ...
+                    'Optimizer',           s.Optimizer, ...
+                    'LearningRate',        s.LearningRate, ...
+                    'NumIterations',       s.NumIterations, ...
+                    'ConvergenceTol',      s.ConvergenceTol, ...
+                    'ShrinkFactors',       py.list(num2cell(int32(s.ShrinkFactors))), ...
+                    'SmoothingSigmas',     py.list(num2cell(double(s.SmoothingSigmas))), ...
+                    'Interpolator',        s.Interpolator, ...
+                    'BSplineMeshSize',     py.list(num2cell(int32(s.BSplineMeshSize))), ...
+                    'BSplineOrder',        s.BSplineOrder, ...
+                    'BSplineScaleFactors', py.list(num2cell(int32(s.BSplineScaleFactors))), ...
+                    'MinJacobian',         s.MinJacobian, ...
+                    'InPlaneOnly',         suMRak.getfield_or(s, 'InPlaneOnly', true)));
+                stages_py.append(d);
             end
             
-            % In case of standard registration, get fixed mask data
-            if app.ChooseRegistrationTypeDropDown.Value == "Standard"
-                fixed_Mask = cell2mat(app.SavedTable.BrainMask(app.SelectfixedDropDown.Value));
+            basic = suMRak.buildRegistrationScript();
+
+            % Check for pipeline order sanity
+            types = {app.StageSettings.Type};
+            enabled = [app.StageSettings.Enabled];
+            bspl = strcmp(types,'BSpline') & enabled;
+            lastBspl = find(bspl, 1, 'last');
+            if ~isempty(lastBspl) && any(enabled(lastBspl+1:end))
+                answer = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    'A BSpline stage is followed by an enabled non-BSpline stage. This rarely converges well. Continue?', ...
+                    'Pipeline order warning', 'Options', {'Continue','Cancel'}, 'DefaultOption', 2);
+                if strcmp(answer,'Cancel'), return, end
             end
+
+            % Get start and end instructions
+            start_instr = cell2mat(split_instr(1));
+            end_instr = cell2mat(split_instr(2));
             
-            % Work along the specified registration instructions slice by slice
-            for i=1:length(split_instr)
-                slice_instr = cell2mat(split_instr(i));
-                
-                % Get moving slice dimension indexes, create numpy array, cat to pre-registration image 
-                F_ind = strfind(slice_instr, 'f');
-                mov_instr = slice_instr(2:(F_ind-1)); 
-                instr_comma_ind = strfind(mov_instr, ',');
-                dim3 = mov_instr(2:instr_comma_ind(1)-1);
-                dim4 = mov_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
-                dim5 = mov_instr(instr_comma_ind(2)+1:end-1);
-                switch app.MovingNDims
+            % Get moving volume dimension indexes
+            [dim3_start, dim4, dim5] = suMRak.parseSegment(start_instr, 'm');
+            dim3_end                 = suMRak.parseSegment(end_instr,   'm');
+            switch app.MovingNDims
+                case 5
+                    moving_Image = squeeze(moving_Image(:,:,:,str2double(dim4),str2double(dim5)));
+                case 4
+                    moving_Image = squeeze(moving_Image(:,:,:,str2double(dim4)));
+            end
+
+            % Create moving numpy array from selected subvolume
+            moving_Image_py = py.numpy.array(subvolume(moving_Image,[nan,nan,nan,nan,dim3_start,dim3_end]));
+
+            % Get fixed slice dimension indexes, create numpy array
+            [dim3_start, dim4, dim5] = suMRak.parseSegment(start_instr, 'f');
+            dim3_end                 = suMRak.parseSegment(end_instr,   'f');
+            switch app.FixedNDims
+                case 5
+                    fixed_Image = squeeze(fixed_Image(:,:,:,str2double(dim4),str2double(dim5)));
+                case 4
+                    fixed_Image = squeeze(fixed_Image(:,:,:,str2double(dim4)));
+            end
+
+            % Create fixed numpy array from selected subvolume
+            fixed_Image = subvolume(fixed_Image,[nan,nan,nan,nan,dim3_start,dim3_end]);
+            app.PreRegistrationFixedImage = fixed_Image;
+            fixed_Image_py = py.numpy.array(fixed_Image);
+
+            if contains(start_instr, 'p') == 1 % If there is parameter image instruction set
+
+                % Get parameter slice dimension indexes, create numpy array
+                [dim3_start, dim4, dim5] = suMRak.parseSegment(start_instr, 'p');
+                dim3_end                 = suMRak.parseSegment(end_instr,   'p');
+                switch app.ParameterNDims
                     case 5
-                        moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
+                        parameter_Image = squeeze(parameter_Image(:,:,:,str2double(dim4),str2double(dim5)));
                     case 4
-                        moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3),str2double(dim4)));
-                    otherwise
-                        moving_Image_py = py.numpy.array(moving_Image(:,:,str2double(dim3)));
+                        parameter_Image = squeeze(parameter_Image(:,:,:,str2double(dim4)));
                 end
 
-                if ~contains(slice_instr, 'p') == 1
-                    % Get fixed slice dimension indexes, create numpy array
-                    fix_instr = slice_instr((F_ind+1):end);  
-                    instr_comma_ind = strfind(fix_instr, ',');
-                    dim3 = fix_instr(2:instr_comma_ind(1)-1);
-                    dim4 = fix_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
-                    dim5 = fix_instr(instr_comma_ind(2)+1:end-1);
-                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
-                        switch app.FixedNDims
-                            case 5
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
-                            case 4
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3),str2double(dim4)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3),str2double(dim4)));
-                            otherwise
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3)));
-                        end
-                    else
-                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3)));
-                        app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3)));
-                    end
-    	            
-                    % Register moving onto fixed
-                    basic = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "parameterMapVector = sitk.VectorOfParameterMap();", "parameterMapVector.append(sitk.GetDefaultParameterMap('affine'));", "parameterMapVector.append(sitk.GetDefaultParameterMap('bspline'));", "elastixImageFilter.SetParameterMap(parameterMapVector);", "elastixImageFilter.LogToConsoleOff()", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
-                    resultImage_py = pyrun(basic, "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py);
-                    resultImage = double(resultImage_py);
+                parameter_Image_py = py.numpy.array(subvolume(parameter_Image,[nan,nan,nan,nan,dim3_start,dim3_end]));
+                
+                % Register on the parameter contrast, then resample the moving image
+                apply_addon = [ ...
+                    "applyIm  = np.ascontiguousarray(np.transpose(applyIm,  (2, 0, 1)))", ...
+                    "applied = sitk.GetImageFromArray(applyIm.astype(np.float32))", ...
+                    "applied.SetSpacing([float(s) for s in applySpacing])", ...
+                    "center_at_origin(applied)", ...
+                    "resampled2 = sitk.Resample(applied, fixed, final, OUT_INTERP, 0.0, applied.GetPixelID())", ...
+                    "resultArray = sitk.GetArrayFromImage(resampled2)", ...
+                    "resultArray = np.ascontiguousarray(np.transpose(resultArray, (1, 2, 0)))" ...
+                    ];
+                full_script = [basic, apply_addon];
 
-                    % Delete output .txt files
-                    delete('TransformParameters.0.txt');
-
-                    % Concatenate to registered data
-                    app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
-                    
-                    % In case of standard registration, concatenate mask
-                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
-                        app.RegisteredMask = cat(3, app.RegisteredMask, fixed_Mask(:,:,str2double(dim3)));
-                    end
-                else
-                    % Get fixed slice dimension indexes, create numpy array
-                    P_ind = strfind(slice_instr, 'p');
-                    fix_instr = slice_instr((F_ind+1):(P_ind-1));  
-                    instr_comma_ind = strfind(fix_instr, ',');
-                    dim3_fix = fix_instr(2:instr_comma_ind(1)-1);
-                    dim4 = fix_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
-                    dim5 = fix_instr(instr_comma_ind(2)+1:end-1);
-                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
-                        switch app.FixedNDims
-                            case 5
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4),str2double(dim5)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3_fix),str2double(dim4),str2double(dim5)));
-                            case 4
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix),str2double(dim4)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3_fix),str2double(dim4)));
-                            otherwise
-                                fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix)));
-                                app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3_fix)));
-                        end
-                    else
-                        fixed_Image_py = py.numpy.array(fixed_Image(:,:,str2double(dim3_fix)));
-                        app.PreRegistrationFixedImage = cat(3, app.PreRegistrationFixedImage, fixed_Image(:,:,str2double(dim3_fix)));
-                    end
-                    % Get parameter slice dimension indexes, create numpy array
-                    par_instr = slice_instr((P_ind+1):end);  
-                    instr_comma_ind = strfind(par_instr, ',');
-                    dim3 = par_instr(2:instr_comma_ind(1)-1);
-                    dim4 = par_instr(instr_comma_ind(1)+1:instr_comma_ind(2)-1);
-                    dim5 = par_instr(instr_comma_ind(2)+1:end-1);
-                    switch app.ParameterNDims
-                        case 5
-                            parameter_Image_py = py.numpy.array(parameter_Image(:,:,str2double(dim3),str2double(dim4),str2double(dim5)));
-                        case 4
-                            parameter_Image_py = py.numpy.array(parameter_Image(:,:,str2double(dim3),str2double(dim4)));
-                        otherwise
-                            parameter_Image_py = py.numpy.array(parameter_Image(:,:,str2double(dim3)));
-                    end
-
-                    % Register moving onto fixed using selected parameter image data registration parameters
-                    advanced = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(paramIm));", "parameterMapVector = sitk.VectorOfParameterMap();", "parameterMapVector.append(sitk.GetDefaultParameterMap('affine'));", "parameterMapVector.append(sitk.GetDefaultParameterMap('bspline'));", "elastixImageFilter.SetParameterMap(parameterMapVector);", "elastixImageFilter.SetLogToConsole(False)", "elastixImageFilter.Execute();", "transformParameterMap = elastixImageFilter.GetTransformParameterMap();", "transformix = sitk.TransformixImageFilter();", "transformix.SetTransformParameterMap(transformParameterMap);", "transformix.SetMovingImage(sitk.GetImageFromArray(movIm));", "transformix.SetLogToConsole(False)", "transformix.Execute();", "resultArray = sitk.GetArrayFromImage(transformix.GetResultImage());"];
-
-                    resultImage_py = pyrun(advanced, "resultArray", fixIm = fixed_Image_py, movIm = moving_Image_py, paramIm = parameter_Image_py);
-                    resultImage = double(resultImage_py);
-                    
-                    % Delete output .txt files
-                    delete('TransformParameters.0.txt');
-                    delete('TransformParameters.1.txt');
-
-                    % Concatenate to registered data and mask
-                    app.RegisteredImageData = cat(3, app.RegisteredImageData, resultImage);
-
-                    % In case of standard registration, concatenate mask
-                    if app.ChooseRegistrationTypeDropDown.Value == "Standard"
-                        app.RegisteredMask = cat(3,app.RegisteredMask, fixed_Mask(:,:,str2double(dim3_fix)));
-                    end
+                % Switch moving and parameter images
+                try
+                    [resultImage_py, warns_py] = pyrun(full_script, ["resultArray", "stage_warnings"], ...
+                        fixIm = fixed_Image_py, ...
+                        movIm = parameter_Image_py, ...
+                        applyIm = moving_Image_py, ...
+                        fixSpacing    = fixedSpacing_py, ...
+                        movSpacing    = paramSpacing_py, ...
+                        applySpacing  = movingSpacing_py, ...
+                        outInterp     = string(app.OutputInterpolatorDropDown.Value), ...
+                        stagesList    = stages_py);
+                catch ME
+                    handleRegistrationError(app, ME);
+                    return
+                end
+            else
+                try
+                    [resultImage_py, warns_py] = pyrun(basic, ["resultArray", "stage_warnings"], ...
+                        fixIm = fixed_Image_py, ...
+                        movIm = moving_Image_py, ...
+                        fixSpacing = fixedSpacing_py, ...
+                        movSpacing = movingSpacing_py, ...
+                        outInterp  = string(app.OutputInterpolatorDropDown.Value), ...
+                        stagesList = stages_py);
+                catch ME
+                    handleRegistrationError(app, ME);
+                    return
                 end
             end
+
+            % Save the result
+            app.RegisteredImageData = double(resultImage_py);
+
+            % Surface non-fatal stage notices (e.g. a BSpline stage dropped for folding)
+            stageNotices = cellfun(@char, cell(warns_py), 'UniformOutput', false);
+            if ~isempty(stageNotices)
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    strjoin(string(stageNotices), newline), ...
+                    'Registration notice', 'Icon', 'warning');
+            end
+            
+            % In case of standard registration, concatenate mask
+            if app.ChooseRegistrationTypeDropDown.Value == "Standard"
+                app.RegisteredMask = subvolume(fixed_Mask,[nan,nan,nan,nan,dim3_start,dim3_end]);
+            end
+            
 
             dims_reg = size(app.RegisteredImageData);
             try
@@ -5109,6 +5920,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.TurboButton_Registration.Enable = 'on';
             app.GreyscaleButton_Registration.Enable = 'on';
             app.ShowReferenceFixedCheckBox.Enable = 'on';
+            app.ReferenceFixedViewDropDown.Enable = app.ShowReferenceFixedCheckBox.Value;
 
             RefreshImageRegistration(app); 
 
@@ -5117,8 +5929,6 @@ classdef suMRak_exported < matlab.apps.AppBase
                 app.ExportDataButton_Registration.Enable = 'on';
             end
 
-            % Close the dialog box
-            close(progress)
         end
 
         % Value changed function: SelectTimeAlignmentDropDown
@@ -5136,7 +5946,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             try
                 working_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
             catch
-                working_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
+                working_data = cell2mat(app.ExperimentPropertyTable.("Image data")(app.SelectTimeAlignmentDropDown.Value));     
             end
             data_dims = size(working_data);
             switch numel(data_dims)
@@ -5171,74 +5981,107 @@ classdef suMRak_exported < matlab.apps.AppBase
 
         % Button pushed function: AlignDataButton
         function AlignDataButtonPushed(app, event)
-            tic
+
             % Draw progress bar
-            progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title','Please wait', 'Indeterminate','on', 'Message', 'Aligning data');
+            progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, 'Title', 'Please wait', ...
+                'Indeterminate', 'on', 'Message', 'Aligning data');
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             % Get image data
+            expName = app.SelectTimeAlignmentDropDown.Value;
             try
-                original_data = cell2mat(app.SavedTable.Image(app.SelectTimeAlignmentDropDown.Value));
+                original_data = cell2mat(app.SavedTable.Image(expName));
             catch
-                original_data = cell2mat(app.ExperimentPropertyTable.(2)(app.SelectTimeAlignmentDropDown.Value));     
+                original_data = cell2mat(app.ExperimentPropertyTable.("Image data")(expName));
             end
             data_dims = size(original_data);
-            
+            if ~ismember(numel(data_dims), [4 5])
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    'Time-series alignment needs 4D (x, y, slice, time) or 5D data.', ...
+                    'Unsupported data');
+                return
+            end
+
             % Set before data
             app.PreRegistrationFixedImage = original_data;
-            % Create empty working array
-            working_data = zeros(data_dims);   
 
-            % Set reference points
-            dim4_reference = app.Dim4Spinner_TimeAlignmentReference.Value;
-            dim5_reference = app.Dim5Spinner_TimeAlignmentReference.Value;
-            % Set python instructions
-            rigid_alignment = ["import SimpleITK as sitk", "elastixImageFilter = sitk.ElastixImageFilter();", "elastixImageFilter.SetFixedImage(sitk.GetImageFromArray(fixIm));", "elastixImageFilter.SetMovingImage(sitk.GetImageFromArray(movIm));", "elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap('rigid'));", "elastixImageFilter.LogToConsoleOff()", "elastixImageFilter.Execute();", "resultArray = sitk.GetArrayFromImage(elastixImageFilter.GetResultImage());"];
-            
+            % Flatten dims 4 (and 5) into one frame axis. The reference frame is
+            % the single (dim4, dim5) position chosen in the spinners; every
+            % other frame is registered onto it.
+            frameDims = data_dims(4:end);
+            nFrames   = prod(frameDims);
+            if isscalar(frameDims)
+                refIdx = app.Dim4Spinner_TimeAlignmentReference.Value;
+            else
+                refIdx = sub2ind(frameDims, app.Dim4Spinner_TimeAlignmentReference.Value, ...
+                                            app.Dim5Spinner_TimeAlignmentReference.Value);
+            end
+            series = reshape(original_data, data_dims(1), data_dims(2), data_dims(3), nFrames);
+
+            % Physical voxel spacing (x, y, slice thickness + gap), shared by all frames
+            p = LookupExperimentParams(app, expName);
+            spacing_py = py.list(num2cell(suMRak.voxelSpacing(p)));
+
+            % Stage pipeline: the Time-Series preset (single in-plane Euler3D stage)
+            if isempty(app.StageSettings)
+                app.StageSettings = suMRak.defaultStageOfType("Euler3D");
+            end
+            stages_py = suMRak.stagesToPy(app.StageSettings);
+
+            regCode = strjoin(suMRak.buildRegistrationScript(), newline);
+            series_script = [ ...
+                "import numpy as np", ...
+                "reg = compile(str(regCode), '<suMRak registration>', 'exec')", ...
+                "ref = int(refIdx)", ...
+                "fixRef = np.array(seriesIm[..., ref])", ...
+                "frames = []", ...
+                "stage_warnings_all = []", ...
+                "for k in range(seriesIm.shape[-1]):", ...
+                "    if k == ref:", ...
+                "        frames.append(np.asarray(fixRef, dtype=np.float32))", ...
+                "        continue", ...
+                "    ns = {'fixIm': fixRef, 'movIm': np.array(seriesIm[..., k]),", ...
+                "          'fixSpacing': spacing, 'movSpacing': spacing,", ...
+                "          'outInterp': 'Linear', 'stagesList': stagesList}", ...
+                "    exec(reg, ns)", ...
+                "    frames.append(np.asarray(ns['resultArray'], dtype=np.float32))", ...
+                "    stage_warnings_all.extend('Frame %d: %s' % (k + 1, w) for w in ns['stage_warnings'])", ...
+                "resultArray = np.ascontiguousarray(np.stack(frames, axis=-1))" ...
+                ];
+
+            try
+                [resultImage_py, warns_py] = pyrun(series_script, ["resultArray", "stage_warnings_all"], ...
+                    regCode    = regCode, ...
+                    seriesIm   = py.numpy.array(series), ...
+                    refIdx     = int32(refIdx - 1), ...
+                    spacing    = spacing_py, ...
+                    stagesList = stages_py);
+            catch ME
+                handleRegistrationError(app, ME);
+                return
+            end
+
+            % Back to the original 4D/5D layout
+            working_data = reshape(double(resultImage_py), data_dims);
+
+            % Surface non-fatal stage notices (e.g. a BSpline stage dropped for folding)
+            stageNotices = cellfun(@char, cell(warns_py), 'UniformOutput', false);
+            if ~isempty(stageNotices)
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    strjoin(string(stageNotices), newline), ...
+                    'Alignment notice', 'Icon', 'warning');
+            end
+
             switch numel(data_dims)
-                % 4D time alignment
                 case 4
-                    % Go through data, if not reference point then align
-                    for i=1:data_dims(3)
-                        base = original_data(:,:,i,dim4_reference);
-                        parfor j=1:data_dims(4)
-                            if j~=dim4_reference
-                                displaced = original_data(:,:,i,j);
-                                resultImage_py = pyrun(rigid_alignment, "resultArray", fixIm = py.numpy.array(base), movIm = py.numpy.array(displaced));
-                                resultImage = double(resultImage_py);
-                                % Update working data matrix with aligned data
-                                working_data(:,:,i,j) = resultImage;
-                            else
-                                working_data(:,:,i,j) = original_data(:,:,i,j);
-                            end
-                        end
-                    end
                     % Disable dim5 controls
                     app.Dim5Slider_TimeAlignmentControl.Enable = 'off';
                     app.Dim5Slider_TimeAlignmentControl.Value = 1;
                     app.Dim5Spinner_TimeAlignmentControl.Enable = 'off';
                     app.Dim5Spinner_TimeAlignmentControl.Value = 1;
-
-                % 5D time alignment
                 case 5
-                    % Go through data, if not reference point then align
-                    for i=1:data_dims(3)
-                        base = original_data(:,:,i,dim4_reference, dim5_reference);
-                        for j=1:data_dims(4)
-                            parfor z=1:data_dims(5)
-                                if j~=dim4_reference & z ~=dim5_reference %#ok<AND2>
-                                    displaced = original_data(:,:,i,j,z);
-                                    resultImage_py = pyrun(rigid_alignment, "resultArray", fixIm = py.numpy.array(base), movIm = py.numpy.array(displaced));
-                                    resultImage = double(resultImage_py);
-                                    % Update working data matrix with aligned data
-                                    working_data(:,:,i,j,z) = resultImage;
-                                else
-                                    working_data(:,:,i,j,z) = original_data(:,:,i,j,z);
-                                end
-                            end
-                        end
-                    end
-                    % Enable dim4 controls
+                    % Enable dim5 controls
                     app.Dim5Slider_TimeAlignmentControl.Enable = 'on';
                     app.Dim5Slider_TimeAlignmentControl.Limits = [1, data_dims(5)];
                     app.Dim5Slider_TimeAlignmentControl.Value = 1;
@@ -5246,9 +6089,6 @@ classdef suMRak_exported < matlab.apps.AppBase
                     app.Dim5Spinner_TimeAlignmentControl.Limits = [1, data_dims(5)];
                     app.Dim5Spinner_TimeAlignmentControl.Value = 1;
             end
-
-            % Delete output .txt files
-            delete('TransformParameters.0.txt');
 
             % Update slice controls
             try
@@ -5275,22 +6115,19 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Set working data as registration data
             app.RegisteredImageData = working_data;
-            
+
             % Enable remaining components, refresh image
             app.TurboButton_Registration.Enable = 'on';
             app.GreyscaleButton_Registration.Enable = 'on';
             app.ShowReferenceFixedCheckBox.Enable = 'on';
+            app.ReferenceFixedViewDropDown.Enable = app.ShowReferenceFixedCheckBox.Value;
 
-            RefreshImageRegistration(app); 
+            RefreshImageRegistration(app);
 
             app.SaveRegisteredDataButton.Enable = 'on';
             if isstring(app.ExportFolderPath)
                 app.ExportDataButton_Registration.Enable = 'on';
             end
-
-            % Close the dialog box
-            close(progress)
-            toc
         end
 
         % Value changing function: SliceSlider_Registration
@@ -5347,43 +6184,8 @@ classdef suMRak_exported < matlab.apps.AppBase
         % Value changed function: ShowReferenceFixedCheckBox
         function ShowReferenceFixedCheckBoxValueChanged(app, event)
             
+            app.ReferenceFixedViewDropDown.Enable = app.ShowReferenceFixedCheckBox.Value;
             RefreshImageRegistration(app);
-        end
-
-        % Menu selected function: MultiplyMovingAndFixedMenu
-        function MultiplyMovingAndFixedMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'on';
-            app.SidebysideMenu.Checked = 'off';
-            app.FalsecolorDifferenceMenu.Checked = 'off';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
-        end
-
-        % Menu selected function: SidebysideMenu
-        function SidebysideMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'off';
-            app.SidebysideMenu.Checked = 'on';
-            app.FalsecolorDifferenceMenu.Checked = 'off';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
-        end
-
-        % Menu selected function: FalsecolorDifferenceMenu
-        function FalsecolorDifferenceMenuSelected(app, event)
-            
-            app.MultiplyMovingAndFixedMenu.Checked = 'off';
-            app.SidebysideMenu.Checked = 'off';
-            app.FalsecolorDifferenceMenu.Checked = 'on';
-            try
-                RefreshImageRegistration(app);
-            catch
-            end
         end
 
         % Button pushed function: ExportDataButton_Registration
@@ -5416,7 +6218,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
         % Menu selected function: ResetInstructionsMenu
         function ResetInstructionsMenuSelected(app, event)
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.RegistrationSliceLimitsTextArea.Value = '';
         end
 
         % Value changed function: ChooseMapTypeDropDown
@@ -5486,7 +6288,7 @@ classdef suMRak_exported < matlab.apps.AppBase
                 app.PreMapImageData = cell2mat(app.SavedTable.Image(value));
             catch
                 try
-                    app.PreMapImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));
+                    app.PreMapImageData = cell2mat(app.ExperimentPropertyTable.("Image data")(value));
                 catch
                 end
             end
@@ -5731,6 +6533,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Draw progress box
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Retrieving data for DSC mapping");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             % Set options display to 1
@@ -5747,15 +6550,11 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Get volumetric data and sequence parameters for map
             % calculation
             progress.Value = 0.2;
-            pause(0.5);
-            drop_Value = app.SelectPreMapDropDown.Value; 
-            try
-                TE = app.SavedTable.TE(drop_Value);
-                TR = app.SavedTable.TR(drop_Value);
-            catch
-                TE = app.ExperimentPropertyTable.(3)(drop_Value);
-                TR = app.ExperimentPropertyTable.(4)(drop_Value);
-            end
+
+            drop_Value = app.SelectPreMapDropDown.Value;
+            p = LookupExperimentParams(app, drop_Value);
+            TE = p.TE;
+            TR = p.TR;
             
             % Calculate and display DSC maps
             progress.Value = 0.4;
@@ -5809,14 +6608,14 @@ classdef suMRak_exported < matlab.apps.AppBase
             % Display maps
             progress.Value = 0.8;
             progress.Message = "Displaying mapping results";
-            pause(0.5);
+
             RefreshImagePostMap(app);
 
             % close the dialog box
             progress.Value = 1;
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
         end
 
         % Value changed function: DSCMapDropDown
@@ -5867,6 +6666,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Calculating T1 maps...", "Indeterminate", "on");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             T1raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
@@ -5943,8 +6743,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
 
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
             
             RefreshImagePostMap(app);
         end
@@ -5962,6 +6762,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Calculating T2 maps...", "Indeterminate", "on");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             T2raw_reordered = permute(app.PreMapImageData,[3 1 2 4]); % reorder 4-D matrix to have echos as the last dimension (slice, x, y, echos)
@@ -6024,8 +6825,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
 
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
             
             RefreshImagePostMap(app);
         end
@@ -6045,6 +6846,7 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Please wait",...
                  'Message', "Calculating pASL maps...", "Indeterminate", "on");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
 
             switch numel(size(app.PreMapImageData))
@@ -6156,8 +6958,8 @@ classdef suMRak_exported < matlab.apps.AppBase
             end
 
             progress.Message = "Done!";
-            pause(0.5);
-            close(progress);
+
+            
             
             RefreshImagePostMap(app);
         end
@@ -6287,7 +7089,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             try
                 app.ViewerImageData = cell2mat(app.SavedTable.Image(value));
             catch
-                app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.(2)(value));     
+                app.ViewerImageData = cell2mat(app.ExperimentPropertyTable.("Image data")(value));     
             end
             app.ViewerImageData = (app.ViewerImageData - min(app.ViewerImageData(:))) / (max(app.ViewerImageData(:)) - min(app.ViewerImageData(:)));
             app.ViewerImageDataDims = size(app.ViewerImageData);
@@ -6324,7 +7126,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             try
                 app.ViewerDimTriplet = [app.SavedTable.VoxDimX(value) app.SavedTable.VoxDimY(value) app.SavedTable.SliceThickness(value)+app.SavedTable.SliceGap(value)];
             catch 
-                app.ViewerDimTriplet = [app.ExperimentPropertyTable.(5)(value) app.ExperimentPropertyTable.(6)(value) app.ExperimentPropertyTable.(7)(value)+app.ExperimentPropertyTable.(8)(value)];
+                app.ViewerDimTriplet = [app.ExperimentPropertyTable.("Voxel dimension X")(value) app.ExperimentPropertyTable.("Voxel dimension Y")(value) app.ExperimentPropertyTable.("Slice Thickness")(value)+app.ExperimentPropertyTable.("Slice Gap")(value)];
             end
             app.XEditField_Viewer.Value = app.ViewerDimTriplet(1);
             app.YEditField_Viewer.Value = app.ViewerDimTriplet(2);
@@ -6599,6 +7401,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             
             progress = uiprogressdlg(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure,'Title',"Shutting down",...
                              'Message', "Deleting temporary data...","Indeterminate","on");
+            cleanupDlg = suMRak.guardDialog(progress);  %#ok<NASGU>
             drawnow
     
             % Purge old temporary data
@@ -6607,7 +7410,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             catch
             end
     
-            close(progress);
+            
     
             selection = uiconfirm(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, "Thank you for using suMRak! Please cite us as: Ister R, Sternak M, Škokić S and Gajović S (2024) suMRak: a multi-tool solution for preclinical brain MRI data analysis. Front. Neuroinform. 18:1358917. doi: 10.3389/fninf.2024.1358917", ...
                 "","Options",{'Bye!'},"DefaultOption",1,"Icon","info");
@@ -6624,6 +7427,105 @@ classdef suMRak_exported < matlab.apps.AppBase
                     return
             end
             
+        end
+
+        % Menu selected function: EditTransformMenu
+        function EditTransformMenuSelected(app, event)
+            idx = currentStageIndex(app);
+            if isempty(idx), return, end
+            TransformParameterEditor(app, idx);
+        end
+
+        % Menu selected function: AddTranslationMenu
+        function AddTranslationMenuSelected(app, event)
+            insertStageOfType(app, "Translation");
+        end
+
+        % Menu selected function: AddEuler3DMenu
+        function AddEuler3DMenuSelected(app, event)
+            insertStageOfType(app, "Euler3D");
+        end
+
+        % Menu selected function: AddSimilarity3DMenu
+        function AddSimilarity3DMenuSelected(app, event)
+            insertStageOfType(app, "Similarity3D");
+        end
+
+        % Menu selected function: AddAffineMenu
+        function AddAffineMenuSelected(app, event)
+            insertStageOfType(app, "Affine");
+        end
+
+        % Menu selected function: AddBSplineMenu
+        function AddBSplineMenuSelected(app, event)
+            insertStageOfType(app, "BSpline");
+        end
+
+        % Menu selected function: DuplicateTransformMenu
+        function DuplicateTransformMenuSelected(app, event)
+            idx = currentStageIndex(app);
+            if isempty(idx), return, end
+            app.StageSettings = [ ...
+                app.StageSettings(1:idx), ...
+                app.StageSettings(idx), ...
+                app.StageSettings(idx+1:end)];
+            refreshTransformsListBox(app);
+            selectStage(app, idx + 1);
+        end
+
+        % Menu selected function: RemoveTransformMenu
+        function RemoveTransformMenuSelected(app, event)
+            idx = currentStageIndex(app);
+            if isempty(idx), return, end
+            if numel(app.StageSettings) <= 1
+                uialert(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure, ...
+                    'Cannot remove the last stage. Add another first, or use Reset.', ...
+                    'Cannot remove');
+                return
+            end
+            app.StageSettings(idx) = [];
+            refreshTransformsListBox(app);
+            selectStage(app, idx);
+        end
+
+        % Menu selected function: MoveUpTransformMenu
+        function MoveUpTransformMenuSelected(app, event)
+            idx = currentStageIndex(app);
+            if isempty(idx) || idx == 1, return, end
+            app.StageSettings([idx-1, idx]) = app.StageSettings([idx, idx-1]);
+            refreshTransformsListBox(app);
+            selectStage(app, idx - 1);
+        end
+
+        % Menu selected function: MoveDownTransformMenu
+        function MoveDownTransformMenuSelected(app, event)
+            idx = currentStageIndex(app);
+            if isempty(idx) || idx == numel(app.StageSettings), return, end
+            app.StageSettings([idx, idx+1]) = app.StageSettings([idx+1, idx]);
+            refreshTransformsListBox(app);
+            selectStage(app, idx + 1);
+        end
+
+        % Menu selected function: ResetTransformMenu
+        function ResetTransformMenuSelected(app, event)
+            if strcmp(app.ChooseRegistrationTypeDropDown.Value, 'Time-Series Alignment')
+                app.StageSettings = suMRak.defaultStageOfType("Euler3D");
+            else
+                app.StageSettings = suMRak.defaultStageSettings(app.ChooseRegistrationTypeDropDown.Value);
+            end
+            refreshTransformsListBox(app);
+            selectStage(app, 1);
+        end
+
+        % Value changed function: TransformsListBox
+        function TransformsListBoxValueChanged(app, event)
+            updateContextMenuState(app);
+        end
+
+        % Value changed function: ReferenceFixedViewDropDown
+        function ReferenceFixedViewDropDownValueChanged(app, event)
+
+            refreshReferenceFixedView(app);
         end
     end
 
@@ -7457,14 +8359,14 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SaveRegisteredDataButton = uibutton(app.RegistrationTab, 'push');
             app.SaveRegisteredDataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveRegisteredDataButtonPushed, true);
             app.SaveRegisteredDataButton.Enable = 'off';
-            app.SaveRegisteredDataButton.Position = [1021 56 140 22];
+            app.SaveRegisteredDataButton.Position = [943 31 140 22];
             app.SaveRegisteredDataButton.Text = 'Save Registered Data';
 
             % Create ExportDataButton_Registration
             app.ExportDataButton_Registration = uibutton(app.RegistrationTab, 'push');
             app.ExportDataButton_Registration.ButtonPushedFcn = createCallbackFcn(app, @ExportDataButton_RegistrationPushed, true);
             app.ExportDataButton_Registration.Enable = 'off';
-            app.ExportDataButton_Registration.Position = [1021 24 140 22];
+            app.ExportDataButton_Registration.Position = [1098 30 140 22];
             app.ExportDataButton_Registration.Text = 'Export Registered Data';
 
             % Create ColormapButtonGroup_Registration
@@ -7473,7 +8375,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ColormapButtonGroup_Registration.BorderType = 'none';
             app.ColormapButtonGroup_Registration.TitlePosition = 'centertop';
             app.ColormapButtonGroup_Registration.Title = 'Colormap';
-            app.ColormapButtonGroup_Registration.Position = [445 16 167 38];
+            app.ColormapButtonGroup_Registration.Position = [362 23 167 38];
 
             % Create GreyscaleButton_Registration
             app.GreyscaleButton_Registration = uiradiobutton(app.ColormapButtonGroup_Registration);
@@ -7492,13 +8394,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SliceSpinner_Registration = uispinner(app.RegistrationTab);
             app.SliceSpinner_Registration.ValueChangedFcn = createCallbackFcn(app, @SliceSpinner_RegistrationValueChanged, true);
             app.SliceSpinner_Registration.Enable = 'off';
-            app.SliceSpinner_Registration.Position = [364 23 51 22];
+            app.SliceSpinner_Registration.Position = [281 30 51 22];
             app.SliceSpinner_Registration.Value = 1;
 
             % Create SliceSliderLabel_Registration
             app.SliceSliderLabel_Registration = uilabel(app.RegistrationTab);
             app.SliceSliderLabel_Registration.HorizontalAlignment = 'right';
-            app.SliceSliderLabel_Registration.Position = [109 24 32 22];
+            app.SliceSliderLabel_Registration.Position = [26 31 32 22];
             app.SliceSliderLabel_Registration.Text = 'Slice';
 
             % Create SliceSlider_Registration
@@ -7509,7 +8411,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SliceSlider_Registration.ValueChangingFcn = createCallbackFcn(app, @SliceSlider_RegistrationValueChanging, true);
             app.SliceSlider_Registration.MinorTicks = [];
             app.SliceSlider_Registration.Enable = 'off';
-            app.SliceSlider_Registration.Position = [170 32 183 3];
+            app.SliceSlider_Registration.Position = [87 39 183 3];
             app.SliceSlider_Registration.Value = 1;
 
             % Create ChooseRegistrationTypeDropDownLabel
@@ -7644,30 +8546,30 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.StandardAtlasRegistrationPanel = uipanel(app.RegistrationTab);
             app.StandardAtlasRegistrationPanel.BorderType = 'none';
             app.StandardAtlasRegistrationPanel.TitlePosition = 'centertop';
-            app.StandardAtlasRegistrationPanel.Position = [917 94 349 500];
+            app.StandardAtlasRegistrationPanel.Position = [917 85 349 509];
 
             % Create RegisterButton
             app.RegisterButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
             app.RegisterButton.ButtonPushedFcn = createCallbackFcn(app, @RegisterButtonPushed, true);
-            app.RegisterButton.Position = [126 14 100 22];
+            app.RegisterButton.Position = [127 2 100 22];
             app.RegisterButton.Text = 'Register';
 
             % Create ManualInstructionInputCheckBox
             app.ManualInstructionInputCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
             app.ManualInstructionInputCheckBox.ValueChangedFcn = createCallbackFcn(app, @ManualInstructionInputCheckBoxValueChanged, true);
             app.ManualInstructionInputCheckBox.Text = 'Manual Instruction Input';
-            app.ManualInstructionInputCheckBox.Position = [102 52 150 22];
+            app.ManualInstructionInputCheckBox.Position = [104 164 150 22];
 
             % Create RegistrationViewerButton
             app.RegistrationViewerButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
             app.RegistrationViewerButton.ButtonPushedFcn = createCallbackFcn(app, @RegistrationViewerButtonPushed, true);
-            app.RegistrationViewerButton.Position = [106 222 140 22];
+            app.RegistrationViewerButton.Position = [107 265 140 22];
             app.RegistrationViewerButton.Text = 'Registration Viewer';
 
             % Create SelectmovingLabel
             app.SelectmovingLabel = uilabel(app.StandardAtlasRegistrationPanel);
             app.SelectmovingLabel.HorizontalAlignment = 'right';
-            app.SelectmovingLabel.Position = [103 475 146 22];
+            app.SelectmovingLabel.Position = [102 490 146 22];
             app.SelectmovingLabel.Text = 'Select Moving Image Data';
 
             % Create SelectmovingDropDown
@@ -7676,13 +8578,13 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectmovingDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectmovingDropDownValueChanged, true);
             app.SelectmovingDropDown.Tooltip = {''};
             app.SelectmovingDropDown.Placeholder = 'None';
-            app.SelectmovingDropDown.Position = [44 444 264 21];
+            app.SelectmovingDropDown.Position = [44 463 264 21];
             app.SelectmovingDropDown.Value = 'None';
 
             % Create SelectfixedLabel
             app.SelectfixedLabel = uilabel(app.StandardAtlasRegistrationPanel);
             app.SelectfixedLabel.HorizontalAlignment = 'right';
-            app.SelectfixedLabel.Position = [108 400 137 22];
+            app.SelectfixedLabel.Position = [109 418 137 22];
             app.SelectfixedLabel.Text = 'Select Fixed Image Data';
 
             % Create SelectfixedDropDown
@@ -7690,19 +8592,19 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectfixedDropDown.Items = {'None'};
             app.SelectfixedDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectfixedDropDownValueChanged, true);
             app.SelectfixedDropDown.Placeholder = 'None';
-            app.SelectfixedDropDown.Position = [44 366 264 21];
+            app.SelectfixedDropDown.Position = [45 384 264 21];
             app.SelectfixedDropDown.Value = 'None';
 
             % Create UseDifferentParameterMapCheckBox
             app.UseDifferentParameterMapCheckBox = uicheckbox(app.StandardAtlasRegistrationPanel);
             app.UseDifferentParameterMapCheckBox.ValueChangedFcn = createCallbackFcn(app, @UseDifferentParameterMapCheckBoxValueChanged, true);
             app.UseDifferentParameterMapCheckBox.Text = 'Use Different Parameter Map';
-            app.UseDifferentParameterMapCheckBox.Position = [92 322 178 22];
+            app.UseDifferentParameterMapCheckBox.Position = [92 349 178 22];
 
             % Create SelectparameterLabel
             app.SelectparameterLabel = uilabel(app.StandardAtlasRegistrationPanel);
             app.SelectparameterLabel.HorizontalAlignment = 'center';
-            app.SelectparameterLabel.Position = [94 296 164 22];
+            app.SelectparameterLabel.Position = [99 324 164 22];
             app.SelectparameterLabel.Text = 'Select Parameter Image Data';
 
             % Create SelectparameterDropDown
@@ -7711,14 +8613,14 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectparameterDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectparameterDropDownValueChanged, true);
             app.SelectparameterDropDown.Enable = 'off';
             app.SelectparameterDropDown.Placeholder = 'None';
-            app.SelectparameterDropDown.Position = [44 267 264 21];
+            app.SelectparameterDropDown.Position = [45 299 264 21];
             app.SelectparameterDropDown.Value = 'None';
 
             % Create ImportReferenceAtlasButton
             app.ImportReferenceAtlasButton = uibutton(app.StandardAtlasRegistrationPanel, 'push');
             app.ImportReferenceAtlasButton.ButtonPushedFcn = createCallbackFcn(app, @ImportReferenceAtlasButtonPushed, true);
             app.ImportReferenceAtlasButton.Visible = 'off';
-            app.ImportReferenceAtlasButton.Position = [108 398 137 23];
+            app.ImportReferenceAtlasButton.Position = [110 420 137 23];
             app.ImportReferenceAtlasButton.Text = 'Import Reference Atlas';
 
             % Create SelectAtlasDropDown
@@ -7727,26 +8629,64 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.SelectAtlasDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectAtlasDropDownValueChanged, true);
             app.SelectAtlasDropDown.Visible = 'off';
             app.SelectAtlasDropDown.Placeholder = 'None';
-            app.SelectAtlasDropDown.Position = [44 366 264 21];
+            app.SelectAtlasDropDown.Position = [45 384 264 21];
             app.SelectAtlasDropDown.Value = 'None';
 
-            % Create RegistrationInstructionsTextAreaLabel
-            app.RegistrationInstructionsTextAreaLabel = uilabel(app.StandardAtlasRegistrationPanel);
-            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'center';
-            app.RegistrationInstructionsTextAreaLabel.Position = [109 188 134 22];
-            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
+            % Create RegistrationSliceLimitsTextAreaLabel
+            app.RegistrationSliceLimitsTextAreaLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.RegistrationSliceLimitsTextAreaLabel.HorizontalAlignment = 'center';
+            app.RegistrationSliceLimitsTextAreaLabel.Position = [107 225 133 22];
+            app.RegistrationSliceLimitsTextAreaLabel.Text = 'Registration Slice Limits';
 
-            % Create RegistrationInstructionsTextArea
-            app.RegistrationInstructionsTextArea = uitextarea(app.StandardAtlasRegistrationPanel);
-            app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [16 89 320 92];
+            % Create RegistrationSliceLimitsTextArea
+            app.RegistrationSliceLimitsTextArea = uitextarea(app.StandardAtlasRegistrationPanel);
+            app.RegistrationSliceLimitsTextArea.Editable = 'off';
+            app.RegistrationSliceLimitsTextArea.Position = [39 194 269 24];
+
+            % Create TransformsLabel
+            app.TransformsLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.TransformsLabel.HorizontalAlignment = 'right';
+            app.TransformsLabel.Position = [39 124 65 22];
+            app.TransformsLabel.Text = 'Transforms';
+
+            % Create TransformsListBox
+            app.TransformsListBox = uilistbox(app.StandardAtlasRegistrationPanel);
+            app.TransformsListBox.Items = {'Rigid', 'Affine', 'Non-Rigid'};
+            app.TransformsListBox.ValueChangedFcn = createCallbackFcn(app, @TransformsListBoxValueChanged, true);
+            app.TransformsListBox.Position = [124 74 185 74];
+            app.TransformsListBox.Value = 'Rigid';
+
+            % Create OutputInterpolatorDropDownLabel
+            app.OutputInterpolatorDropDownLabel = uilabel(app.StandardAtlasRegistrationPanel);
+            app.OutputInterpolatorDropDownLabel.HorizontalAlignment = 'right';
+            app.OutputInterpolatorDropDownLabel.WordWrap = 'on';
+            app.OutputInterpolatorDropDownLabel.Position = [37 34 66 38];
+            app.OutputInterpolatorDropDownLabel.Text = 'Output Interpolator';
+
+            % Create OutputInterpolatorDropDown
+            app.OutputInterpolatorDropDown = uidropdown(app.StandardAtlasRegistrationPanel);
+            app.OutputInterpolatorDropDown.Items = {'Nearest Neighbor', 'Linear', 'BSpline'};
+            app.OutputInterpolatorDropDown.ItemsData = {'NearestNeighbor', 'Linear', 'BSpline'};
+            app.OutputInterpolatorDropDown.Tooltip = {'Interpolation for the final resample of the moving image onto the fixed grid. Nearest Neighbor preserves quantitative values exactly; Linear and B-Spline give smoother anatomical images but blend/overshoot voxel values.'};
+            app.OutputInterpolatorDropDown.Placeholder = 'NearestNeighbor';
+            app.OutputInterpolatorDropDown.Position = [125 40 183 22];
+            app.OutputInterpolatorDropDown.Value = 'NearestNeighbor';
 
             % Create ShowReferenceFixedCheckBox
             app.ShowReferenceFixedCheckBox = uicheckbox(app.RegistrationTab);
             app.ShowReferenceFixedCheckBox.ValueChangedFcn = createCallbackFcn(app, @ShowReferenceFixedCheckBoxValueChanged, true);
             app.ShowReferenceFixedCheckBox.Enable = 'off';
             app.ShowReferenceFixedCheckBox.Text = 'Show Reference Fixed Data';
-            app.ShowReferenceFixedCheckBox.Position = [633 24 172 22];
+            app.ShowReferenceFixedCheckBox.Position = [550 31 172 22];
+
+            % Create ReferenceFixedViewDropDown
+            app.ReferenceFixedViewDropDown = uidropdown(app.RegistrationTab);
+            app.ReferenceFixedViewDropDown.Items = {'Multiply', 'Side-by-side', 'Falsecolor difference'};
+            app.ReferenceFixedViewDropDown.ItemsData = {'multiply', 'sidebyside', 'falsecolor'};
+            app.ReferenceFixedViewDropDown.ValueChangedFcn = createCallbackFcn(app, @ReferenceFixedViewDropDownValueChanged, true);
+            app.ReferenceFixedViewDropDown.Enable = 'off';
+            app.ReferenceFixedViewDropDown.Position = [730 31 170 22];
+            app.ReferenceFixedViewDropDown.Value = 'sidebyside';
 
             % Create ParameterMapsTab
             app.ParameterMapsTab = uitab(app.TabGroup);
@@ -8256,8 +9196,8 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Create LabelPlusMinus_Brain
             app.LabelPlusMinus_Brain = uilabel(app.BrainPanel);
-            app.LabelPlusMinus_Brain.Interpreter = 'latex';
             app.LabelPlusMinus_Brain.HorizontalAlignment = 'center';
+            app.LabelPlusMinus_Brain.Interpreter = 'latex';
             app.LabelPlusMinus_Brain.Position = [178 328 29 24];
             app.LabelPlusMinus_Brain.Text = '±';
 
@@ -8332,8 +9272,8 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Create LabelPlusMinus_Hemisphere
             app.LabelPlusMinus_Hemisphere = uilabel(app.HemispherePanel);
-            app.LabelPlusMinus_Hemisphere.Interpreter = 'latex';
             app.LabelPlusMinus_Hemisphere.HorizontalAlignment = 'center';
+            app.LabelPlusMinus_Hemisphere.Interpreter = 'latex';
             app.LabelPlusMinus_Hemisphere.Position = [178 324 29 24];
             app.LabelPlusMinus_Hemisphere.Text = '±';
 
@@ -8444,8 +9384,8 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Create LabelPlusMinus_ROI
             app.LabelPlusMinus_ROI = uilabel(app.ROIPanel_Results);
-            app.LabelPlusMinus_ROI.Interpreter = 'latex';
             app.LabelPlusMinus_ROI.HorizontalAlignment = 'center';
+            app.LabelPlusMinus_ROI.Interpreter = 'latex';
             app.LabelPlusMinus_ROI.Position = [181 324 29 24];
             app.LabelPlusMinus_ROI.Text = '±';
 
@@ -8587,7 +9527,6 @@ classdef suMRak_exported < matlab.apps.AppBase
 
             % Create UIAxes_Results_Container
             app.UIAxes_Results_Container = uipanel(app.ResultsTab);
-            app.UIAxes_Results_Container.BorderColor = [1 1 1];
             app.UIAxes_Results_Container.BorderWidth = 5;
             app.UIAxes_Results_Container.Visible = 'off';
             app.UIAxes_Results_Container.BackgroundColor = [0.9412 0.9412 0.9412];
@@ -8856,7 +9795,7 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.VersionLabel.FontSize = 18;
             app.VersionLabel.FontAngle = 'italic';
             app.VersionLabel.Position = [1039 649 108 23];
-            app.VersionLabel.Text = 'version 1.0.0';
+            app.VersionLabel.Text = 'version 1.1.0';
 
             % Create AuthorsILabel
             app.AuthorsILabel = uilabel(app.AboutTab);
@@ -9043,29 +9982,73 @@ classdef suMRak_exported < matlab.apps.AppBase
             app.ResetInstructionsMenu.Text = 'Reset Instructions';
             
             % Assign app.ContextMenu_RegistrationInstructions
-            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
+            app.RegistrationSliceLimitsTextArea.ContextMenu = app.ContextMenu_RegistrationInstructions;
 
-            % Create ContextMenu_RegistrationReferenceFixed
-            app.ContextMenu_RegistrationReferenceFixed = uicontextmenu(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
+            % Create TransformsContextMenu
+            app.TransformsContextMenu = uicontextmenu(app.suMRakSimpleUtilityMRiAnalysisKitUIFigure);
 
-            % Create MultiplyMovingAndFixedMenu
-            app.MultiplyMovingAndFixedMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
-            app.MultiplyMovingAndFixedMenu.MenuSelectedFcn = createCallbackFcn(app, @MultiplyMovingAndFixedMenuSelected, true);
-            app.MultiplyMovingAndFixedMenu.Checked = 'on';
-            app.MultiplyMovingAndFixedMenu.Text = 'Multiply Moving And Fixed';
+            % Create EditTransformMenu
+            app.EditTransformMenu = uimenu(app.TransformsContextMenu);
+            app.EditTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @EditTransformMenuSelected, true);
+            app.EditTransformMenu.Text = 'Edit...';
 
-            % Create SidebysideMenu
-            app.SidebysideMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
-            app.SidebysideMenu.MenuSelectedFcn = createCallbackFcn(app, @SidebysideMenuSelected, true);
-            app.SidebysideMenu.Text = 'Side-by-side';
+            % Create AddTransformMenu
+            app.AddTransformMenu = uimenu(app.TransformsContextMenu);
+            app.AddTransformMenu.Text = 'Add stage';
 
-            % Create FalsecolorDifferenceMenu
-            app.FalsecolorDifferenceMenu = uimenu(app.ContextMenu_RegistrationReferenceFixed);
-            app.FalsecolorDifferenceMenu.MenuSelectedFcn = createCallbackFcn(app, @FalsecolorDifferenceMenuSelected, true);
-            app.FalsecolorDifferenceMenu.Text = 'Falsecolor Difference';
+            % Create AddTranslationMenu
+            app.AddTranslationMenu = uimenu(app.AddTransformMenu);
+            app.AddTranslationMenu.MenuSelectedFcn = createCallbackFcn(app, @AddTranslationMenuSelected, true);
+            app.AddTranslationMenu.Text = 'Translation';
+
+            % Create AddEuler3DMenu
+            app.AddEuler3DMenu = uimenu(app.AddTransformMenu);
+            app.AddEuler3DMenu.MenuSelectedFcn = createCallbackFcn(app, @AddEuler3DMenuSelected, true);
+            app.AddEuler3DMenu.Text = 'Euler3D';
+
+            % Create AddSimilarity3DMenu
+            app.AddSimilarity3DMenu = uimenu(app.AddTransformMenu);
+            app.AddSimilarity3DMenu.MenuSelectedFcn = createCallbackFcn(app, @AddSimilarity3DMenuSelected, true);
+            app.AddSimilarity3DMenu.Text = 'Similarity3D';
+
+            % Create AddAffineMenu
+            app.AddAffineMenu = uimenu(app.AddTransformMenu);
+            app.AddAffineMenu.MenuSelectedFcn = createCallbackFcn(app, @AddAffineMenuSelected, true);
+            app.AddAffineMenu.Text = 'Affine';
+
+            % Create AddBSplineMenu
+            app.AddBSplineMenu = uimenu(app.AddTransformMenu);
+            app.AddBSplineMenu.MenuSelectedFcn = createCallbackFcn(app, @AddBSplineMenuSelected, true);
+            app.AddBSplineMenu.Text = 'BSpline';
+
+            % Create DuplicateTransformMenu
+            app.DuplicateTransformMenu = uimenu(app.TransformsContextMenu);
+            app.DuplicateTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @DuplicateTransformMenuSelected, true);
+            app.DuplicateTransformMenu.Text = 'Duplicate';
+
+            % Create RemoveTransformMenu
+            app.RemoveTransformMenu = uimenu(app.TransformsContextMenu);
+            app.RemoveTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @RemoveTransformMenuSelected, true);
+            app.RemoveTransformMenu.Text = 'Remove';
+
+            % Create MoveUpTransformMenu
+            app.MoveUpTransformMenu = uimenu(app.TransformsContextMenu);
+            app.MoveUpTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @MoveUpTransformMenuSelected, true);
+            app.MoveUpTransformMenu.Text = 'Move up';
+
+            % Create MoveDownTransformMenu
+            app.MoveDownTransformMenu = uimenu(app.TransformsContextMenu);
+            app.MoveDownTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @MoveDownTransformMenuSelected, true);
+            app.MoveDownTransformMenu.Text = 'Move down';
+
+            % Create ResetTransformMenu
+            app.ResetTransformMenu = uimenu(app.TransformsContextMenu);
+            app.ResetTransformMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetTransformMenuSelected, true);
+            app.ResetTransformMenu.Separator = 'on';
+            app.ResetTransformMenu.Text = 'Reset to default';
             
-            % Assign app.ContextMenu_RegistrationReferenceFixed
-            app.ShowReferenceFixedCheckBox.ContextMenu = app.ContextMenu_RegistrationReferenceFixed;
+            % Assign app.TransformsContextMenu
+            app.TransformsListBox.ContextMenu = app.TransformsContextMenu;
 
             % Show the figure after all components are created
             app.suMRakSimpleUtilityMRiAnalysisKitUIFigure.Visible = 'on';

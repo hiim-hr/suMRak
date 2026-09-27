@@ -2,55 +2,57 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        RegistrationViewerUIFigure     matlab.ui.Figure
-        Dim5Spinner_Parameter          matlab.ui.control.Spinner
-        Dim5Spinner_Label_Parameter    matlab.ui.control.Label
-        Dim4Spinner_Parameter          matlab.ui.control.Spinner
-        Dim4Spinner_Label_Parameter    matlab.ui.control.Label
-        SliceSlider_Parameter          matlab.ui.control.Slider
-        SliceLabel_Parameter           matlab.ui.control.Label
-        SliceSpinner_Parameter         matlab.ui.control.Spinner
-        ParameterImageLabel            matlab.ui.control.Label
-        ColormapButtonGroup_Parameter  matlab.ui.container.ButtonGroup
-        TurboButton_Parameter          matlab.ui.control.RadioButton
-        GreyscaleButton_Parameter      matlab.ui.control.RadioButton
-        ReturnInstructionsButton       matlab.ui.control.Button
-        FixedImageLabel                matlab.ui.control.Label
-        MovingImageLabel               matlab.ui.control.Label
-        AddsliceButton                 matlab.ui.control.Button
-        RegistrationInstructionsTextArea  matlab.ui.control.TextArea
-        RegistrationInstructionsTextAreaLabel  matlab.ui.control.Label
-        ColormapButtonGroup_Fixed      matlab.ui.container.ButtonGroup
-        TurboButton_Fixed              matlab.ui.control.RadioButton
-        GreyscaleButton_Fixed          matlab.ui.control.RadioButton
-        ColormapButtonGroup_Moving     matlab.ui.container.ButtonGroup
-        TurboButton_Moving             matlab.ui.control.RadioButton
-        GreyscaleButton_Moving         matlab.ui.control.RadioButton
-        Dim5Spinner_Fixed              matlab.ui.control.Spinner
-        Dim5Spinner_Label_Fixed        matlab.ui.control.Label
-        Dim4Spinner_Fixed              matlab.ui.control.Spinner
-        Dim4Spinner_Label_Fixed        matlab.ui.control.Label
-        SliceSlider_Fixed              matlab.ui.control.Slider
-        SliceLabel_Fixed               matlab.ui.control.Label
-        SliceSpinner_Fixed             matlab.ui.control.Spinner
-        Dim5Spinner_Moving             matlab.ui.control.Spinner
-        Dim5Spinner_Label_Moving       matlab.ui.control.Label
-        Dim4Spinner_Moving             matlab.ui.control.Spinner
-        Dim4Spinner_Label_Moving       matlab.ui.control.Label
-        SliceSlider_Moving             matlab.ui.control.Slider
-        SliceLabel_Moving              matlab.ui.control.Label
-        SliceSpinner_Moving            matlab.ui.control.Spinner
-        UIAxes_Parameter               matlab.ui.control.UIAxes
-        UIAxes_Fixed                   matlab.ui.control.UIAxes
-        UIAxes_Moving                  matlab.ui.control.UIAxes
-        ContextMenu_Instructions       matlab.ui.container.ContextMenu
-        ResetInstructionsMenu          matlab.ui.container.Menu
-        ContextMenu_Moving             matlab.ui.container.ContextMenu
-        ResetViewMenu_Moving           matlab.ui.container.Menu
-        ContextMenu_Fixed              matlab.ui.container.ContextMenu
-        ResetViewMenu_Fixed            matlab.ui.container.Menu
-        ContextMenu_Parameter          matlab.ui.container.ContextMenu
-        ResetViewMenu_Parameter        matlab.ui.container.Menu
+        RegistrationViewerUIFigure      matlab.ui.Figure
+        ResetSelectionButton            matlab.ui.control.Button
+        EndSlicesNotationTextArea       matlab.ui.control.TextArea
+        EndSlicesNotationTextAreaLabel  matlab.ui.control.Label
+        SetEndSlicesButton              matlab.ui.control.Button
+        Dim5Spinner_Parameter           matlab.ui.control.Spinner
+        Dim5Spinner_Label_Parameter     matlab.ui.control.Label
+        Dim4Spinner_Parameter           matlab.ui.control.Spinner
+        Dim4Spinner_Label_Parameter     matlab.ui.control.Label
+        SliceSlider_Parameter           matlab.ui.control.Slider
+        SliceLabel_Parameter            matlab.ui.control.Label
+        SliceSpinner_Parameter          matlab.ui.control.Spinner
+        ParameterImageLabel             matlab.ui.control.Label
+        ColormapButtonGroup_Parameter   matlab.ui.container.ButtonGroup
+        TurboButton_Parameter           matlab.ui.control.RadioButton
+        GreyscaleButton_Parameter       matlab.ui.control.RadioButton
+        ReturnInstructionsButton        matlab.ui.control.Button
+        FixedImageLabel                 matlab.ui.control.Label
+        MovingImageLabel                matlab.ui.control.Label
+        SetStartingSlicesButton         matlab.ui.control.Button
+        StartSlicesNotationTextArea     matlab.ui.control.TextArea
+        StartSlicesNotationTextAreaLabel  matlab.ui.control.Label
+        ColormapButtonGroup_Fixed       matlab.ui.container.ButtonGroup
+        TurboButton_Fixed               matlab.ui.control.RadioButton
+        GreyscaleButton_Fixed           matlab.ui.control.RadioButton
+        ColormapButtonGroup_Moving      matlab.ui.container.ButtonGroup
+        TurboButton_Moving              matlab.ui.control.RadioButton
+        GreyscaleButton_Moving          matlab.ui.control.RadioButton
+        Dim5Spinner_Fixed               matlab.ui.control.Spinner
+        Dim5Spinner_Label_Fixed         matlab.ui.control.Label
+        Dim4Spinner_Fixed               matlab.ui.control.Spinner
+        Dim4Spinner_Label_Fixed         matlab.ui.control.Label
+        SliceSlider_Fixed               matlab.ui.control.Slider
+        SliceLabel_Fixed                matlab.ui.control.Label
+        SliceSpinner_Fixed              matlab.ui.control.Spinner
+        Dim5Spinner_Moving              matlab.ui.control.Spinner
+        Dim5Spinner_Label_Moving        matlab.ui.control.Label
+        Dim4Spinner_Moving              matlab.ui.control.Spinner
+        Dim4Spinner_Label_Moving        matlab.ui.control.Label
+        SliceSlider_Moving              matlab.ui.control.Slider
+        SliceLabel_Moving               matlab.ui.control.Label
+        SliceSpinner_Moving             matlab.ui.control.Spinner
+        UIAxes_Parameter                matlab.ui.control.UIAxes
+        UIAxes_Fixed                    matlab.ui.control.UIAxes
+        UIAxes_Moving                   matlab.ui.control.UIAxes
+        ContextMenu_Moving              matlab.ui.container.ContextMenu
+        ResetViewMenu_Moving            matlab.ui.container.Menu
+        ContextMenu_Fixed               matlab.ui.container.ContextMenu
+        ResetViewMenu_Fixed             matlab.ui.container.Menu
+        ContextMenu_Parameter           matlab.ui.container.ContextMenu
+        ResetViewMenu_Parameter         matlab.ui.container.Menu
     end
 
     
@@ -62,10 +64,44 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
         ExpDimsFixed % Fixed image data dimensions
         ParameterImageData % Parameter image data
         ExpDimsParameter % Parameter image data dimensions
+        MovingImageHandle   % Image object on UIAxes_Moving, reused between refreshes
+        FixedImageHandle    % Image object on UIAxes_Fixed, reused between refreshes
+        ParameterImageHandle % Image object on UIAxes_Parameter, reused between refreshes
     end
     
     methods (Access = private)
         
+        % Show a slice on a UIAxes. Reuses the existing image object and only swaps its CData
+        function imHandle = showSlice(app, imHandle, ax, slice, useTurbo, cmenu) %#ok<INUSL>
+            lims = double([min(slice(:)) max(slice(:))]);
+            if ~all(isfinite(lims))
+                finiteVals = slice(isfinite(slice));
+                if isempty(finiteVals)
+                    lims = [0 1];
+                else
+                    lims = double([min(finiteVals) max(finiteVals)]);
+                end
+            end
+            if lims(1) >= lims(2)
+                lims = double(getrangefromclass(slice));   % constant slice: same fallback as imshow
+            end
+
+            canReuse = ~isempty(imHandle) && isgraphics(imHandle) ...
+                && isequal(imHandle.Parent, ax) && isequal(size(imHandle.CData), size(slice));
+            if canReuse
+                imHandle.CData = slice;
+            else
+                imHandle = imshow(slice, lims, 'Parent', ax);
+                imHandle.ContextMenu = cmenu;
+            end
+            ax.CLim = lims;
+            if useTurbo
+                ax.Colormap = turbo;
+            else
+                ax.Colormap = gray;
+            end
+        end
+
         % Moving UIAxes image updating
         function RefreshImageMoving(app)
             app.ExpDimsMoving = size(app.MovingImageData);
@@ -81,13 +117,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            switch app.TurboButton_Moving.Value
-                case true
-                    mov = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Moving, Colormap = turbo);
-                otherwise
-                    mov = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Moving);
-            end
-            mov.ContextMenu = app.ContextMenu_Moving;
+            app.MovingImageHandle = showSlice(app, app.MovingImageHandle, app.UIAxes_Moving, ...
+                CurrentSlice, app.TurboButton_Moving.Value, app.ContextMenu_Moving);
         end
 
         % Fixed UIAxes image updating
@@ -105,16 +136,11 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            switch app.TurboButton_Fixed.Value
-                case true
-                    fix = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Fixed, Colormap = turbo);
-                otherwise
-                    fix = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Fixed);
-            end
-            fix.ContextMenu = app.ContextMenu_Fixed;
+            app.FixedImageHandle = showSlice(app, app.FixedImageHandle, app.UIAxes_Fixed, ...
+                CurrentSlice, app.TurboButton_Fixed.Value, app.ContextMenu_Fixed);
         end
 
-        % Fixed UIAxes image updating
+        % Parameter UIAxes image updating
         function RefreshImageParameter(app)
             app.ExpDimsParameter = size(app.ParameterImageData);
             switch numel(app.ExpDimsParameter)
@@ -129,13 +155,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     %error alert missing
             end
-            switch app.TurboButton_Parameter.Value
-                case true
-                    par = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Parameter, Colormap = turbo);
-                otherwise
-                    par = imshow(CurrentSlice, 'DisplayRange', [], 'Parent', app.UIAxes_Parameter);
-            end
-            par.ContextMenu = app.ContextMenu_Parameter;
+            app.ParameterImageHandle = showSlice(app, app.ParameterImageHandle, app.UIAxes_Parameter, ...
+                CurrentSlice, app.TurboButton_Parameter.Value, app.ContextMenu_Parameter);
         end
     end
     
@@ -373,8 +394,8 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             RefreshImageParameter(app);
         end
 
-        % Button pushed function: AddsliceButton
-        function AddsliceButtonPushed(app, event)
+        % Button pushed function: SetStartingSlicesButton
+        function SetStartingSlicesButtonPushed(app, event)
             % Create slice registration instructions based on char formula
             % moving(dim3,dim4,dim5)fixed(dim3,dim4,dim5)parameter(dim3,dim4,dim5)
             switch numel(app.ExpDimsMoving)
@@ -401,30 +422,63 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
                 otherwise
                     parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',-,-) ');
             end
-            slice_instruction = append(moving, fixed, parameter);
 
-            % Add to total registration instructions
-            if app.RegistrationInstructionsTextArea.Value == ""
-                app.RegistrationInstructionsTextArea.Value = slice_instruction;
-            else
-                app.RegistrationInstructionsTextArea.Value = append(app.RegistrationInstructionsTextArea.Value, ' ', slice_instruction);
-            end
-        end
+            app.StartSlicesNotationTextArea.Value = append(moving, fixed, parameter);
 
-        % Menu selected function: ResetInstructionsMenu
-        function ResetInstructionsMenuSelected(app, event)
-            app.RegistrationInstructionsTextArea.Value = '';
+            app.Dim4Spinner_Moving.Enable = "off";
+            app.Dim5Spinner_Moving.Enable = "off";
+            app.Dim4Spinner_Fixed.Enable = "off";
+            app.Dim5Spinner_Fixed.Enable = "off";
+            app.Dim4Spinner_Parameter.Enable = "off";
+            app.Dim5Spinner_Parameter.Enable = "off";
+
         end
 
         % Button pushed function: ReturnInstructionsButton
         function ReturnInstructionsButtonPushed(app, event)
-            % Return registration instructions
-            app.suMRak.RegistrationInstructionsTextArea.Value = app.RegistrationInstructionsTextArea.Value;
             
+            % Sanity check: make sure start and end slices have been set,
+            % and that start slice numbers are lower than (or equal to) end slice numbers
+            startStr = char(join(string(app.StartSlicesNotationTextArea.Value), ''));
+            endStr   = char(join(string(app.EndSlicesNotationTextArea.Value),   ''));
+        
+            if isempty(strtrim(startStr)) || isempty(strtrim(endStr))
+                uialert(app.RegistrationViewerUIFigure, ...
+                    'Please set both the start and end slices before returning instructions.', ...
+                    'Missing slices');
+                return
+            end
+        
+            % Extract slice numbers for each volume (moving 'm', fixed 'f', parameter 'p').
+            prefixes = {'m', 'f', 'p'};
+            labels   = {'moving', 'fixed', 'parameter'};
+            for k = 1:numel(prefixes)
+                pat = [prefixes{k} '\((\d+),'];
+                sTok = regexp(startStr, pat, 'tokens', 'once');
+                eTok = regexp(endStr,   pat, 'tokens', 'once');
+                if isempty(sTok) || isempty(eTok)
+                    continue
+                end
+                sVal = str2double(sTok{1});
+                eVal = str2double(eTok{1});
+                if sVal > eVal
+                    uialert(app.RegistrationViewerUIFigure, ...
+                        sprintf(['Start slice must be lower than or equal to end slice ' ...
+                                 'for the %s volume (start = %d, end = %d).'], ...
+                                 labels{k}, sVal, eVal), ...
+                        'Invalid slice range');
+                    return
+                end
+            end
+        
+            % Return registration instructions
+            app.suMRak.RegistrationSliceLimitsTextArea.Value = append(app.StartSlicesNotationTextArea.Value, ' -> ', app.EndSlicesNotationTextArea.Value);
+        
             % Turn on viewer button, delete app
             app.suMRak.RegistrationViewerButton.Enable = 'on';
             close(app.suMRak.ProgressBar)
-            delete(app) 
+            delete(app)
+
         end
 
         % Menu selected function: ResetViewMenu_Moving
@@ -455,6 +509,70 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             app.suMRak.RegistrationViewerButton.Enable = 'on';
             close(app.suMRak.ProgressBar)
             delete(app) 
+        end
+
+        % Button pushed function: SetEndSlicesButton
+        function SetEndSlicesButtonPushed(app, event)
+            
+            % Create slice registration instructions based on char formula
+            % moving(dim3,dim4,dim5)fixed(dim3,dim4,dim5)parameter(dim3,dim4,dim5)
+            switch numel(app.ExpDimsMoving)
+                case 5
+                    moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',', num2str(app.Dim5Spinner_Moving.Value), ')');
+                case 4
+                    moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',', num2str(app.Dim4Spinner_Moving.Value), ',-)');
+                otherwise
+                    moving = append('m(', num2str(app.SliceSpinner_Moving.Value), ',-,-)');
+            end
+            switch numel(app.ExpDimsFixed)
+                case 5
+                    fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',', num2str(app.Dim5Spinner_Fixed.Value), ')');
+                case 4
+                    fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',', num2str(app.Dim4Spinner_Fixed.Value), ',-)');
+                otherwise
+                    fixed = append('f(', num2str(app.SliceSpinner_Fixed.Value), ',-,-)');
+            end
+            switch numel(app.ExpDimsParameter)
+                case 5
+                    parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',', num2str(app.Dim4Spinner_Parameter.Value), ',', num2str(app.Dim5Spinner_Parameter.Value), ') ');
+                case 4
+                    parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',', num2str(app.Dim4Spinner_Parameter.Value), ',-) ');
+                otherwise
+                    parameter = append('p(', num2str(app.SliceSpinner_Parameter.Value), ',-,-) ');
+            end
+
+            app.EndSlicesNotationTextArea.Value = append(moving, fixed, parameter);
+
+            app.Dim4Spinner_Moving.Enable = "off";
+            app.Dim5Spinner_Moving.Enable = "off";
+            app.Dim4Spinner_Fixed.Enable = "off";
+            app.Dim5Spinner_Fixed.Enable = "off";
+            app.Dim4Spinner_Parameter.Enable = "off";
+            app.Dim5Spinner_Parameter.Enable = "off";
+
+        end
+
+        % Button pushed function: ResetSelectionButton
+        function ResetSelectionButtonPushed(app, event)
+            
+            app.Dim4Spinner_Moving.Enable = "on";
+            app.Dim5Spinner_Moving.Enable = "on";
+            app.Dim4Spinner_Fixed.Enable = "on";
+            app.Dim5Spinner_Fixed.Enable = "on";
+
+            app.SliceSlider_Moving.Value = 1;
+            app.SliceSpinner_Moving.Value = 1;
+            app.Dim4Spinner_Moving.Value = 1;
+            app.Dim5Spinner_Moving.Value = 1;
+            
+            app.SliceSlider_Fixed.Value = 1;
+            app.SliceSpinner_Fixed.Value = 1;
+            app.Dim4Spinner_Fixed.Value = 1;
+            app.Dim5Spinner_Fixed.Value = 1;
+
+            app.StartSlicesNotationTextArea.Value = "";
+            app.EndSlicesNotationTextArea.Value = "";
+
         end
     end
 
@@ -648,22 +766,22 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             app.TurboButton_Fixed.Text = 'Turbo';
             app.TurboButton_Fixed.Position = [2 -3 65 22];
 
-            % Create RegistrationInstructionsTextAreaLabel
-            app.RegistrationInstructionsTextAreaLabel = uilabel(app.RegistrationViewerUIFigure);
-            app.RegistrationInstructionsTextAreaLabel.HorizontalAlignment = 'right';
-            app.RegistrationInstructionsTextAreaLabel.Position = [685 361 134 22];
-            app.RegistrationInstructionsTextAreaLabel.Text = 'Registration Instructions';
+            % Create StartSlicesNotationTextAreaLabel
+            app.StartSlicesNotationTextAreaLabel = uilabel(app.RegistrationViewerUIFigure);
+            app.StartSlicesNotationTextAreaLabel.HorizontalAlignment = 'right';
+            app.StartSlicesNotationTextAreaLabel.Position = [696 398 114 22];
+            app.StartSlicesNotationTextAreaLabel.Text = 'Start Slices Notation';
 
-            % Create RegistrationInstructionsTextArea
-            app.RegistrationInstructionsTextArea = uitextarea(app.RegistrationViewerUIFigure);
-            app.RegistrationInstructionsTextArea.Editable = 'off';
-            app.RegistrationInstructionsTextArea.Position = [657 209 190 145];
+            % Create StartSlicesNotationTextArea
+            app.StartSlicesNotationTextArea = uitextarea(app.RegistrationViewerUIFigure);
+            app.StartSlicesNotationTextArea.Editable = 'off';
+            app.StartSlicesNotationTextArea.Position = [670 366 167 25];
 
-            % Create AddsliceButton
-            app.AddsliceButton = uibutton(app.RegistrationViewerUIFigure, 'push');
-            app.AddsliceButton.ButtonPushedFcn = createCallbackFcn(app, @AddsliceButtonPushed, true);
-            app.AddsliceButton.Position = [702 171 100 22];
-            app.AddsliceButton.Text = 'Add slice ';
+            % Create SetStartingSlicesButton
+            app.SetStartingSlicesButton = uibutton(app.RegistrationViewerUIFigure, 'push');
+            app.SetStartingSlicesButton.ButtonPushedFcn = createCallbackFcn(app, @SetStartingSlicesButtonPushed, true);
+            app.SetStartingSlicesButton.Position = [698 332 113 23];
+            app.SetStartingSlicesButton.Text = 'Set Starting Slices';
 
             % Create MovingImageLabel
             app.MovingImageLabel = uilabel(app.RegistrationViewerUIFigure);
@@ -679,7 +797,7 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             % Create ReturnInstructionsButton
             app.ReturnInstructionsButton = uibutton(app.RegistrationViewerUIFigure, 'push');
             app.ReturnInstructionsButton.ButtonPushedFcn = createCallbackFcn(app, @ReturnInstructionsButtonPushed, true);
-            app.ReturnInstructionsButton.Position = [690 51 125 22];
+            app.ReturnInstructionsButton.Position = [702 70 125 22];
             app.ReturnInstructionsButton.Text = 'Return Instructions';
 
             % Create ColormapButtonGroup_Parameter
@@ -756,16 +874,27 @@ classdef RegistrationViewer_Parameter_exported < matlab.apps.AppBase
             app.Dim5Spinner_Parameter.Position = [568 70 51 22];
             app.Dim5Spinner_Parameter.Value = 1;
 
-            % Create ContextMenu_Instructions
-            app.ContextMenu_Instructions = uicontextmenu(app.RegistrationViewerUIFigure);
+            % Create SetEndSlicesButton
+            app.SetEndSlicesButton = uibutton(app.RegistrationViewerUIFigure, 'push');
+            app.SetEndSlicesButton.ButtonPushedFcn = createCallbackFcn(app, @SetEndSlicesButtonPushed, true);
+            app.SetEndSlicesButton.Position = [704 214 100 23];
+            app.SetEndSlicesButton.Text = 'Set End Slices';
 
-            % Create ResetInstructionsMenu
-            app.ResetInstructionsMenu = uimenu(app.ContextMenu_Instructions);
-            app.ResetInstructionsMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetInstructionsMenuSelected, true);
-            app.ResetInstructionsMenu.Text = 'Reset Instructions';
-            
-            % Assign app.ContextMenu_Instructions
-            app.RegistrationInstructionsTextArea.ContextMenu = app.ContextMenu_Instructions;
+            % Create EndSlicesNotationTextAreaLabel
+            app.EndSlicesNotationTextAreaLabel = uilabel(app.RegistrationViewerUIFigure);
+            app.EndSlicesNotationTextAreaLabel.HorizontalAlignment = 'right';
+            app.EndSlicesNotationTextAreaLabel.Position = [698 280 110 22];
+            app.EndSlicesNotationTextAreaLabel.Text = 'End Slices Notation';
+
+            % Create EndSlicesNotationTextArea
+            app.EndSlicesNotationTextArea = uitextarea(app.RegistrationViewerUIFigure);
+            app.EndSlicesNotationTextArea.Position = [670 249 167 23];
+
+            % Create ResetSelectionButton
+            app.ResetSelectionButton = uibutton(app.RegistrationViewerUIFigure, 'push');
+            app.ResetSelectionButton.ButtonPushedFcn = createCallbackFcn(app, @ResetSelectionButtonPushed, true);
+            app.ResetSelectionButton.Position = [706 160 100 23];
+            app.ResetSelectionButton.Text = 'Reset Selection';
 
             % Create ContextMenu_Moving
             app.ContextMenu_Moving = uicontextmenu(app.RegistrationViewerUIFigure);

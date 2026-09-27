@@ -1,1 +1,33 @@
-# List of untracked files to ignore
+# MATLAB autosaves / editor backups
+*.asv
+*.m~
+*.mlx.bak
+
+# MATLAB codegen & build artifacts
+mex_files/codegen/
+derived/
+slprj/
+sccprj/
+
+# MATLAB Project local user state
+resources/.SimulinkProject/
+resources/.ProjectInfo/
+
+# Manual .mlapp snapshots (use git tags/branches instead)
+backup/
+
+# Proprietary Bruker pvmatlab package — licensed separately, do not commit.
+# See README for installation instructions.
+bruker_tools/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+desktop.ini
+*~
+.vscode/
+.idea/
+
+# Local tooling / scratch extraction of .mlapp archives
+.mlapp_extracted/
+.claude/

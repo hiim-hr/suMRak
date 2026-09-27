@@ -34,6 +34,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             app.suMRak = caller;
 
             movegui(app.ReferenceAtlasImporterUIFigure, 'center');
+
         end
 
         % Callback function: ReferenceAtlasTree
@@ -43,15 +44,15 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             estimated_size_MB = 0;
             % Go through all atlases
             if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, checkedNodes)
-                estimated_size_MB = estimated_size_MB + 247;
+                estimated_size_MB = estimated_size_MB + 123;
             end
 
             if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, checkedNodes)
-                estimated_size_MB = estimated_size_MB + 512;
+                estimated_size_MB = estimated_size_MB + 330;
             end
 
             if ismember(app.T1wWaxholmSpaceAtlasC57BL6JMouseNode, checkedNodes)
-                estimated_size_MB = estimated_size_MB + 512;
+                estimated_size_MB = estimated_size_MB + 430;
             end
 
             if ismember(app.AllenBrainAtlasAdultMouseNisslGrayscaleNode, checkedNodes) 
@@ -103,235 +104,33 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             if ismember(app.HistologicalAtlasNode, chosen_Collection)
                 num_of_atlases = num_of_atlases-1;
             end
-            step_size = 1/((num_of_atlases*3)+1);
+            step_size = 1/((num_of_atlases*3)+2);
 
             loadedCollection = struct();
             dropdown_items = {'None'};
-            % Check whether to store selected atlases to specific
-            % directory
+
+            progress = uiprogressdlg(app.ReferenceAtlasImporterUIFigure,'Title',"Please wait",...
+                         'Message', "Setting up folder structure");
+            drawnow
+            pause(0.5)
+
+            % Check whether to store selected atlases to specific directory
             switch app.SaveToDirectoryCheckBox.Value
                 case 0
-                    % Draw progress box 
-                    progress = uiprogressdlg(app.ReferenceAtlasImporterUIFigure,'Title',"Please wait",...
-                         'Message', "Purging old temporary data");
-                    drawnow
-                    pause(0.5)
-
                     % Create new folder for atlas loading operations inside suMRak working temp
                     % folder
                     atlas_loading_folder = strcat(app.suMRak.WorkingFolder, filesep, 'Atlas Loading');
-                    % Purge old temporary data
-                    try
-                        rmdir(atlas_loading_folder, "s");
-                    catch
-                    end
-                    mkdir(atlas_loading_folder);   
-
-                    % Go through all atlases
-                    if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        MICe_atlas_Path = strcat(atlas_loading_folder, filesep, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
-                        mkdir(MICe_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), "http://repo.mouseimaging.ca/repo/Dorr_2008_nifti/Dorr_2008_average.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), MICe_atlas_Path);
-                        movefile(strcat(MICe_atlas_Path, filesep, 'MICeAtlas'), strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        MICe_atlas.ImageData = niftiread(MICe_atlas_Path);
-                        MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
-                        MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
-                        MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
-                        MICe_atlas.ImageData = flip(MICe_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        MICe_info = niftiinfo(MICe_atlas_Path);
-                        MICe_atlas.VoxDimX = MICe_info.PixelDimensions(1);
-                        MICe_atlas.VoxDimY = MICe_info.PixelDimensions(1);
-                        MICe_atlas.SliceThickness = MICe_info.PixelDimensions(1);
-                        MICe_atlas.SliceGap = 0;
-                        MICe_atlas.Units = "mm mm mm";
-                        MICe_atlas.RotMat = MICe_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.MICeAtlas = MICe_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
-                    end
-
-                    if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        waxholm_t2_atlas_Path = strcat(atlas_loading_folder, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
-                        mkdir(waxholm_t2_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"), "https://www.nitrc.org/frs/download.php/9520/canon_T2W_r.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"), waxholm_t2_atlas_Path);
-                        movefile(strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse'), strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"));
-                        
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        waxholm_t2_atlas_Path = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        waxholm_t2_atlas.ImageData = niftiread(waxholm_t2_atlas_Path);
-                        waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
-                        waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
-                        waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
-                        waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
-                        waxholm_t2_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.SliceGap = 0;
-                        waxholm_t2_atlas.Units = "mm mm mm";
-                        waxholm_t2_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.T2WaxholmMouse = waxholm_t2_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
-                    end
-
-                    if ismember(app.T1wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        waxholm_t1_atlas_Path = strcat(atlas_loading_folder, filesep, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
-                        mkdir(waxholm_t1_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"), "https://www.nitrc.org/frs/download.php/9518/canon_T1_r.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"), waxholm_t1_atlas_Path);
-                        movefile(strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse'), strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        waxholm_t1_atlas_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        waxholm_t1_atlas.ImageData = niftiread(waxholm_t1_atlas_Path);
-                        waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
-                        waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
-                        waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
-                        waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
-                        waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.SliceGap = 0;
-                        waxholm_t1_atlas.Units = "mm mm mm";
-                        waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.T1WaxholmMouse = waxholm_t1_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
-                    end
-                    
-                    if ismember(app.AllenBrainAtlasAdultMouseNisslGrayscaleNode, chosen_Collection) 
-                        % Download atlas, unzip and rename end folder
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        websave(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"), "http://download.alleninstitute.org/informatics-archive/current-release/mouse_annotation/P56_atlasVolume.zip");
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        unzip(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"), atlas_loading_folder);
-        
-                        allen_atlas_Path = strcat(atlas_loading_folder, filesep, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
-                        movefile(strcat(atlas_loading_folder, filesep, 'atlasVolume'), allen_atlas_Path);
-                        
-                        % delete downloaded .zip
-                        delete(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        % Update atlas path
-                        allen_atlas_Path = strcat(allen_atlas_Path, filesep, 'atlasVolume.raw');
-                        % Load atlas per Allen Brain Atlas instructions
-                        fid = fopen(allen_atlas_Path, 'r', 'l' );
-                        allen_atlas.ImageData = fread( fid, prod([528 320 456]), 'uint8' );
-                        fclose( fid );
-                        allen_atlas.ImageData = reshape(allen_atlas.ImageData, [528 320 456]);
-                        % Permute and transpose image
-                        allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
-                        allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
-
-                        % Set atlas dimensions, rotation matrix
-                        allen_atlas.VoxDimX = 0.025;
-                        allen_atlas.VoxDimY = 0.025;
-                        allen_atlas.SliceThickness = 0.025;
-                        allen_atlas.SliceGap = 0;
-                        allen_atlas.Units = "mm mm mm";
-                        allen_atlas.RotMat = diag([1,1,1]);
-                        
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.AllenAdultMouseNissl = allen_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
-                    end
-                    
-                    progress.Value = 1;
-                    progress.Message = 'Done!';
-                    pause(0.5)
-                    close(progress);
-
+                    mkdir(atlas_loading_folder);
                 case 1
-                % In this case, atlases are saved to a chosen directory and
-                % available for future easier loading
+                    % In this case, atlases are saved to a chosen directory and
+                    % available for future easier loading
                     % Check for selected directory
                     if isequal(app.AtlasDirectoryEditField.Value, '')
                         uialert(app.ReferenceAtlasImporterUIFigure, 'Please select a directory for atlas saving.', 'No Directory Set')
                         return
                     end
                     
-                    % Draw progress box 
-                    progress = uiprogressdlg(app.ReferenceAtlasImporterUIFigure,'Title',"Please wait",...
-                         'Message', "Creating new reference atlas directory");
-                    drawnow
-                    pause(0.5)
+                    progress.Message = ('Creating new reference atlas directory');
                     
                     % Create new folder for atlas loading operations inside
                     % chosen directory
@@ -342,198 +141,230 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
                     catch
                     end
                     mkdir(atlas_loading_folder);
-
-                    % Go through all atlases
-                    if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        MICe_atlas_Path = strcat(atlas_loading_folder, filesep, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
-                        mkdir(MICe_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), "http://repo.mouseimaging.ca/repo/Dorr_2008_nifti/Dorr_2008_average.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"), MICe_atlas_Path);
-                        movefile(strcat(MICe_atlas_Path, filesep, 'MICeAtlas'), strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "MICeAtlas.gz"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing MICe Neuroanatomy Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, 'MICeAtlas.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        MICe_atlas.ImageData = niftiread(MICe_atlas_Path);
-                        MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
-                        MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
-                        MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
-                        MICe_atlas.ImageData = flip(MICe_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        MICe_info = niftiinfo(MICe_atlas_Path);
-                        MICe_atlas.VoxDimX = MICe_info.PixelDimensions(1);
-                        MICe_atlas.VoxDimY = MICe_info.PixelDimensions(1);
-                        MICe_atlas.SliceThickness = MICe_info.PixelDimensions(1);
-                        MICe_atlas.SliceGap = 0;
-                        MICe_atlas.Units = "mm mm mm";
-                        MICe_atlas.RotMat = MICe_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.MICeAtlas = MICe_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
-                    end
-
-                    if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        waxholm_t2_atlas_Path = strcat(atlas_loading_folder, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
-                        mkdir(waxholm_t2_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"), "https://www.nitrc.org/frs/download.php/9520/canon_T2W_r.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"), waxholm_t2_atlas_Path);
-                        movefile(strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse'), strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "T2WaxholmMouse.gz"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing T2w Waxholm Space Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        waxholm_t2_atlas_Path = strcat(waxholm_t2_atlas_Path, filesep, 'T2WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        waxholm_t2_atlas.ImageData = niftiread(waxholm_t2_atlas_Path);
-                        waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
-                        waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
-                        waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
-                        waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
-                        waxholm_t2_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
-                        waxholm_t2_atlas.SliceGap = 0;
-                        waxholm_t2_atlas.Units = "mm mm mm";
-                        waxholm_t2_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.T2WaxholmMouse = waxholm_t2_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
-                    end
-
-                    if ismember(app.T1wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
-                        % Create end folder
-                        waxholm_t1_atlas_Path = strcat(atlas_loading_folder, filesep, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
-                        mkdir(waxholm_t1_atlas_Path);
-
-                        % Download atlas, unzip to end folder, rename to
-                        % .nii
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        websave(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"), "https://www.nitrc.org/frs/download.php/9518/canon_T1_r.nii.gz");
-
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        gunzip(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"), waxholm_t1_atlas_Path);
-                        movefile(strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse'), strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii'));
-
-                        % Delete downloaded .nii.gz
-                        delete(strcat(atlas_loading_folder, filesep, "T1WaxholmMouse.gz"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing T1w Waxholm Space Atlas - C57BL6J Mouse';
-                        % Update atlas path
-                        waxholm_t1_atlas_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii');
-                        % Load atlas using niftiread, permute dims,
-                        % pagetranspose and flipud
-                        waxholm_t1_atlas.ImageData = niftiread(waxholm_t1_atlas_Path);
-                        waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
-                        waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
-                        waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
-                        waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
-
-                        % Get atlas info, update dimensions and rotation
-                        % matrix
-                        waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
-                        waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
-                        waxholm_t1_atlas.SliceGap = 0;
-                        waxholm_t1_atlas.Units = "mm mm mm";
-                        waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
-
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.T1WaxholmMouse = waxholm_t1_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
-                    end
-
-                    if ismember(app.AllenBrainAtlasAdultMouseNisslGrayscaleNode, chosen_Collection) 
-                        % Download atlas, unzip and rename end folder
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Downloading Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        websave(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"), "http://download.alleninstitute.org/informatics-archive/current-release/mouse_annotation/P56_atlasVolume.zip");
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Unzipping Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        unzip(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"), atlas_loading_folder);
-        
-                        allen_atlas_Path = strcat(atlas_loading_folder, filesep, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
-                        movefile(strcat(atlas_loading_folder, filesep, 'atlasVolume'), allen_atlas_Path);
-                        
-                        % delete downloaded .zip
-                        delete(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"));
-                        
-                        progress.Value = progress.Value + step_size;
-                        progress.Message = 'Importing Allen Brain Atlas - Adult Mouse Nissl Grayscale';
-                        % Update atlas path
-                        allen_atlas_Path = strcat(allen_atlas_Path, filesep, 'atlasVolume.raw');
-                        % Load atlas per Allen Brain Atlas instructions
-                        fid = fopen(allen_atlas_Path, 'r', 'l' );
-                        allen_atlas.ImageData = fread( fid, prod([528 320 456]), 'uint8' );
-                        fclose( fid );
-                        allen_atlas.ImageData = reshape(allen_atlas.ImageData, [528 320 456]);
-                        % Permute and transpose image
-                        allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
-                        allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
-
-                        % Set atlas dimensions, rotation matrix
-                        allen_atlas.VoxDimX = 0.025;
-                        allen_atlas.VoxDimY = 0.025;
-                        allen_atlas.SliceThickness = 0.025;
-                        allen_atlas.SliceGap = 0;
-                        allen_atlas.Units = "mm mm mm";
-                        allen_atlas.RotMat = diag([1,1,1]);
-                        
-                        % Save to loaded atlas collection struct, update
-                        % drop down items
-                        loadedCollection.AllenAdultMouseNissl = allen_atlas;
-                        dropdown_items = cat(1, dropdown_items, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
-                    end
-                    
-                    progress.Value = 1;
-                    progress.Message = 'Done!';
-                    pause(0.5)
-                    close(progress);
-
             end
+
+            progress.Message = ('Purging old temporary data');
+            progress.Value = progress.Value + step_size;
+            % Purge old temporary data
+            try
+                rmdir(atlas_loading_folder, "s");
+            catch
+            end
+            mkdir(atlas_loading_folder);
+
+            % Go through all atlases
+            if ismember(app.MICeNeuroanatomyAtlasC57BL6JMouseNode, chosen_Collection)
+                % Create end folder
+                MICe_atlas_Path = strcat(atlas_loading_folder, filesep, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+                mkdir(MICe_atlas_Path);
+
+                % Download atlas, unzip to end folder, rename to
+                % .nii
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Downloading MICe Neuroanatomy Atlas - C57BL6J Mouse';
+                MICe_labels_Path = strcat(MICe_atlas_Path, filesep, "MICeAtlasLabels.mnc");
+                MICe_atlas_Path = strcat(MICe_atlas_Path, filesep, "MICeAtlas.mnc");
+                
+                websave(MICe_atlas_Path, "https://www.mouseimaging.ca/mnc/C57Bl6j_mouse_atlas/male-female-mouse-atlas.mnc");
+                websave(MICe_labels_Path, "https://www.mouseimaging.ca/mnc/C57Bl6j_mouse_atlas/c57_fixed_labels_resized.mnc");
+                
+                progress.Value = progress.Value + 2 * step_size;
+                progress.Message = 'Importing MICe Neuroanatomy Atlas - C57BL6J Mouse';
+
+                % Load atlas and labels using minc_read, apply labels as
+                % mask
+                [MICe_info, MICe_atlas.ImageData] = minc_read(char(MICe_atlas_Path));
+                [~,         MICe_labels.ImageData] = minc_read(char(MICe_labels_Path));
+                MICe_labels.ImageData = cast(MICe_labels.ImageData, 'logical');
+                MICe_atlas.ImageData = MICe_atlas.ImageData .* cast(MICe_labels.ImageData, 'like', MICe_atlas.ImageData);
+
+                % Permute dims, pagetranspose and flipud
+                MICe_atlas.ImageData = permute(MICe_atlas.ImageData, [1,3,2]);
+                MICe_atlas.ImageData = pagetranspose(MICe_atlas.ImageData);
+                MICe_atlas.ImageData = flipud(MICe_atlas.ImageData);
+                MICe_atlas.ImageData = flip(MICe_atlas.ImageData, 3);
+
+                % Get atlas info, update dimensions and rotation
+                % matrix
+                MICe_atlas.VoxDimX = MICe_info.info.voxel_size(1);
+                MICe_atlas.VoxDimY = MICe_info.info.voxel_size(2);
+                MICe_atlas.SliceThickness = MICe_info.info.voxel_size(3);
+                MICe_atlas.SliceGap = 0;
+                MICe_atlas.Units = "mm mm mm";
+                MICe_atlas.RotMat = MICe_info.info.mat(1:3,1:3);
+
+                % Save to loaded atlas collection struct, update
+                % drop down items
+                loadedCollection.MICeAtlas = MICe_atlas;
+                dropdown_items = cat(1, dropdown_items, 'MICe Neuroanatomy Atlas - C57BL6J Mouse');
+            end
+
+            if ismember(app.T2wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
+                % Create end folder
+                waxholm_t2_folder = strcat(atlas_loading_folder, filesep, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
+                mkdir(waxholm_t2_folder);
+            
+                % Download atlas
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Downloading T2w Waxholm Space Atlas - C57BL6J Mouse';
+                waxholm_t2_atlas_Archive = strcat(waxholm_t2_folder, filesep, "T2WaxholmMouse.nii.gz");
+                websave(waxholm_t2_atlas_Archive, "https://www.nitrc.org/frs/download.php/9520/canon_T2W_r.nii.gz");
+            
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Copying T2w Waxholm Space labels';
+                if isdeployed
+                    LabelsBasePath = ctfroot;
+                else
+                    LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
+                end
+                copyfile(fullfile(LabelsBasePath, 'WHS_0.6.1_Labels.nii.gz'), ...
+                    strcat(waxholm_t2_folder, filesep, 'T2WaxholmMouseLabels.nii.gz'));
+            
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Importing T2w Waxholm Space Atlas - C57BL6J Mouse';
+                % Build both paths from the folder
+                waxholm_t2_labels_Path = strcat(waxholm_t2_folder, filesep, 'T2WaxholmMouseLabels.nii.gz');
+                waxholm_t2_atlas_Path  = strcat(waxholm_t2_folder, filesep, 'T2WaxholmMouse.nii.gz');
+            
+                % Load atlas and labels using niftiread, apply labels as mask
+                waxholm_t2_atlas.ImageData  = niftiread(waxholm_t2_atlas_Path);
+                waxholm_t2_labels.ImageData = niftiread(waxholm_t2_labels_Path);
+                
+                % Remove nerves and inner ear and apply labels as mask
+                waxholm_t2_labels.ImageData(ismember(waxholm_t2_labels.ImageData, [18 32 33 34 35 36 37 38 39])) = 0;
+                waxholm_t2_labels.ImageData = cast(waxholm_t2_labels.ImageData, 'logical');
+                waxholm_t2_atlas.ImageData = waxholm_t2_atlas.ImageData .* cast(waxholm_t2_labels.ImageData, 'like', waxholm_t2_atlas.ImageData);
+            
+                % permute dims, pagetranspose and flipud
+                waxholm_t2_atlas.ImageData = permute(waxholm_t2_atlas.ImageData, [1,3,2]);
+                waxholm_t2_atlas.ImageData = pagetranspose(waxholm_t2_atlas.ImageData);
+                waxholm_t2_atlas.ImageData = flipud(waxholm_t2_atlas.ImageData);
+                waxholm_t2_atlas.ImageData = flip(waxholm_t2_atlas.ImageData, 3);
+            
+                % Get atlas info, update dimensions and rotation matrix
+                waxholm_info = niftiinfo(waxholm_t2_atlas_Path);
+                waxholm_t2_atlas.VoxDimX        = waxholm_info.PixelDimensions(1);
+                waxholm_t2_atlas.VoxDimY        = waxholm_info.PixelDimensions(1);
+                waxholm_t2_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                waxholm_t2_atlas.SliceGap       = 0;
+                waxholm_t2_atlas.Units          = "mm mm mm";
+                waxholm_t2_atlas.RotMat         = waxholm_info.Transform.T(1:3,1:3);
+            
+                % Save to loaded atlas collection struct, update drop down items
+                loadedCollection.T2WaxholmMouse = waxholm_t2_atlas;
+                dropdown_items = cat(1, dropdown_items, 'T2w Waxholm Space Atlas - C57BL6J Mouse');
+            end
+
+            if ismember(app.T1wWaxholmSpaceAtlasC57BL6JMouseNode, chosen_Collection)
+                % Create end folder
+                waxholm_t1_atlas_Path = strcat(atlas_loading_folder, filesep, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
+                mkdir(waxholm_t1_atlas_Path);
+
+                % Download atlas, unzip to end folder, rename to
+                % .nii
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Downloading T1w Waxholm Space Atlas - C57BL6J Mouse';
+                waxholm_t1_atlas_Archive = strcat(waxholm_t1_atlas_Path, filesep, "T1WaxholmMouse.nii.gz");
+                websave(waxholm_t1_atlas_Archive, "https://www.nitrc.org/frs/download.php/9518/canon_T1W_r.nii.gz");
+
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Unzipping T1w Waxholm Space Atlas - C57BL6J Mouse';
+                
+                if isdeployed
+                    LabelsBasePath = ctfroot;
+                else
+                    LabelsBasePath = fullfile(fileparts(mfilename('fullpath')), 'resources');
+                end
+                copyfile(fullfile(LabelsBasePath, 'WHS_0.6.1_Labels.nii.gz'), strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouseLabels.nii.gz'));
+
+
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Importing T1w Waxholm Space Atlas - C57BL6J Mouse';
+                % Update atlas and labels path
+                waxholm_t1_labels_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouseLabels.nii.gz');
+                waxholm_t1_atlas_Path = strcat(waxholm_t1_atlas_Path, filesep, 'T1WaxholmMouse.nii.gz');
+                
+                % Load atlas and labels using niftiread, apply labels as
+                % mask
+                waxholm_t1_atlas.ImageData = niftiread(waxholm_t1_atlas_Path);
+                waxholm_t1_labels.ImageData = niftiread(waxholm_t1_labels_Path);
+                
+                % Remove nerves and inner ear and apply labels as mask
+                waxholm_t1_labels.ImageData(ismember(waxholm_t1_labels.ImageData, [18 32 33 34 35 36 37 38 39])) = 0;
+                waxholm_t1_labels.ImageData = cast(waxholm_t1_labels.ImageData, 'logical');
+                waxholm_t1_atlas.ImageData = waxholm_t1_atlas.ImageData .* cast(waxholm_t1_labels.ImageData, 'like', waxholm_t1_atlas.ImageData);
+                
+
+                % permute dims, pagetranspose and flipud
+                waxholm_t1_atlas.ImageData = permute(waxholm_t1_atlas.ImageData, [1,3,2]);
+                waxholm_t1_atlas.ImageData = pagetranspose(waxholm_t1_atlas.ImageData);
+                waxholm_t1_atlas.ImageData = flipud(waxholm_t1_atlas.ImageData);
+                waxholm_t1_atlas.ImageData = flip(waxholm_t1_atlas.ImageData, 3);
+
+                % Get atlas info, update dimensions and rotation
+                % matrix
+                waxholm_info = niftiinfo(waxholm_t1_atlas_Path);
+                waxholm_t1_atlas.VoxDimX = waxholm_info.PixelDimensions(1);
+                waxholm_t1_atlas.VoxDimY = waxholm_info.PixelDimensions(1);
+                waxholm_t1_atlas.SliceThickness = waxholm_info.PixelDimensions(1);
+                waxholm_t1_atlas.SliceGap = 0;
+                waxholm_t1_atlas.Units = "mm mm mm";
+                waxholm_t1_atlas.RotMat = waxholm_info.Transform.T(1:3,1:3);
+
+                % Save to loaded atlas collection struct, update
+                % drop down items
+                loadedCollection.T1WaxholmMouse = waxholm_t1_atlas;
+                dropdown_items = cat(1, dropdown_items, 'T1w Waxholm Space Atlas - C57BL6J Mouse');
+            end
+            
+            if ismember(app.AllenBrainAtlasAdultMouseNisslGrayscaleNode, chosen_Collection) 
+                % Download atlas, unzip and rename end folder
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Downloading Allen Brain Atlas - Adult Mouse Nissl Grayscale';
+                allen_atlas_Archive = strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip");
+                websave(allen_atlas_Archive, "http://download.alleninstitute.org/informatics-archive/current-release/mouse_annotation/P56_atlasVolume.zip");
+
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Unzipping Allen Brain Atlas - Adult Mouse Nissl Grayscale';
+                unzip(allen_atlas_Archive, atlas_loading_folder);
+
+                allen_atlas_Path = strcat(atlas_loading_folder, filesep, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
+                movefile(strcat(atlas_loading_folder, filesep, 'atlasVolume'), allen_atlas_Path);
+                
+                % delete downloaded .zip
+                delete(strcat(atlas_loading_folder, filesep, "AllenMouseAtlas.zip"));
+                
+                progress.Value = progress.Value + step_size;
+                progress.Message = 'Importing Allen Brain Atlas - Adult Mouse Nissl Grayscale';
+                % Update atlas path
+                allen_atlas_Path = strcat(allen_atlas_Path, filesep, 'atlasVolume.raw');
+                % Load atlas per Allen Brain Atlas instructions
+                fid = fopen(allen_atlas_Path, 'r', 'l' );
+                allen_atlas.ImageData = fread( fid, prod([528 320 456]), 'uint8' );
+                fclose( fid );
+                allen_atlas.ImageData = reshape(allen_atlas.ImageData, [528 320 456]);
+                % Permute and transpose image
+                allen_atlas.ImageData = permute(allen_atlas.ImageData, [3 2 1]);
+                allen_atlas.ImageData = pagetranspose(allen_atlas.ImageData);
+
+                % Set atlas dimensions, rotation matrix
+                allen_atlas.VoxDimX = 0.025;
+                allen_atlas.VoxDimY = 0.025;
+                allen_atlas.SliceThickness = 0.025;
+                allen_atlas.SliceGap = 0;
+                allen_atlas.Units = "mm mm mm";
+                allen_atlas.RotMat = diag([1,1,1]);
+                
+                % Save to loaded atlas collection struct, update
+                % drop down items
+                loadedCollection.AllenAdultMouseNissl = allen_atlas;
+                dropdown_items = cat(1, dropdown_items, 'Allen Brain Atlas - Adult Mouse Nissl Grayscale');
+            end
+                       
+            progress.Value = 1;
+            progress.Message = 'Done!';
+            pause(0.5)
+            close(progress);
 
             % Return loaded atlas collection to suMRak, update drop down
             app.suMRak.AtlasCollection = loadedCollection;
@@ -549,6 +380,7 @@ classdef ReferenceAtlasImporter_exported < matlab.apps.AppBase
             % Turn on atlas import button, delete app
             app.suMRak.ImportReferenceAtlasButton.Enable = 'on';
             close(app.suMRak.ProgressBar)
+            delete(gcp('nocreate'))
             delete(app)
         end
     end

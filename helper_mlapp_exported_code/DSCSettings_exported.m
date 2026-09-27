@@ -77,7 +77,26 @@ classdef DSCSettings_exported < matlab.apps.AppBase
         function startupFcn(app, caller, loadedOptions)
             % Store suMRak
             app.suMRak = caller;
-            
+
+            % Older saved option structs used Italian field names. Translate
+            % them to English before reading, so legacy .mat files still load.
+            if isfield(loadedOptions.aif, 'semiasseMinore')
+                loadedOptions.aif.minorSemiAxis = loadedOptions.aif.semiasseMinore;
+                loadedOptions.aif = rmfield(loadedOptions.aif, 'semiasseMinore');
+            end
+            if isfield(loadedOptions.aif, 'semiasseMaggiore')
+                loadedOptions.aif.majorSemiAxis = loadedOptions.aif.semiasseMaggiore;
+                loadedOptions.aif = rmfield(loadedOptions.aif, 'semiasseMaggiore');
+            end
+            if isfield(loadedOptions.aif, 'ricircolo')
+                loadedOptions.aif.recirculationCorrection = loadedOptions.aif.ricircolo;
+                loadedOptions.aif = rmfield(loadedOptions.aif, 'ricircolo');
+            end
+            if isfield(loadedOptions.aif, 'diffPicco')
+                loadedOptions.aif.peakTTPClusterThreshold = loadedOptions.aif.diffPicco;
+                loadedOptions.aif = rmfield(loadedOptions.aif, 'diffPicco');
+            end
+
             % Set label values to loaded option values
             % Image
             if loadedOptions.conc == 1
@@ -93,15 +112,15 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.S0MaxVoxNrEditField.Value = loadedOptions.S0.nSamplesMax;
             % AIF
             app.EnableAIFCheckBox.Value = loadedOptions.aif.enable;
-            app.AIFROIMinorSemiaxisEditField.Value = loadedOptions.aif.semiasseMinore;
-            app.AIFROIMajorSemiaxisEditField.Value = loadedOptions.aif.semiasseMaggiore;
+            app.AIFROIMinorSemiaxisEditField.Value = loadedOptions.aif.minorSemiAxis;
+            app.AIFROIMajorSemiaxisEditField.Value = loadedOptions.aif.majorSemiAxis;
             app.AIFMinVoxNrEditField.Value = loadedOptions.aif.nVoxelMin;
             app.AIFMaxVoxNrEditField.Value = loadedOptions.aif.nVoxelMax;
-            app.AIFRecirculationCorrectionCheckBox.Value = loadedOptions.aif.ricircolo;
+            app.AIFRecirculationCorrectionCheckBox.Value = loadedOptions.aif.recirculationCorrection;
             app.VoxelDiscardFractionAUCEditField.Value = loadedOptions.aif.pArea;
             app.VoxelDiscardFractionTTPEditField.Value = loadedOptions.aif.pTTP;
             app.VoxelDiscardFractionRegularityEditField.Value = loadedOptions.aif.pReg;
-            app.ClusterThresholdPeakTTPEditField.Value = loadedOptions.aif.diffPicco;
+            app.ClusterThresholdPeakTTPEditField.Value = loadedOptions.aif.peakTTPClusterThreshold;
             % Proportionality constants
             app.KhEditField.Value = loadedOptions.par.kh;
             app.RhoEditField.Value = loadedOptions.par.rho;
@@ -181,15 +200,20 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             app.suMRak.DSCOptions.S0.nSamplesMax = app.S0MaxVoxNrEditField.Value;
             % AIF
             app.suMRak.DSCOptions.aif.enable = app.EnableAIFCheckBox.Value;
-            app.suMRak.DSCOptions.aif.semiasseMinore = app.AIFROIMinorSemiaxisEditField.Value;
-            app.suMRak.DSCOptions.aif.semiasseMaggiore = app.AIFROIMajorSemiaxisEditField.Value;
+            app.suMRak.DSCOptions.aif.minorSemiAxis = app.AIFROIMinorSemiaxisEditField.Value;
+            app.suMRak.DSCOptions.aif.majorSemiAxis = app.AIFROIMajorSemiaxisEditField.Value;
             app.suMRak.DSCOptions.aif.nVoxelMin = app.AIFMinVoxNrEditField.Value;
             app.suMRak.DSCOptions.aif.nVoxelMax = app.AIFMaxVoxNrEditField.Value;
-            app.suMRak.DSCOptions.aif.ricircolo = app.AIFRecirculationCorrectionCheckBox.Value;
+            app.suMRak.DSCOptions.aif.recirculationCorrection = app.AIFRecirculationCorrectionCheckBox.Value;
             app.suMRak.DSCOptions.aif.pArea = app.VoxelDiscardFractionAUCEditField.Value;
             app.suMRak.DSCOptions.aif.pTTP = app.VoxelDiscardFractionTTPEditField.Value;
             app.suMRak.DSCOptions.aif.pReg = app.VoxelDiscardFractionRegularityEditField.Value;
-            app.suMRak.DSCOptions.aif.diffPicco = app.ClusterThresholdPeakTTPEditField.Value;
+            app.suMRak.DSCOptions.aif.peakTTPClusterThreshold = app.ClusterThresholdPeakTTPEditField.Value;
+            % Mirror to the field names the DSC toolbox (DSC_mri_aif.m) actually reads
+            app.suMRak.DSCOptions.aif.semiasseMinore   = app.suMRak.DSCOptions.aif.minorSemiAxis;
+            app.suMRak.DSCOptions.aif.semiasseMaggiore = app.suMRak.DSCOptions.aif.majorSemiAxis;
+            app.suMRak.DSCOptions.aif.ricircolo        = app.suMRak.DSCOptions.aif.recirculationCorrection;
+            app.suMRak.DSCOptions.aif.diffPicco        = app.suMRak.DSCOptions.aif.peakTTPClusterThreshold;
             % Proportionality constants
             app.suMRak.DSCOptions.par.kh = app.KhEditField.Value;
             app.suMRak.DSCOptions.par.rho = app.RhoEditField.Value;
@@ -211,7 +235,7 @@ classdef DSCSettings_exported < matlab.apps.AppBase
             % Turn on settings button, delete app
             app.suMRak.AdvancedSettingsButton.Enable = 'on';
             close(app.suMRak.ProgressBar)
-            delete(app) 
+            delete(app)
         end
 
         % Close request function: DSCMappingAdvancedSettingsUIFigure

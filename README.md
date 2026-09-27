@@ -2,7 +2,7 @@
 
 <b> A Simple Utility MRi Analysis Kit </b>
 
-![Static Badge](https://img.shields.io/badge/MATLAB-R2023a-orange) ![Static Badge](https://img.shields.io/badge/python-3.9-blue)
+![Static Badge](https://img.shields.io/badge/MATLAB-R2024a-orange) ![Static Badge](https://img.shields.io/badge/python-3.9-blue)
 
 ------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ suMRak is a MATLAB application created with the aim of simplifying pre-clinical 
 
 suMRak is available as a MATLAB App Designer binary _.mlapp_ file and a fully exported MATLAB code _.m_ file which can both be executed directly from the MATLAB Command Window.
 
-It is also available as a single _.exe_ installer file which installs suMRak (and the required MATLAB Runtime R2023a) as a standalone application.
+It is also available as a single _.exe_ installer file which installs suMRak (and the required MATLAB Runtime R2024a) as a standalone application.
 > [!IMPORTANT]
 > **suMRak is currently compatible with _64-bit Windows 7_ and later**.
 
@@ -23,17 +23,15 @@ The following are **prerequisites** for installing suMRak on a end-user machine:
 - [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) - During installation, select the option to add Python to PATH
 
 Optional - required for image registration: 
-- suMRak uses the [SimpleElastix](https://simpleelastix.github.io/) python library for image registration, which can be compiled and installed by following the instructions in the [SimpleElastix Documentation](https://simpleelastix.readthedocs.io/GettingStarted.html#compiling-on-windows).
-- Additionally, SimpleElastix can be installed using the Windows command prompt and the pip package installer for Python;
+- suMRak uses the [SimpleITK](https://simpleitk.org/) python library for image registration and time-series alignment (since v1.1.0; earlier versions used SimpleElastix, which is no longer required).
 
-### Instructions for SimpleElastix installation using pip
+### Instructions for SimpleITK installation using pip
 
 Open the Windows command prompt and insert following commands, line by line:
 
 ```
 pip install --upgrade pip
 pip install SimpleITK
-pip install SimpleITK-SimpleElastix
 ```
 
 ------------------------------------------------------------------------
@@ -68,8 +66,8 @@ displayed accordingly. Segmented regions of interest can also be corrected for e
 
 ### Registration
  
-MATLAB's integrated python engine allows users to register saved experiments using the [SimpleElastix](https://simpleelastix.github.io/) python library. suMRak uses this capability to allow the following methods of image registration:
-1. Standard moving/fixed non-rigid image registration, described [here](https://simpleelastix.readthedocs.io/NonRigidRegistration.html)
+MATLAB's integrated python engine allows users to register saved experiments using the [SimpleITK](https://simpleitk.org/) python library. Registrations are built as configurable multi-stage transform pipelines (Translation, Euler3D, Similarity3D, Affine, BSpline), with per-stage metric, optimizer and sampling settings editable in the Transform Parameter Editor. suMRak uses this capability to allow the following methods of image registration:
+1. Standard moving/fixed rigid, affine and non-rigid (BSpline) image registration
 2. Non-rigid registration of data to reference histological/MRi atlases
 3. Time-series data alignment
 
